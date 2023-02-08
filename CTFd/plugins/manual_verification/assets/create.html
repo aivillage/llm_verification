@@ -1,0 +1,11 @@
+{% extends "admin/challenges/create.html" %}
+
+{% block header %}
+	<div class="alert alert-secondary" role="alert">
+		Manual verification challenges requires admins to mark submissions as solved. Flags are not required. Submissions can be graded from the "Manual Submissions" plugin interface.
+	</div>
+{% endblock %}
+
+{% block type %}
+	<input type="hidden" name="type" value="manual_verification">
+{% endblock %}

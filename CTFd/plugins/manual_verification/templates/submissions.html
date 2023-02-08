@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block stylesheets %}
+{% endblock %}
+
+{% block content %}
+	<div class="jumbotron">
+		<div class="container">
+			<h1>Submissions</h1>
+		</div>
+	</div>
+	<div class="container">
+		<div class="row">
+			<div class="col-md-12">
+				<h2>Pending Submissions</h2>
+				<hr>
+				{% for sub in pending %}
+					<div class="card bg-light mb-4">
+						<div class="card-body">
+							<h3 class="card-title">{{ sub.challenge.name }}</h3>
+							<blockquote class="blockquote mb-0">
+								<p>{{ sub.provided }}</p>
+								<small class="text-muted">{{ sub.date | isoformat }}</small>
+							</blockquote>
+						</div>
+					</div>
+				{% endfor %}
+
+				<h2>Correct Submissions</h2>
+				<hr>
+				{% for sub in correct %}
+					<div class="card bg-light mb-4">
+						<div class="card-body">
+							<h3 class="card-title">{{ sub.challenge.name }}</h3>
+							<blockquote class="blockquote mb-0">
+								<p>{{ sub.provided }}</p>
+								<small class="text-muted">{{ sub.date | isoformat }}</small>
+							</blockquote>
+						</div>
+					</div>
+				{% endfor %}
+
+				<h2>Awarded Submissions</h2>
+				<hr>
+				{% for award in awarded %}
+					<div class="card bg-light mb-4">
+						<div class="card-body">
+							<h3 class="card-title">{{ award.challenge.name }}</h3>
+							<blockquote class="blockquote mb-0">
+								<p>{{ award.provided }}</p>
+								<small class="text-muted">{{ award.date | isoformat }}</small>
+							</blockquote>
+						</div>
+					</div>
+				{% endfor %}
+			</div>
+		</div>
+	</div>
+{% endblock %}
+
+{% block scripts %}
+{% endblock %}
