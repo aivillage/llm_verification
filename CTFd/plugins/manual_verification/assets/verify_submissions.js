@@ -83,7 +83,11 @@ $(document).ready(function() {
       .text()
       .trim();
     var submission = elem.find(".submission").attr("id");
-    var submission_content = elem
+    var prompt_content = elem
+      .find(".prompt")
+      .text()
+      .trim();
+    var text_content = elem
       .find(".flag")
       .text()
       .trim();
@@ -95,10 +99,11 @@ $(document).ready(function() {
 
     ezgrade({
       title: "Grade Submission",
-      body: "Grade {0}'s submission for {1}: {2}".format(
+      body: "Grade {0}'s submission for {1}: {2}, {4}".format(
         "<strong>" + htmlentities(team_name) + "</strong>",
         "<strong>" + htmlentities(chal_name) + "</strong>",
-        "<pre>" + htmlentities(submission_content) + "</pre>"
+        "<pre>" + htmlentities(prompt_content) + "</pre>",
+        "<pre>" + htmlentities(text_content) + "</pre>"
       ),
       success: function() {
         CTFd.ui.ezq.ezQuery({

@@ -21,13 +21,14 @@
             <td><b>Team</b></td>
             <td><b>Challenge</b></td>
             <td><b>Type</b></td>
-            <td><b>Submission</b></td>
+            <td><b>Prompt</b></td>
+            <td><b>Text</b></td>
             <td class="text-center"><b>Date</b></td>
             <td class="text-center"><b>Grade</b></td>
           </tr>
         </thead>
         <tbody>
-          {% for sub in submissions %}
+          {% for sub, provided in submissions %}
           <tr>
             <td class="text-center" id="{{ sub.id }}">
               {{ sub.id }}
@@ -41,8 +42,11 @@
             <td>
               {{ sub.type }}
             </td>
+            <td class="prompt" id="{{ sub.id }}">
+              <pre class="mb-0">{{ provided['prompt'] }}</pre>
+            </td>
             <td class="flag" id="{{ sub.id }}">
-              <pre class="mb-0">{{ sub.provided }}</pre>
+              <pre class="mb-0">{{ provided['text'] }}</pre>
             </td>
             <td class="text-center solve-time">
               <span data-time="{{ sub.date | isoformat }}"></span>

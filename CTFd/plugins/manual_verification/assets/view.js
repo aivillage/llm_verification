@@ -155,17 +155,30 @@ challenge.postRender = function() {
         );
         $("#challenge-submissions").append(entry);
       }
+
+      // Fix prompt text and generate button
+      $("#challenge-window #challenge-generate").addClass(
+        "btn btn-md btn-outline-secondary float-right"
+      );
+      $("#challenge-window #challenge-prompt").addClass("form-control");
+
+      $("#challenge-generate").click(function(event) {
+        event.preventDefault();
+        $("#challenge-input").val("Ha, generated text!");
+      });
     });
 };
 
 challenge.submit = function(preview) {
   var challenge_id = parseInt($("#challenge-id").val());
-  var submission = $("#challenge-input").val();
-
+  var submission_prompt = $("#challenge-prompt").val();
+  var submission_text = $("#challenge-input").val();
+  var submission = { prompt: submission_prompt, text: submission_text };
   var body = {
     challenge_id: challenge_id,
     submission: submission
   };
+  console.log(body);
   var params = {};
   if (preview) {
     params["preview"] = true;

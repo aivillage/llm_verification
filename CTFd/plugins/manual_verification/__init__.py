@@ -1,5 +1,7 @@
 from flask import Blueprint, jsonify, render_template, request
 
+import json
+
 from CTFd.models import Awards, Challenges, Fails, Solves, Submissions, db
 from CTFd.plugins import register_plugin_assets_directory
 from CTFd.plugins.challenges import CHALLENGE_CLASSES, BaseChallenge
@@ -88,7 +90,7 @@ class ManualSubmissionChallenge(BaseChallenge):
         :return:
         """
         data = request.form or request.get_json()
-        submission = data["submission"].strip()
+        submission = json.dumps(data["submission"])
         pending = Pending(
             user_id=user.id,
             team_id=team.id if team else None,
@@ -202,7 +204,8 @@ def load(app):
             .slice(page_start, page_end)
             .all()
         )
-
+        # Hack to prevent DB modifications. 
+        submissions = [(submission, json.loads(submission.provided)) for submission in submissions]
         return render_template(
             "verify_submissions.html",
             submissions=submissions,
