@@ -42,6 +42,30 @@ if (!window.Moment) {
   }
 }
 
+async function generate_text(challenge_id, prompt) {
+  console.log("Generating text", challenge_id, prompt);
+  var domain = CTFd.config.urlRoot;
+  var path = "generate";
+  var body = {
+    challenge_id: challenge_id,
+    prompt: prompt
+  };
+
+  var headers = {};
+  headers["Accept"] = ["application/json"];
+  headers["Content-Type"] = ["application/json"];
+  headers["X-CSRFToken"] = [CTFd.config.csrfNonce];
+  var response = fetch(domain + path, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body)
+  })
+    .then((response) => {
+      return response.json();
+    });
+  return response;
+};
+
 function htmlEntities(string) {
   return $("<div/>")
     .text(string)
@@ -160,11 +184,23 @@ challenge.postRender = function() {
       $("#challenge-window #challenge-generate").addClass(
         "btn btn-md btn-outline-secondary float-right"
       );
+      $("#challenge-window #challenge-generate-loading").addClass(
+        "btn btn-md btn-outline-secondary float-right"
+      );
       $("#challenge-window #challenge-prompt").addClass("form-control");
 
       $("#challenge-generate").click(function(event) {
         event.preventDefault();
-        $("#challenge-input").val("Ha, generated text!");
+  
+        $("#challenge-input").val();
+        
+        var challenge_id = $("#challenge-id").val();
+        var prompt = $("#challenge-prompt").val();
+        generate_text(challenge_id, prompt).then(function(response) {
+          console.log(response);
+          console.log(response.data.text);
+          $("#challenge-input").val(response.data.text);
+        });
       });
     });
 };
@@ -174,9 +210,10 @@ challenge.submit = function(preview) {
   var submission_prompt = $("#challenge-prompt").val();
   var submission_text = $("#challenge-input").val();
   var submission = { prompt: submission_prompt, text: submission_text };
+
   var body = {
     challenge_id: challenge_id,
-    submission: submission
+    submission: submission.stringify()
   };
   console.log(body);
   var params = {};

@@ -1,9 +1,10 @@
 from flask import Blueprint, jsonify, render_template, request
 
-import json
+import json, traceback
+from .skel_client_llm.wrapper import ClientLLM
 
 from CTFd.models import Awards, Challenges, Fails, Solves, Submissions, db
-from CTFd.plugins import register_plugin_assets_directory
+from CTFd.plugins import bypass_csrf_protection, register_plugin_assets_directory
 from CTFd.plugins.challenges import CHALLENGE_CLASSES, BaseChallenge
 from CTFd.plugins.migrations import upgrade
 from CTFd.utils import get_config
@@ -11,7 +12,6 @@ from CTFd.utils.dates import isoformat
 from CTFd.utils.decorators import admins_only, authed_only
 from CTFd.utils.modes import USERS_MODE, get_model
 from CTFd.utils.user import get_current_user, get_ip
-
 
 class ManualChallenge(Challenges):
     __mapper_args__ = {"polymorphic_identity": "manual_verification"}
@@ -21,6 +21,14 @@ class ManualChallenge(Challenges):
 
     def __init__(self, *args, **kwargs):
         super(ManualChallenge, self).__init__(**kwargs)
+
+    @property
+    def html(self):
+        from CTFd.utils.config.pages import build_markdown
+        from CTFd.utils.helpers import markup
+        description = json.loads(self.description)
+        description = description["description"]
+        return markup(build_markdown(description))
 
 
 class Pending(Submissions):
@@ -56,6 +64,29 @@ class ManualSubmissionChallenge(BaseChallenge):
     )
     challenge_model = ManualChallenge
 
+    @classmethod
+    def create(cls, request):
+        """
+        This method is used to process the challenge creation request.
+
+        :param request:
+        :return:
+        """
+        data = request.form or request.get_json()
+        description = data["description"]
+        preprompt = data["preprompt"]
+
+        description = {"description": description, "preprompt": preprompt}
+        data["description"] = json.dumps(description)
+        del data["preprompt"]
+
+        challenge = cls.challenge_model(**data)
+
+        db.session.add(challenge)
+        db.session.commit()
+
+        return challenge
+    
     @staticmethod
     def attempt(challenge, request):
         """
@@ -111,6 +142,35 @@ def load(app):
     manual_verifications = Blueprint(
         "manual_verifications", __name__, template_folder="templates"
     )
+    client_llm = ClientLLM(host='192.168.1.219', port=50055)
+    
+    @manual_verifications.route("/generate", methods=["POST"])
+    @bypass_csrf_protection
+    def generate_for_challenge():
+        content = request.json
+        challenge_id = content["challenge_id"]
+        prompt = content["prompt"]
+        challenge = ManualChallenge.query.filter_by(id=challenge_id).first_or_404()
+        
+        #client_llm = ClientLLM(host='127.0.0.1', port=50055)
+        preprompt = json.loads(challenge.description)["preprompt"]
+        try:
+            generated = client_llm._generate(prompts=[preprompt + prompt])
+            print(generated)
+            if len(generated.generations) == 0:
+                return jsonify({"success": False, "data": {"text": ""}})
+            
+            text = generated.generations[0][0].text
+            resp = {
+                "success": True,
+                "data": {
+                    "text": text,
+                },
+            }
+            return jsonify(resp)
+        except Exception as e:
+            print(e)
+            return jsonify({"success": False, "data": {"text": ""}})
 
     @manual_verifications.route("/submissions/<challenge_id>", methods=["GET"])
     @authed_only
@@ -274,5 +334,6 @@ def load(app):
         db.session.commit()
         db.session.close()
         return jsonify({"success": True})
+
 
     app.register_blueprint(manual_verifications)

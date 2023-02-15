@@ -6,6 +6,26 @@
 	</div>
 {% endblock %}
 
+{% block message %}
+	<div class="form-group">
+		<label>
+			Message:<br>
+			<small class="form-text text-muted">
+				Use this to give a brief introduction to your challenge.
+			</small>
+		</label>
+		<textarea id="new-desc-editor" class="form-control markdown" name="description" rows="10"></textarea>
+
+		<label>
+			Pre-Prompt:<br>
+			<small class="form-text text-muted">
+				Use this as a secret preprompt for your challenge.
+			</small>
+		</label>
+		<textarea id="new-desc-editor" class="form-control markdown" name="preprompt" rows="5"></textarea>
+	</div>
+{% endblock %}
+
 {% block type %}
 	<input type="hidden" name="type" value="manual_verification">
 {% endblock %}
