@@ -10,8 +10,9 @@ import grpclib
 
 @dataclass
 class GenerateRequest(betterproto.Message):
-    prompts: List[str] = betterproto.string_field(1)
-    stop: List[str] = betterproto.string_field(2)
+    api_key: str = betterproto.string_field(1)
+    prompts: List[str] = betterproto.string_field(2)
+    stop: List[str] = betterproto.string_field(3)
 
 
 @dataclass
@@ -33,7 +34,7 @@ class GenerateReplyGenerationList(betterproto.Message):
 
 @dataclass
 class LLMTypeRequest(betterproto.Message):
-    pass
+    api_key: str = betterproto.string_field(1)
 
 
 @dataclass
@@ -43,9 +44,10 @@ class LLMTypeReply(betterproto.Message):
 
 class RemoteLLMStub(betterproto.ServiceStub):
     async def generate(
-        self, *, prompts: List[str] = [], stop: List[str] = []
+        self, *, api_key: str = "", prompts: List[str] = [], stop: List[str] = []
     ) -> GenerateReply:
         request = GenerateRequest()
+        request.api_key = api_key
         request.prompts = prompts
         request.stop = stop
 
@@ -55,8 +57,9 @@ class RemoteLLMStub(betterproto.ServiceStub):
             GenerateReply,
         )
 
-    async def get_llm_type(self) -> LLMTypeReply:
+    async def get_llm_type(self, *, api_key: str = "") -> LLMTypeReply:
         request = LLMTypeRequest()
+        request.api_key = api_key
 
         return await self._unary_unary(
             "/llm_rpc.api.RemoteLLM/GetLlmType",

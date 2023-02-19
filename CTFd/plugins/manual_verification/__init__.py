@@ -1,7 +1,8 @@
 from flask import Blueprint, jsonify, render_template, request
 
 import json, traceback
-from .skel_client_llm.wrapper import ClientLLM
+from .remote_llm.client import ClientLLM
+from grpclib.client import Channel
 
 from CTFd.models import Awards, Challenges, Fails, Solves, Submissions, db
 from CTFd.plugins import bypass_csrf_protection, register_plugin_assets_directory
@@ -142,7 +143,7 @@ def load(app):
     manual_verifications = Blueprint(
         "manual_verifications", __name__, template_folder="templates"
     )
-    client_llm = ClientLLM(host='192.168.1.219', port=50055)
+    client_llm = ClientLLM(host='73.213.62.188', port=50055, api_key="deb94aa4-faa6-4f16-afa3-fdf3563a971f")
     
     @manual_verifications.route("/generate", methods=["POST"])
     @bypass_csrf_protection
@@ -155,7 +156,7 @@ def load(app):
         #client_llm = ClientLLM(host='127.0.0.1', port=50055)
         preprompt = json.loads(challenge.description)["preprompt"]
         try:
-            generated = client_llm._generate(prompts=[preprompt + prompt])
+            generated = client_llm.generate_text(prompts=[preprompt + prompt])
             print(generated)
             if len(generated.generations) == 0:
                 return jsonify({"success": False, "data": {"text": ""}})
