@@ -143,7 +143,7 @@ def load(app):
     manual_verifications = Blueprint(
         "manual_verifications", __name__, template_folder="templates"
     )
-    client_llm = ClientLLM(host='73.213.62.188', port=50055, api_key="deb94aa4-faa6-4f16-afa3-fdf3563a971f")
+    client_llm = ClientLLM(host='devgrt.aivillage.org', port=50055, api_key="deb94aa4-faa6-4f16-afa3-fdf3563a971f")
     
     @manual_verifications.route("/generate", methods=["POST"])
     @bypass_csrf_protection
