@@ -66,9 +66,24 @@ class ClientLLM:
     def sync_generate_text(
         self, prompts: List[str],
     ) -> LLMResult:
-        loop = asyncio.get_event_loop()
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError as e:
+            if str(e).startswith('There is no current event loop in thread'):
+                loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        else:
+            raise
+
         return loop.run_until_complete(self.generate_text(prompts))
     
     def sync_llm_name(self) -> str:
-        loop = asyncio.get_event_loop()
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError as e:
+            if str(e).startswith('There is no current event loop in thread'):
+                loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        else:
+            raise
         return loop.run_until_complete(self.llm_name())

@@ -156,7 +156,7 @@ def load(app):
         #client_llm = ClientLLM(host='127.0.0.1', port=50055)
         preprompt = json.loads(challenge.description)["preprompt"]
         try:
-            generated = client_llm.generate_text(prompts=[preprompt + prompt])
+            generated = client_llm.sync_generate_text(prompts=[preprompt + prompt])
             print(generated)
             if len(generated.generations) == 0:
                 return jsonify({"success": False, "data": {"text": ""}})
