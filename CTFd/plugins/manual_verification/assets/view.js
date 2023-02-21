@@ -43,7 +43,6 @@ if (!window.Moment) {
 }
 
 async function generate_text(challenge_id, prompt) {
-  console.log("Generating text", challenge_id, prompt);
   var domain = CTFd.config.urlRoot;
   var path = "generate";
   var body = {
@@ -213,9 +212,8 @@ challenge.submit = function(preview) {
 
   var body = {
     challenge_id: challenge_id,
-    submission: submission.stringify()
+    submission: JSON.stringify(submission)
   };
-  console.log(body);
   var params = {};
   if (preview) {
     params["preview"] = true;
