@@ -98,8 +98,8 @@ $(document).ready(function() {
       .parent();
 
     ezgrade({
-      title: "Grade Submission",
-      body: "Grade {0}'s submission for {1}: <strong> <br> Prompt: <br> </strong> {2} <strong> <br> Text: </strong> <br> {3}".format(
+      title: "Submission",
+      body: " {0}'s submission for {1}: <strong> <br> Prompt: <br> </strong> {2} <strong> <br> Text: </strong> <br> {3}".format(
         "<strong>" + htmlentities(team_name) + "</strong>",
         "<strong>" + htmlentities(chal_name) + "</strong>",
         "<pre>" + htmlentities(prompt_content) + "</pre>",

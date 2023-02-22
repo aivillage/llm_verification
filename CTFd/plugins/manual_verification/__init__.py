@@ -1,8 +1,11 @@
+from dataclasses import dataclass
 from flask import Blueprint, jsonify, render_template, request
 
 import json, traceback
 from .remote_llm.client import ClientLLM
 from grpclib.client import Channel
+import datetime
+from sqlalchemy.ext.hybrid import hybrid_property
 
 from CTFd.models import Awards, Challenges, Fails, Solves, Submissions, db
 from CTFd.plugins import bypass_csrf_protection, register_plugin_assets_directory
@@ -16,10 +19,12 @@ from CTFd.utils.user import get_current_user, get_ip
 
 class ManualChallenge(Challenges):
     __mapper_args__ = {"polymorphic_identity": "manual_verification"}
+    __table_args__ = {'extend_existing': True} 
+
     id = db.Column(
         db.Integer, db.ForeignKey("challenges.id", ondelete="CASCADE"), primary_key=True
     )
-
+    preprompt = db.Column(db.Text)
     def __init__(self, *args, **kwargs):
         super(ManualChallenge, self).__init__(**kwargs)
 
@@ -27,17 +32,47 @@ class ManualChallenge(Challenges):
     def html(self):
         from CTFd.utils.config.pages import build_markdown
         from CTFd.utils.helpers import markup
-        description = json.loads(self.description)
-        description = description["description"]
-        return markup(build_markdown(description))
+        return markup(build_markdown(self.description))
 
 
 class Pending(Submissions):
     __mapper_args__ = {"polymorphic_identity": "pending"}
 
-
 class Awarded(Submissions):
     __mapper_args__ = {"polymorphic_identity": "awarded"}
+
+class GRTSubmission(db.Model):
+    __tablename__ = "grt_submissions"
+    __table_args__ = {'extend_existing': True} 
+    
+    id = db.Column(db.Integer, primary_key=True)
+    submission_id = db.Column(db.Integer, db.ForeignKey("submissions.id", ondelete="CASCADE"))
+    challenge_id = db.Column(db.Integer, db.ForeignKey("challenges.id", ondelete="CASCADE"))
+    text = db.Column(db.Text)
+    prompt = db.Column(db.Text)
+
+class GRTSolves(db.Model):
+    __tablename__ = "grt_solves"
+    __table_args__ = {'extend_existing': True} 
+    
+    id = db.Column(db.Integer, primary_key=True)
+    success = db.Column(db.Boolean)
+    challenge_id = db.Column(db.Integer, db.ForeignKey("challenges.id", ondelete="CASCADE"))
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"))
+    team_id = db.Column(db.Integer, db.ForeignKey("teams.id", ondelete="CASCADE"))
+    text = db.Column(db.Text)
+    prompt = db.Column(db.Text)
+    date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+
+    @hybrid_property
+    def account_id(self):
+        from CTFd.utils import get_config
+
+        user_mode = get_config("user_mode")
+        if user_mode == "teams":
+            return self.team_id
+        elif user_mode == "users":
+            return self.user_id
 
 
 class ManualSubmissionChallenge(BaseChallenge):
@@ -73,13 +108,7 @@ class ManualSubmissionChallenge(BaseChallenge):
         :param request:
         :return:
         """
-        data = request.form or request.get_json()
-        description = data["description"]
-        preprompt = data["preprompt"]
-
-        description = {"description": description, "preprompt": preprompt}
-        data["description"] = json.dumps(description)
-        del data["preprompt"]
+        data = request.form or request.get_json()    
 
         challenge = cls.challenge_model(**data)
 
@@ -122,7 +151,7 @@ class ManualSubmissionChallenge(BaseChallenge):
         :return:
         """
         data = request.form or request.get_json()
-        submission = json.dumps(data["submission"])
+        submission = data["submission"]
         pending = Pending(
             user_id=user.id,
             team_id=team.id if team else None,
@@ -131,6 +160,15 @@ class ManualSubmissionChallenge(BaseChallenge):
             provided=submission,
         )
         db.session.add(pending)
+        db.session.commit()
+
+        grt = GRTSubmission(
+            submission_id=pending.id,
+            text=data["text"],
+            prompt=data["prompt"],
+            challenge_id=challenge.id
+        )
+        db.session.add(grt)
         db.session.commit()
 
 
@@ -144,7 +182,7 @@ def load(app):
         "manual_verifications", __name__, template_folder="templates"
     )
     client_llm = ClientLLM(host='devgrt.aivillage.org', port=50055, api_key="deb94aa4-faa6-4f16-afa3-fdf3563a971f")
-    
+
     @manual_verifications.route("/generate", methods=["POST"])
     @bypass_csrf_protection
     def generate_for_challenge():
@@ -154,7 +192,7 @@ def load(app):
         challenge = ManualChallenge.query.filter_by(id=challenge_id).first_or_404()
         
         #client_llm = ClientLLM(host='127.0.0.1', port=50055)
-        preprompt = json.loads(challenge.description)["preprompt"]
+        preprompt = challenge.preprompt
         try:
             generated = client_llm.sync_generate_text(prompts=[preprompt + prompt])
             print(generated)
@@ -234,6 +272,7 @@ def load(app):
     @manual_verifications.route("/admin/submissions/pending", methods=["GET"])
     @admins_only
     def view_pending_submissions():
+        
         filters = {"type": "pending"}
 
         curr_page = abs(int(request.args.get("page", 1, type=int)))
@@ -257,18 +296,66 @@ def load(app):
                 Submissions.date,
                 Challenges.name.label("challenge_name"),
                 Model.name.label("team_name"),
+                GRTSubmission.prompt,
+                GRTSubmission.text,
             )
+            .select_from(Submissions)
             .filter_by(**filters)
             .join(Challenges)
             .join(Model)
+            .join(GRTSubmission, GRTSubmission.id == Submissions.id)
             .order_by(Submissions.date.desc())
             .slice(page_start, page_end)
             .all()
         )
-        # Hack to prevent DB modifications. 
-        submissions = [(submission, json.loads(submission.provided)) for submission in submissions]
+        
         return render_template(
             "verify_submissions.html",
+            submissions=submissions,
+            page_count=page_count,
+            curr_page=curr_page,
+        )
+    
+    @manual_verifications.route("/admin/submissions/solved", methods=["GET"])
+    @admins_only
+    def view_solved_submissions():
+        
+        filters = {"success": True}
+
+        curr_page = abs(int(request.args.get("page", 1, type=int)))
+        results_per_page = 50
+        page_start = results_per_page * (curr_page - 1)
+        page_end = results_per_page * (curr_page - 1) + results_per_page
+        sub_count = GRTSolves.query.filter_by(**filters).count()
+        page_count = int(sub_count / results_per_page) + (
+            sub_count % results_per_page > 0
+        )
+
+        Model = get_model()
+
+        submissions = (
+            GRTSolves.query.add_columns(
+                GRTSolves.id,
+                GRTSolves.challenge_id,
+                GRTSolves.prompt,
+                GRTSolves.account_id,
+                GRTSolves.text,
+                GRTSolves.date,
+                Challenges.name.label("challenge_name"),
+                Challenges.description.label("challenge_description"),
+                Model.name.label("team_name"),
+            )
+            .select_from(GRTSolves)
+            .filter_by(**filters)
+            .join(Challenges)
+            .join(Model)
+            .order_by(GRTSolves.date.desc())
+            .slice(page_start, page_end)
+            .all()
+        )
+        
+        return render_template(
+            "solved_submissions.html",
             submissions=submissions,
             page_count=page_count,
             curr_page=curr_page,
@@ -280,6 +367,7 @@ def load(app):
     @admins_only
     def verify_submissions(submission_id, status):
         submission = Submissions.query.filter_by(id=submission_id).first_or_404()
+        grt_submission = GRTSubmission.query.filter_by(id=submission_id).first_or_404()
 
         if status == "solve":
             solve = Solves(
@@ -298,16 +386,16 @@ def load(app):
                 Submissions.user_id == submission.user_id,
                 Submissions.type == "pending",
             ).delete()
-        elif status == "fail":
-            wrong = Fails(
+            solve = GRTSolves(
+                success=True,
+                challenge_id=submission.challenge_id,
+                text=grt_submission.text,
+                prompt=grt_submission.prompt,
+                date=submission.date,
                 user_id=submission.user_id,
                 team_id=submission.team_id,
-                challenge_id=submission.challenge_id,
-                ip=submission.ip,
-                provided=submission.provided,
-                date=submission.date,
             )
-            db.session.add(wrong)
+            db.session.add(solve)
         elif status == "award":
             awarded = Awarded(
                 user_id=submission.user_id,
@@ -328,7 +416,36 @@ def load(app):
             )
             db.session.add(awarded)
             db.session.add(award)
-
+            solve = GRTSolves(
+                success=True,
+                challenge_id=submission.challenge_id,
+                text=grt_submission.text,
+                prompt=grt_submission.prompt,
+                date=submission.date,
+                user_id=submission.user_id,
+                team_id=submission.team_id,
+            )
+            db.session.add(solve)
+        elif status == "fail":
+            wrong = Fails(
+                user_id=submission.user_id,
+                team_id=submission.team_id,
+                challenge_id=submission.challenge_id,
+                ip=submission.ip,
+                provided=submission.provided,
+                date=submission.date,
+            )
+            db.session.add(wrong)
+            solve = GRTSolves(
+                success=False,
+                challenge_id=submission.challenge_id,
+                text=grt_submission.text,
+                prompt=grt_submission.prompt,
+                date=submission.date,
+                user_id=submission.user_id,
+                team_id=submission.team_id,
+            )
+            db.session.add(solve)
         else:
             return jsonify({"success": False})
         db.session.delete(submission)

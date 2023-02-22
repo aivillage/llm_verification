@@ -208,11 +208,12 @@ challenge.submit = function(preview) {
   var challenge_id = parseInt($("#challenge-id").val());
   var submission_prompt = $("#challenge-prompt").val();
   var submission_text = $("#challenge-input").val();
-  var submission = { prompt: submission_prompt, text: submission_text };
-
+  
   var body = {
     challenge_id: challenge_id,
-    submission: JSON.stringify(submission)
+    submission: "Generative Text",
+    prompt: submission_prompt,
+    text: submission_text
   };
   var params = {};
   if (preview) {
