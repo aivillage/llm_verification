@@ -17,7 +17,7 @@ from CTFd.utils.decorators import admins_only, authed_only
 from CTFd.utils.modes import USERS_MODE, get_model
 from CTFd.utils.user import get_current_user, get_ip
 
-class ManualChallenge(Challenges):
+class LlmChallenge(Challenges):
     __mapper_args__ = {"polymorphic_identity": "manual_verification"}
     __table_args__ = {'extend_existing': True} 
 
@@ -25,8 +25,9 @@ class ManualChallenge(Challenges):
         db.Integer, db.ForeignKey("challenges.id", ondelete="CASCADE"), primary_key=True
     )
     preprompt = db.Column(db.Text)
+    llm_used = db.Column(db.Text)
     def __init__(self, *args, **kwargs):
-        super(ManualChallenge, self).__init__(**kwargs)
+        super(LlmChallenge, self).__init__(**kwargs)
 
     @property
     def html(self):
@@ -98,7 +99,7 @@ class ManualSubmissionChallenge(BaseChallenge):
         template_folder="templates",
         static_folder="assets",
     )
-    challenge_model = ManualChallenge
+    challenge_model = LlmChallenge
 
     @classmethod
     def create(cls, request):
@@ -189,7 +190,7 @@ def load(app):
         content = request.json
         challenge_id = content["challenge_id"]
         prompt = content["prompt"]
-        challenge = ManualChallenge.query.filter_by(id=challenge_id).first_or_404()
+        challenge = LlmChallenge.query.filter_by(id=challenge_id).first_or_404()
         
         #client_llm = ClientLLM(host='127.0.0.1', port=50055)
         preprompt = challenge.preprompt
