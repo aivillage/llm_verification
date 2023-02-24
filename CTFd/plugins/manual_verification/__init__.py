@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 from flask import Blueprint, jsonify, render_template, request
 
-import json, traceback
+import os, json, traceback
+
+import toml
 from .remote_llm.client import ClientLLM
 from grpclib.client import Channel
 import datetime
@@ -25,7 +27,7 @@ class LlmChallenge(Challenges):
         db.Integer, db.ForeignKey("challenges.id", ondelete="CASCADE"), primary_key=True
     )
     preprompt = db.Column(db.Text)
-    llm_used = db.Column(db.Text)
+    llm = db.Column(db.Text)
     def __init__(self, *args, **kwargs):
         super(LlmChallenge, self).__init__(**kwargs)
 
@@ -182,7 +184,24 @@ def load(app):
     manual_verifications = Blueprint(
         "manual_verifications", __name__, template_folder="templates"
     )
-    client_llm = ClientLLM(host='devgrt.aivillage.org', port=50055, api_key="deb94aa4-faa6-4f16-afa3-fdf3563a971f")
+    # Open the llm_config.toml file and get the host and port
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    print(dir_path)
+    config_path = os.path.join(dir_path, "llm_config.toml")
+    with open(config_path, "r") as f:
+        llm_config = toml.load(f)
+        
+    llms = {}
+    default_llm = llm_config["default_llm"]
+    for llm_name, config in llm_config["llms"].items():
+        host = config["host"]
+        port = config["port"]
+        api_key = config["api_key"]
+        
+        client_llm = ClientLLM(host=host, port=port, api_key=api_key)
+        llms[llm_name] = client_llm
+
+
 
     @manual_verifications.route("/generate", methods=["POST"])
     @bypass_csrf_protection
@@ -194,8 +213,9 @@ def load(app):
         
         #client_llm = ClientLLM(host='127.0.0.1', port=50055)
         preprompt = challenge.preprompt
+        llm = llms.get(challenge.llm, llms[default_llm])
         try:
-            generated = client_llm.sync_generate_text(prompts=[preprompt + prompt])
+            generated = llm.sync_generate_text(prompts=[preprompt + prompt])
             print(generated)
             if len(generated.generations) == 0:
                 return jsonify({"success": False, "data": {"text": ""}})
