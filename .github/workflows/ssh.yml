@@ -16,7 +16,7 @@ jobs:
         host: 52.15.244.210
         username: ubuntu
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+#        known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
         port: 22
         script: |
           sh $HOME/start.sh
