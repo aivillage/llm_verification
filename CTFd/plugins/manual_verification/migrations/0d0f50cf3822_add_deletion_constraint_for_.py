@@ -17,15 +17,15 @@ def upgrade(op=None):
     url = str(bind.engine.url)
     if url.startswith("mysql"):
         op.drop_constraint(
-            "manual_challenge_ibfk_1", "manual_challenge", type_="foreignkey"
+            "llm_challenge_ibfk_1", "llm_challenge", type_="foreignkey"
         )
     elif url.startswith("postgres"):
         op.drop_constraint(
-            "manual_challenge_id_fkey", "manual_challenge", type_="foreignkey"
+            "llm_challenge_id_fkey", "llm_challenge", type_="foreignkey"
         )
 
     op.create_foreign_key(
-        None, "manual_challenge", "challenges", ["id"], ["id"], ondelete="CASCADE"
+        None, "llm_challenge", "challenges", ["id"], ["id"], ondelete="CASCADE"
     )
 
 
@@ -34,13 +34,13 @@ def downgrade(op=None):
     url = str(bind.engine.url)
     if url.startswith("mysql"):
         op.drop_constraint(
-            "manual_challenge_ibfk_1", "manual_challenge", type_="foreignkey"
+            "llm_challenge_ibfk_1", "llm_challenge", type_="foreignkey"
         )
     elif url.startswith("postgres"):
         op.drop_constraint(
-            "manual_challenge_id_fkey", "manual_challenge", type_="foreignkey"
+            "llm_challenge_id_fkey", "llm_challenge", type_="foreignkey"
         )
 
     op.create_foreign_key(
-        "manual_challenge_ibfk_1", "manual_challenge", "challenges", ["id"], ["id"]
+        "llm_challenge_ibfk_1", "llm_challenge", "challenges", ["id"], ["id"]
     )

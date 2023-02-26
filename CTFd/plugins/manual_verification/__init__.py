@@ -20,7 +20,7 @@ from CTFd.utils.modes import USERS_MODE, get_model
 from CTFd.utils.user import get_current_user, get_ip
 
 class LlmChallenge(Challenges):
-    __mapper_args__ = {"polymorphic_identity": "manual_verification"}
+    __mapper_args__ = {"polymorphic_identity": "llm_verification"}
     __table_args__ = {'extend_existing': True} 
 
     id = db.Column(
@@ -80,23 +80,23 @@ class GRTSolves(db.Model):
 
 class ManualSubmissionChallenge(BaseChallenge):
     __version__ = "1.1.1"
-    id = "manual_verification"  # Unique identifier used to register challenges
-    name = "manual_verification"  # Name of a challenge type
+    id = "llm_verification"  # Unique identifier used to register challenges
+    name = "llm_verification"  # Name of a challenge type
     templates = {  # Handlebars templates used for each aspect of challenge editing & viewing
-        "create": "/plugins/manual_verification/assets/create.html",
-        "update": "/plugins/manual_verification/assets/update.html",
-        "view": "/plugins/manual_verification/assets/view.html",
+        "create": "/plugins/llm_verification/assets/create.html",
+        "update": "/plugins/llm_verification/assets/update.html",
+        "view": "/plugins/llm_verification/assets/view.html",
     }
     scripts = {  # Scripts that are loaded when a template is loaded
-        "create": "/plugins/manual_verification/assets/create.js",
-        "update": "/plugins/manual_verification/assets/update.js",
-        "view": "/plugins/manual_verification/assets/view.js",
+        "create": "/plugins/llm_verification/assets/create.js",
+        "update": "/plugins/llm_verification/assets/update.js",
+        "view": "/plugins/llm_verification/assets/view.js",
     }
     # Route at which files are accessible. This must be registered using register_plugin_assets_directory()
-    route = "/plugins/manual_verification/assets/"
+    route = "/plugins/llm_verification/assets/"
     # Blueprint used to access the static_folder directory.
     blueprint = Blueprint(
-        "manual_verification",
+        "llm_verification",
         __name__,
         template_folder="templates",
         static_folder="assets",
@@ -177,12 +177,12 @@ class ManualSubmissionChallenge(BaseChallenge):
 
 def load(app):
     upgrade()
-    CHALLENGE_CLASSES["manual_verification"] = ManualSubmissionChallenge
+    CHALLENGE_CLASSES["llm_verification"] = ManualSubmissionChallenge
     register_plugin_assets_directory(
-        app, base_path="/plugins/manual_verification/assets/"
+        app, base_path="/plugins/llm_verification/assets/"
     )
-    manual_verifications = Blueprint(
-        "manual_verifications", __name__, template_folder="templates"
+    llm_verifications = Blueprint(
+        "llm_verifications", __name__, template_folder="templates"
     )
     # Open the llm_config.toml file and get the host and port
     dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -203,7 +203,7 @@ def load(app):
 
 
 
-    @manual_verifications.route("/generate", methods=["POST"])
+    @llm_verifications.route("/generate", methods=["POST"])
     @bypass_csrf_protection
     def generate_for_challenge():
         content = request.json
@@ -232,7 +232,7 @@ def load(app):
             print(e)
             return jsonify({"success": False, "data": {"text": ""}})
 
-    @manual_verifications.route("/submissions/<challenge_id>", methods=["GET"])
+    @llm_verifications.route("/submissions/<challenge_id>", methods=["GET"])
     @authed_only
     def submissions_for_challenge(challenge_id):
         user = get_current_user()
@@ -290,7 +290,7 @@ def load(app):
         }
         return jsonify(resp)
 
-    @manual_verifications.route("/admin/submissions/pending", methods=["GET"])
+    @llm_verifications.route("/admin/submissions/pending", methods=["GET"])
     @admins_only
     def view_pending_submissions():
         
@@ -337,7 +337,7 @@ def load(app):
             curr_page=curr_page,
         )
     
-    @manual_verifications.route("/admin/submissions/solved", methods=["GET"])
+    @llm_verifications.route("/admin/submissions/solved", methods=["GET"])
     @admins_only
     def view_solved_submissions():
         
@@ -382,7 +382,7 @@ def load(app):
             curr_page=curr_page,
         )
 
-    @manual_verifications.route(
+    @llm_verifications.route(
         "/admin/verify_submissions/<submission_id>/<status>", methods=["POST"]
     )
     @admins_only
@@ -475,4 +475,4 @@ def load(app):
         return jsonify({"success": True})
 
 
-    app.register_blueprint(manual_verifications)
+    app.register_blueprint(llm_verifications)
