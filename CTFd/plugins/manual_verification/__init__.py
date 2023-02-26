@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 from flask import Blueprint, jsonify, render_template, request
 
-import json, traceback
+import os, json, traceback
+
+import toml
 from .remote_llm.client import ClientLLM
 from grpclib.client import Channel
 import datetime
@@ -17,7 +19,7 @@ from CTFd.utils.decorators import admins_only, authed_only
 from CTFd.utils.modes import USERS_MODE, get_model
 from CTFd.utils.user import get_current_user, get_ip
 
-class ManualChallenge(Challenges):
+class LlmChallenge(Challenges):
     __mapper_args__ = {"polymorphic_identity": "manual_verification"}
     __table_args__ = {'extend_existing': True} 
 
@@ -25,8 +27,9 @@ class ManualChallenge(Challenges):
         db.Integer, db.ForeignKey("challenges.id", ondelete="CASCADE"), primary_key=True
     )
     preprompt = db.Column(db.Text)
+    llm = db.Column(db.Text)
     def __init__(self, *args, **kwargs):
-        super(ManualChallenge, self).__init__(**kwargs)
+        super(LlmChallenge, self).__init__(**kwargs)
 
     @property
     def html(self):
@@ -98,7 +101,7 @@ class ManualSubmissionChallenge(BaseChallenge):
         template_folder="templates",
         static_folder="assets",
     )
-    challenge_model = ManualChallenge
+    challenge_model = LlmChallenge
 
     @classmethod
     def create(cls, request):
@@ -181,7 +184,24 @@ def load(app):
     manual_verifications = Blueprint(
         "manual_verifications", __name__, template_folder="templates"
     )
-    client_llm = ClientLLM(host='devgrt.aivillage.org', port=50055, api_key="deb94aa4-faa6-4f16-afa3-fdf3563a971f")
+    # Open the llm_config.toml file and get the host and port
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    print(dir_path)
+    config_path = os.path.join(dir_path, "llm_config.toml")
+    with open(config_path, "r") as f:
+        llm_config = toml.load(f)
+        
+    llms = {}
+    default_llm = llm_config["default_llm"]
+    for llm_name, config in llm_config["llms"].items():
+        host = config["host"]
+        port = config["port"]
+        api_key = config["api_key"]
+        
+        client_llm = ClientLLM(host=host, port=port, api_key=api_key)
+        llms[llm_name] = client_llm
+
+
 
     @manual_verifications.route("/generate", methods=["POST"])
     @bypass_csrf_protection
@@ -189,12 +209,13 @@ def load(app):
         content = request.json
         challenge_id = content["challenge_id"]
         prompt = content["prompt"]
-        challenge = ManualChallenge.query.filter_by(id=challenge_id).first_or_404()
+        challenge = LlmChallenge.query.filter_by(id=challenge_id).first_or_404()
         
         #client_llm = ClientLLM(host='127.0.0.1', port=50055)
         preprompt = challenge.preprompt
+        llm = llms.get(challenge.llm, llms[default_llm])
         try:
-            generated = client_llm.sync_generate_text(prompts=[preprompt + prompt])
+            generated = llm.sync_generate_text(prompts=[preprompt + prompt])
             print(generated)
             if len(generated.generations) == 0:
                 return jsonify({"success": False, "data": {"text": ""}})
