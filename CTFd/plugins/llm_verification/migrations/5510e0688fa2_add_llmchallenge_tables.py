@@ -1,14 +1,14 @@
 """Add LlmChallenge tables
 
-Revision ID: 3bf8f3a42887
-Revises: 1093835a1051
+Revision ID: 5510e0688fa2
+Revises: 3bf8f3a42887
 Create Date: 2020-05-08 15:11:03.647190
 
 """
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = "3bf8f3a42887"
+revision = "5510e0688fa2"
 down_revision = None
 branch_labels = None
 depends_on = None
