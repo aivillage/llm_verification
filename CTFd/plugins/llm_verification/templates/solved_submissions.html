@@ -7,7 +7,7 @@
 
 <div class="jumbotron">
   <div class="container">
-    <h1>Pending Submissions</h1>
+    <h1>Solved Submissions</h1>
   </div>
 </div>
 
@@ -24,7 +24,7 @@
             <td><b>Prompt</b></td>
             <td><b>Text</b></td>
             <td class="text-center"><b>Date</b></td>
-            <td class="text-center"><b>Grade</b></td>
+            <td class="text-center"><b>View</b></td>
           </tr>
         </thead>
         <tbody>
@@ -37,7 +37,7 @@
               <a href="{{ generate_account_url(sub.account_id, admin=True) }}">{{ sub.team_name }}</a>
             </td>
             <td class="chal" id="{{ sub.challenge_id }}">
-              {{ sub.challenge_name }}
+              {{ sub.challenge_name }} <div class="desc" id="{{ sub.challenge_id }}" hidden>{{ sub.challenge_description }}</div>
             </td>
             <td>
               {{ sub.type }}
@@ -52,8 +52,8 @@
               <span data-time="{{ sub.date | isoformat }}"></span>
             </td>
             <td class="text-center">
-              <span class="grade-submission" data-toggle="tooltip" data-placement="top"
-                title="Grade submission #{{ sub.id }}">
+              <span class="view-submission" data-toggle="tooltip" data-placement="top"
+                title="View submission #{{ sub.id }}">
                 <i class="far fa-comment"></i>
               </span>
             </td>
@@ -86,8 +86,8 @@
 
 {% block scripts %}
 	{% if request.script_root %}
-		<script defer src="/{{ request.script_root }}/plugins/manual_verification/assets/verify_submissions.js"></script>
+		<script defer src="/{{ request.script_root }}/plugins/llm_verification/assets/solved_submissions.js"></script>
 	{% else %}
-		<script defer src="/plugins/manual_verification/assets/verify_submissions.js"></script>
+		<script defer src="/plugins/llm_verification/assets/solved_submissions.js"></script>
 	{% endif %}
 {% endblock %}

@@ -1,4 +1,4 @@
 {
-    "name": "Manual Submissions",
+    "name": "LLM Submissions",
     "route": "/admin/submissions/pending"
 }
