@@ -1,4 +1,4 @@
-"""Add deletion constraint for ManualChallenge
+"""Add deletion constraint for LlmChallenge
 
 Revision ID: 0d0f50cf3822
 Revises: 1093835a1051
@@ -19,13 +19,31 @@ def upgrade(op=None):
         op.drop_constraint(
             "llm_challenge_ibfk_1", "llm_challenge", type_="foreignkey"
         )
+        op.drop_constraint(
+            "grt_submissions_ibfk_1", "grt_submissions", type_="foreignkey"
+        )
+        op.drop_constraint(
+            "grt_submissions_ibfk_2", "grt_submissions", type_="foreignkey"
+        )
     elif url.startswith("postgres"):
         op.drop_constraint(
             "llm_challenge_id_fkey", "llm_challenge", type_="foreignkey"
         )
+        op.drop_constraint(
+            "grt_submissions_challenge_id_fkey", "grt_submissions", type_="foreignkey"
+        )
+        op.drop_constraint(
+            "grt_submissions_submission_id_fkey", "grt_submissions", type_="foreignkey"
+        )
 
     op.create_foreign_key(
         None, "llm_challenge", "challenges", ["id"], ["id"], ondelete="CASCADE"
+    )
+    op.create_foreign_key(
+        None, "grt_submissions", "challenges", ["challenge_id"], ["id"], ondelete="CASCADE"
+    )
+    op.create_foreign_key(
+        None, "grt_submissions", "submissions", ["submission_id"], ["id"], ondelete="CASCADE"
     )
 
 

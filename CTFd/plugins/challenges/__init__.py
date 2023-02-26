@@ -202,6 +202,7 @@ def get_chal_class(class_id):
     :param class_id: String representing the class ID
     :return: Challenge class
     """
+    print(class_id, CHALLENGE_CLASSES)
     cls = CHALLENGE_CLASSES.get(class_id)
     if cls is None:
         raise KeyError

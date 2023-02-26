@@ -4,13 +4,13 @@ Within this plugin you will find the plugin files for installation.
 
 ## Installation
 
-1. Copy the `manual_verification` folder that containes this `README.md` file to the
+1. Copy the `llm_verification` folder that containes this `README.md` file to the
    `CTFd/plugins` direcotry.
 
-2. Start CTFd and create a challenge. You should see `manual_verification` as an
+2. Start CTFd and create a challenge. You should see `llm_verification` as an
    option in the `Challenge Type` dropdown.
 
-3. Follow the instructions to create a `manual_verification` challenge.
+3. Follow the instructions to create a `llm_verification` challenge.
 
 4. In the admin panel, under the `Plugins` tab, you can access the pending
    submissions page where you will be able to manually approve or reject

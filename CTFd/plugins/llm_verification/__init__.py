@@ -78,7 +78,7 @@ class GRTSolves(db.Model):
             return self.user_id
 
 
-class ManualSubmissionChallenge(BaseChallenge):
+class LlmSubmissionChallenge(BaseChallenge):
     __version__ = "1.1.1"
     id = "llm_verification"  # Unique identifier used to register challenges
     name = "llm_verification"  # Name of a challenge type
@@ -123,7 +123,7 @@ class ManualSubmissionChallenge(BaseChallenge):
     @staticmethod
     def attempt(challenge, request):
         """
-        This method is not used as manual submissions are not solved with the compare() method.
+        This method is not used as llm submissions are not solved with the compare() method.
 
         :param challenge: The Challenge object from the database
         :param request: The request the user submitted
@@ -134,7 +134,7 @@ class ManualSubmissionChallenge(BaseChallenge):
     @staticmethod
     def solve(user, team, challenge, request):
         """
-        This method is not used as manual submission challenges are not solved with flags.
+        This method is not used as llm submission challenges are not solved with flags.
 
         :param team: The Team object from the database
         :param chal: The Challenge object from the database
@@ -177,7 +177,7 @@ class ManualSubmissionChallenge(BaseChallenge):
 
 def load(app):
     upgrade()
-    CHALLENGE_CLASSES["llm_verification"] = ManualSubmissionChallenge
+    CHALLENGE_CLASSES["llm_verification"] = LlmSubmissionChallenge
     register_plugin_assets_directory(
         app, base_path="/plugins/llm_verification/assets/"
     )
