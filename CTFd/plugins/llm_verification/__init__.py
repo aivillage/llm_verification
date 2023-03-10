@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from flask import Blueprint, jsonify, render_template, request
 
-import os, json, traceback
+import os, json, traceback, requests
 
 import toml
 from .remote_llm.client import ClientLLM
@@ -174,6 +174,13 @@ class LlmSubmissionChallenge(BaseChallenge):
         db.session.add(grt)
         db.session.commit()
 
+def generate_text(prompt):
+    API_URL = "https://api-inference.huggingface.co/models/EleutherAI/gpt-neox-20b"
+    headers = {"Authorization": "Bearer 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"}
+    payload = { "inputs": prompt }
+    response = requests.post(API_URL, headers=headers, json=payload)
+    text = response.json()[0]['generated_text'][len(prompt):]
+    return text
 
 def load(app):
     upgrade()
@@ -213,7 +220,24 @@ def load(app):
         
         #client_llm = ClientLLM(host='127.0.0.1', port=50055)
         preprompt = challenge.preprompt
+        complete_prompt = preprompt + prompt
+        try:
+            text = generate_text(complete_prompt)
+            print(text)
+            resp = {
+                "success": True,
+                "data": {
+                    "text": text,
+                },
+            }
+            return jsonify(resp)
+        except Exception as e:
+            print(e)
+            return jsonify({"success": False, "data": {"text": ""}})
+
         llm = llms.get(challenge.llm, llms[default_llm])
+
+
         try:
             generated = llm.sync_generate_text(prompts=[preprompt + prompt])
             print(generated)
