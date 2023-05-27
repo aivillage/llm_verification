@@ -80,3 +80,7 @@ node_modules/
 
 # Flask Profiler files
 flask_profiler.sql
+
+# Pipenv Files
+Pipfile
+Pipfile.lock
