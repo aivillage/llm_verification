@@ -26,4 +26,4 @@ python manage.py db upgrade
 
 # Start CTFd
 echo "Starting CTFd"
-exec flask run
+exec flask run --port 8000
