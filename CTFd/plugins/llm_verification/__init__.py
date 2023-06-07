@@ -187,6 +187,7 @@ def generate_text(prompt):
     return text
 
 def load(app):
+    # Perform database migrations (if necessary).
     upgrade()
     CHALLENGE_CLASSES["llm_verification"] = LlmSubmissionChallenge
     register_plugin_assets_directory(
