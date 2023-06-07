@@ -198,7 +198,7 @@ def load(app):
     )
     # Open the llm_config.toml file and get the host and port
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    print(dir_path)
+    print(f'Path to llm_verification __init__.py file: {dir_path}')
     config_path = os.path.join(dir_path, "llm_config.toml")
     with open(config_path, "r") as f:
         llm_config = toml.load(f)
