@@ -20,6 +20,7 @@ from CTFd.utils.modes import USERS_MODE, get_model
 from CTFd.utils.user import get_current_user, get_ip
 
 class LlmChallenge(Challenges):
+    """SQLAlchemy Table model for LLM Challenges."""
     __mapper_args__ = {"polymorphic_identity": "llm_verification"}
     __table_args__ = {'extend_existing': True} 
 
@@ -45,6 +46,7 @@ class Awarded(Submissions):
     __mapper_args__ = {"polymorphic_identity": "awarded"}
 
 class GRTSubmission(db.Model):
+    """GRT CTFd SQLAlchemy table for answer submissions."""
     __tablename__ = "grt_submissions"
     __table_args__ = {'extend_existing': True} 
     
@@ -55,6 +57,7 @@ class GRTSubmission(db.Model):
     prompt = db.Column(db.Text)
 
 class GRTSolves(db.Model):
+    """GRT CTFd SQLAlchemy table for solve attempts."""
     __tablename__ = "grt_solves"
     __table_args__ = {'extend_existing': True} 
     
@@ -79,6 +82,7 @@ class GRTSolves(db.Model):
 
 
 class LlmSubmissionChallenge(BaseChallenge):
+    """Customized CTFd challenge type for LLM submissions."""
     __version__ = "1.1.1"
     id = "llm_verification"  # Unique identifier used to register challenges
     name = "llm_verification"  # Name of a challenge type
