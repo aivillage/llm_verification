@@ -2,7 +2,9 @@ version: '2'
 
 services:
   ctfd:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
     user: root
     restart: always
     ports:
