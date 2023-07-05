@@ -57,3 +57,17 @@ $ docker compose -f docker-compose.dev.yml up --build
 ```
 
 To start over from a clean slate, ensure that no CTFd containers are running with `docker ps` and `docker kill`. Then run `rm -rf ./.data`.
+
+To make logs output in the correct timezone, use the `TZ` environment variable.
+
+For example, use the timezone of the system:
+
+```console
+$ TZ=$(date +%Z) docker-compose up
+```
+
+Or, use Pacific Daylight Time (PDT):
+
+```console
+$ TZ=PDT docker-compose up
+```
