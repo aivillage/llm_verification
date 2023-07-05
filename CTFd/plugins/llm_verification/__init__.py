@@ -3,6 +3,9 @@ from flask import Blueprint, jsonify, render_template, request
 
 import os, json, traceback, requests
 
+import sys
+import logging
+from flask import current_app
 import toml
 from .remote_llm.client import ClientLLM
 from grpclib.client import Channel
@@ -18,6 +21,39 @@ from CTFd.utils.dates import isoformat
 from CTFd.utils.decorators import admins_only, authed_only
 from CTFd.utils.modes import USERS_MODE, get_model
 from CTFd.utils.user import get_current_user, get_ip
+
+
+def initialize_grtctfd_loggers(app):
+    """Create and initialize the loggers for the grtctfd LLM Verification plugin."""
+    logger_llm_verification = logging.getLogger("llm_verification")
+    # Set LLM verification plugin logs to INFO.
+    logger_llm_verification.setLevel(logging.INFO)
+    # Assume that CTFd's log folder already exists (defined in `CTFd/utils/initialization/__init__.py`)
+    log_dir = app.config["LOG_FOLDER"]
+    logs = {"llm_verification": os.path.join(log_dir, "llm_verification.log")}
+
+    try:
+        # Ensure that each log file (of which there is one) exists.
+        for log in logs.values():
+            if not os.path.exists(log):
+                open(log, "a").close()
+        llm_verification_log = logging.handlers.RotatingFileHandler(logs["llm_verification"],
+                                                                         maxBytes=10485760,
+                                                                         backupCount=5)
+        logger_llm_verification.addHandler(llm_verification_log)
+    except IOError:
+        pass
+
+    stdout = logging.StreamHandler(stream=sys.stdout)
+
+    logger_llm_verification.addHandler(stdout)
+
+    logger_llm_verification.propagate = 0
+    return logger_llm_verification
+
+initialize_grtctfd_loggers(app=current_app)
+log = logging.getLogger("llm_verification")
+log.info("Initialized LLM Verification plugin logger.")
 
 class LlmChallenge(Challenges):
     """SQLAlchemy Table model for LLM Challenges."""
