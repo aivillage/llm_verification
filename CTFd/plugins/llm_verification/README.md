@@ -55,3 +55,5 @@ For dependency and Dockerfile changes to take effect, add `--build`. This will t
 ```console
 $ docker compose -f docker-compose.dev.yml up --build
 ```
+
+To start over from a clean slate, ensure that no CTFd containers are running with `docker ps` and `docker kill`. Then run `rm -rf ./.data`.
