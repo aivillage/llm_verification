@@ -71,3 +71,5 @@ Or, use Pacific Daylight Time (PDT):
 ```console
 $ TZ=PDT docker-compose up
 ```
+
+In practice, `TZ=$(date +%Z) docker compose -f docker-compose.dev.yml up` suits most code-related changes.
