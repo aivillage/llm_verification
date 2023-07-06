@@ -263,7 +263,8 @@ def load(app):
     @llm_verifications.route('/submissions/<challenge_id>', methods=['GET'])
     @authed_only
     def submissions_for_challenge(challenge_id):
-        # Get the current user.
+        """Define a route for for showing users their answer submissions."""
+        # Identify the user who would like to see their answer submissions.
         current_user = get_current_user()
         if get_config('user_mode') == USERS_MODE:
             pending = Pending.query.filter_by(challenge_id=challenge_id,
@@ -372,6 +373,7 @@ def load(app):
     @llm_verifications.route('/admin/verify_submissions/<submission_id>/<status>', methods=['POST'])
     @admins_only
     def verify_submissions(submission_id, status):
+        """Add a route for admins to mark answer attempts as correct or incorrect."""
         submission = Submissions.query.filter_by(id=submission_id).first_or_404()
         grt_submission = GRTSubmission.query.filter_by(id=submission_id).first_or_404()
         if status == 'solve':
