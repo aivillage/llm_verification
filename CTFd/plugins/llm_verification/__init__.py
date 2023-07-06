@@ -308,6 +308,7 @@ def load(app):
     @llm_verifications.route('/admin/submissions/pending', methods=['GET'])
     @admins_only
     def view_pending_submissions():
+        """Add an admin route for viewing answer submissions that haven't been reviewed."""
         filters = {'type': 'pending'}
         curr_page = abs(int(request.args.get('page', 1, type=int)))
         results_per_page = 50
@@ -341,6 +342,7 @@ def load(app):
     @llm_verifications.route('/admin/submissions/solved', methods=['GET'])
     @admins_only
     def view_solved_submissions():
+        """Add an admin route for viewing answer submissions that have been marked as correct."""
         filters = {'success': True}
         curr_page = abs(int(request.args.get('page', 1, type=int)))
         results_per_page = 50
