@@ -206,6 +206,7 @@ def load(app):
     log.debug('Starting database migrations')
     # Perform database migrations (if necessary).
     ctfd_migrations()
+    log.debug('Finished database migrations')
     CHALLENGE_CLASSES['llm_verification'] = LlmSubmissionChallenge
     register_plugin_assets_directory(app, base_path='/plugins/llm_verification/assets/')
     log.debug('Registered plugin assets directory')
@@ -437,6 +438,7 @@ def load(app):
         db.session.delete(submission)
         db.session.commit()
         db.session.close()
+        log.info(f'Marked answer submission "{submission_id}" as "{status}"')
         return jsonify({'success': True})
 
 
