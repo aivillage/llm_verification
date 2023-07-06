@@ -207,7 +207,7 @@ def generate_text(prompt):
         llmv_config = json_load(infile)
     neox_token = llmv_config['vanilla_neox_api_key']
     response = requests.post(url='https://api-inference.huggingface.co/models/EleutherAI/gpt-neox-20b',
-                                       headers={'Authorization': 'Bearer {neox_token}'},
+                                       headers={'Authorization': f'Bearer {neox_token}'},
                                        json={'inputs': prompt})
     log.debug(f'Received {response.status_code} response from EleutherAI API')
     # If it's a successful HTTP status code, then...
