@@ -215,10 +215,10 @@ def generate_text(prompt):
         json_response = response.json()
         log.debug(f'Response: {json_response}')
         generated_text = json_response[0]['generated_text']
-        log.info(generated_text)
-        # Log: Show the first 100 characters of generated text.
-        log.info(f'Generated text (first 100 chars): {generated_text:.100}...')
-        response = generated_text
+        # Remove newlines from the generated text.
+        oneline_generation = generated_text.replace('\n', ' ')
+        log.info(f'Received generated text from remote API: {oneline_generation}...')
+        response = oneline_generation
     elif 400 <= response.status_code <= 599:
         # ... raise an error.
         raise HTTPError(f'EleutherAI API returned error status code {response.status_code}: '
