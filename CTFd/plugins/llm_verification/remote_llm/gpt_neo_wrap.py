@@ -1,6 +1,4 @@
 """Wrapper around Huggingface."""
-
-import logging
 from typing import (
     List,
     Optional,
@@ -9,9 +7,12 @@ from transformers import TextGenerationPipeline, AutoTokenizer, AutoModelForCaus
 
 from .base_llm import AbstractLLM
 from .schema import Generation, LLMResult
-logger = logging.getLogger(__name__)
+from logging import getLogger
+
+log = getLogger(__name__)
 
 class GPTNeoWrap(AbstractLLM):
+    log.debug('Initialized GTNeoWrap')
     model: AutoModelForCausalLM
     tokenizer: AutoTokenizer
     generator: TextGenerationPipeline

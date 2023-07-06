@@ -3,11 +3,14 @@ from flask import Blueprint, jsonify, render_template, request
 
 import os, json, traceback, requests
 
+from logging import getLogger
 import toml
 from .remote_llm.client import ClientLLM
 from grpclib.client import Channel
 import datetime
 from sqlalchemy.ext.hybrid import hybrid_property
+
+from .llmv_logger import initialize_grtctfd_loggers
 
 from CTFd.models import Awards, Challenges, Fails, Solves, Submissions, db
 from CTFd.plugins import bypass_csrf_protection, register_plugin_assets_directory
@@ -18,6 +21,11 @@ from CTFd.utils.dates import isoformat
 from CTFd.utils.decorators import admins_only, authed_only
 from CTFd.utils.modes import USERS_MODE, get_model
 from CTFd.utils.user import get_current_user, get_ip
+
+
+# Get the logger for the LLM Verification plugin.
+llmv_logger = getLogger(__name__)
+initialize_grtctfd_loggers(llmv_logger=llmv_logger)
 
 class LlmChallenge(Challenges):
     """SQLAlchemy Table model for LLM Challenges."""
