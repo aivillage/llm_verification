@@ -222,11 +222,10 @@ def load(app):
     default_llm = llm_config['default_llm']
     # For each LLM in the config file...
     for llm_name, config in llm_config['llms'].items():
-        host = config['host']
-        port = config['port']
-        api_key = config['api_key']
         # ... create a ClientLLM object...
-        client_llm = ClientLLM(host=host, port=port, api_key=api_key)
+        client_llm = ClientLLM(host=config['host'],
+                               port=config['port'],
+                               api_key=config['api_key'])
         # and add the ClientLLM object to the LLMs dictionary.
         llms[llm_name] = client_llm
 
