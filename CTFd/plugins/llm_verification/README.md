@@ -32,7 +32,7 @@ Thanks again for supporting the CTFd Project!
 
 ### tl;dr
 
-Use `docker-compose.dev.yml` for making code changes to CTFd or plugins. Add `--build` for non-code changes such as dependency changes in `requirements.txt` or entrypoint changes in `Dockerfile`.
+Use `docker-compose.dev.yml` for making code changes to CTFd or plugins. Add `--build` for non-code changes such as dependency changes in `requirements.txt` or entrypoint changes in `Dockerfile`. CTFd will be available at [https://localhost:8000](https://localhost:8000).
 
 ```console
 $ docker compose -f docker-compose.dev.yml up --build
