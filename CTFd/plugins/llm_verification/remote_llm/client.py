@@ -1,5 +1,5 @@
 """Wrapper around Huggingface."""
-import logging
+from logging import getLogger
 from typing import (
     List,
     Optional,
@@ -21,7 +21,7 @@ except RuntimeError as e:
 import nest_asyncio
 nest_asyncio.apply()
 
-logger = logging.getLogger(__name__)
+log = getLogger(__name__)
 
 def unpack_generation_list(generations: GenerateReplyGenerationList) -> List[Generation]:
     return [Generation(text=g.text, generation_info=g.generation_info) for g in generations.generations]
@@ -46,6 +46,7 @@ class ClientLLM:
         self.port = port
         self.api_key = api_key
         self.channel_kwargs = channel_kwargs or {}
+        log.debug('Initialized ClientLLM.')
 
     async def generate_text(
         self, prompts: List[str], stop: Optional[List[str]] = None

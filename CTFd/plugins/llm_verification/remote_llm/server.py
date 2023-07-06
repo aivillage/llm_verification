@@ -1,6 +1,6 @@
 """Wrapper around Huggingface."""
 
-import logging
+from logging import getLogger
 from typing import (
     List,
     Dict,
@@ -13,7 +13,7 @@ from .base_llm import AbstractLLM
 from .llm_rpc.api import GenerateRequest, GenerateReply, LLMTypeRequest, LLMTypeReply
 from .schema import Generation, LLMResult, pack_result
 from .keystore import ApiKeystore
-logger = logging.getLogger(__name__)
+log = getLogger(__name__)
         
 '''
 This shouldn't exist, but for some reason the TextGenerationPipeline doesn't work when it's in the normal service class.
@@ -25,6 +25,7 @@ class LLMService():
     def __init__(self, *, llm: AbstractLLM, keystore: Optional[ApiKeystore] = None):
         self.base_llm = llm
         self.keystore = keystore
+        log.debug('Initialized LLMService')
 
     def check_key(self, api_key: Optional[str]) -> Optional[str]:
         if self.keystore is None:
