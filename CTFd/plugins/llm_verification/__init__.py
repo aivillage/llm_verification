@@ -366,7 +366,6 @@ def load(app):
                                                                                       .order_by(GRTSolves.date.desc())
                                                                                       .slice(page_start, page_end)
                                                                                       .all())
-
         return render_template('solved_submissions.html',
                                 submissions=submissions,
                                 page_count=page_count,
@@ -444,6 +443,5 @@ def load(app):
         db.session.close()
         log.info(f'Marked answer submission "{submission_id}" as "{status}"')
         return jsonify({'success': True})
-
 
     app.register_blueprint(llm_verifications)
