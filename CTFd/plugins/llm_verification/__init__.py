@@ -56,7 +56,7 @@ class GRTSubmission(db.Model):
     """GRT CTFd SQLAlchemy table for answer submissions."""
     __tablename__ = 'grt_submissions'
     __table_args__ = {'extend_existing': True}
-    
+
     id = db.Column(db.Integer, primary_key=True)
     submission_id = db.Column(db.Integer, db.ForeignKey('submissions.id', ondelete='CASCADE'))
     challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id', ondelete='CASCADE'))
@@ -67,7 +67,7 @@ class GRTSolves(db.Model):
     """GRT CTFd SQLAlchemy table for solve attempts."""
     __tablename__ = 'grt_solves'
     __table_args__ = {'extend_existing': True}
-    
+
     id = db.Column(db.Integer, primary_key=True)
     success = db.Column(db.Boolean)
     challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id', ondelete='CASCADE'))
@@ -125,7 +125,7 @@ class LlmSubmissionChallenge(BaseChallenge):
         db.session.add(challenge)
         db.session.commit()
         return challenge
-    
+
     @staticmethod
     def attempt(challenge, request):
         """This method is not used as llm submissions are not solved with the compare() method.
@@ -163,7 +163,7 @@ class LlmSubmissionChallenge(BaseChallenge):
             team: The Team object from the database
             challenge: The Challenge object from the database
             request: The request the user submitted
-        
+
         Returns:
             `None`
         """
@@ -335,7 +335,7 @@ def load(app):
                                submissions=submissions,
                                page_count=page_count,
                                curr_page=curr_page)
-    
+
     @llm_verifications.route('/admin/submissions/solved', methods=['GET'])
     @admins_only
     def view_solved_submissions():
@@ -362,7 +362,7 @@ def load(app):
                                                                                       .order_by(GRTSolves.date.desc())
                                                                                       .slice(page_start, page_end)
                                                                                       .all())
-        
+
         return render_template('solved_submissions.html',
                                 submissions=submissions,
                                 page_count=page_count,
