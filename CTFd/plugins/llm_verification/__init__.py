@@ -324,9 +324,9 @@ def load(app):
         log.debug(f'User "{current_user.id}" has {len(incorrect)} incorrect submissions for challenge "{challenge_id}"')
         response = {'success': True,
                                     'data': {'pending': pending,
-                                            'correct': correct,
-                                            'awarded': awarded,
-                                            'incorrect': incorrect}}
+                                             'correct': correct,
+                                             'awarded': awarded,
+                                             'incorrect': incorrect}}
         log.info(f'Showed user {current_user.id} '
                  f'their answer submissions for challenge "{challenge_id}"')
         return jsonify(response)
