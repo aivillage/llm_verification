@@ -24,9 +24,7 @@ from .llmv_logger import initialize_grtctfd_loggers
 from .config_manager import load_llmv_config
 
 
-# Get the logger for the LLM Verification plugin.
-llmv_logger = getLogger(__name__)
-log = initialize_grtctfd_loggers(llmv_logger=llmv_logger)
+log = getLogger(__name__)
 
 class LlmChallenge(Challenges):
     """SQLAlchemy Table model for LLM Challenges."""
@@ -234,6 +232,8 @@ def generate_text(prompt):
 def load(app):
     """Load plugin config from TOML file and register plugin assets."""
     print('Initializing LLM Verification Plugin')
+    # Get the logger for the LLM Verification plugin.
+    log = initialize_grtctfd_loggers()
     # Ensure that the configuration file for the LLM Verification Plugin exists.
     llmv_config = load_llmv_config()
     log.debug('Starting CTFd database migrations')

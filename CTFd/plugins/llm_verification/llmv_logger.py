@@ -5,20 +5,13 @@ from pathlib import Path
 import sys
 
 
-def initialize_grtctfd_loggers(llmv_logger):
+def initialize_grtctfd_loggers():
     """Create and initialize the loggers for the grtctfd LLM Verification plugin.
-
-    Arguments:
-        llmv_logger: Logger for the grtctfd LLM Verification plugin.
 
     Returns:
         logger: The logger for the grtctfd LLM Verification plugin.
             This is here for posterity because `logging.get_logger(__name__)` is a cleaner way to get the logger.
     """
-
-    # Create a logger for the LLM Verification Plugin.
-    llmv_logger = getLogger(__name__)
-
     ## Set up file handler for log records.
     # Assume that CTFd's log folder already exists (defined in `CTFd/utils/initialization/__init__.py`) and store logfiles there.
     log_dir = current_app.config["LOG_FOLDER"]
@@ -28,6 +21,8 @@ def initialize_grtctfd_loggers(llmv_logger):
     llm_verification_log = RotatingFileHandler(llmv_logfile,
                                                maxBytes=10485760,
                                                backupCount=5)
+    # Create a logger for the LLM Verification Plugin.
+    llmv_logger = getLogger(__name__)
     # Write all LLM Verification Plugin logs to the log file.
     llmv_logger.addHandler(llm_verification_log)
 
