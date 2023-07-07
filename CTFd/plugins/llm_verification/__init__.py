@@ -233,7 +233,7 @@ def generate_text(prompt):
 
 def load(app):
     """Load plugin config from TOML file and register plugin assets."""
-    log.info('Initializing LLM Verification Plugin')
+    print('Initializing LLM Verification Plugin')
     # Ensure that the configuration file for the LLM Verification Plugin exists.
     llmv_config = load_llmv_config()
     log.debug('Starting CTFd database migrations')
