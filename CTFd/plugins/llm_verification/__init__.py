@@ -22,7 +22,6 @@ from CTFd.utils.modes import USERS_MODE, get_model
 from CTFd.utils.user import get_current_user, get_ip
 
 # LLM Verification Plugin module imports.
-from .remote_llm.client import ClientLLM
 from .llmv_logger import initialize_grtctfd_loggers
 
 
