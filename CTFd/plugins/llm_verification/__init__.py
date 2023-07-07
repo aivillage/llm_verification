@@ -198,7 +198,7 @@ def generate_text(prompt):
     """
     log.info(f'Received text generation request for prompt "{prompt}"')
     # Load the Vanilla Neox API key from the config file.
-    llmv_config = get_config()
+    llmv_config = load_config()
     neox_token = llmv_config['vanilla_neox_api_key']
     response = post(url='https://api-inference.huggingface.co/models/EleutherAI/gpt-neox-20b',
                               headers={'Authorization': f'Bearer {neox_token}'},
