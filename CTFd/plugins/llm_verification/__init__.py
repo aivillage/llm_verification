@@ -1,16 +1,16 @@
-from flask import Blueprint, jsonify, render_template, request
-
+# Standard library imports.
+import datetime
 from json import load as json_load
 from logging import getLogger
+from pathlib import Path
+
+# Third-party imports.
+from flask import Blueprint, jsonify, render_template, request
 from requests import post
 from requests.exceptions import HTTPError
-from pathlib import Path
-from .remote_llm.client import ClientLLM
-import datetime
 from sqlalchemy.ext.hybrid import hybrid_property
 
-from .llmv_logger import initialize_grtctfd_loggers
-
+# CTFd imports.
 from CTFd.models import Awards, Challenges, Fails, Solves, Submissions, db
 from CTFd.plugins import bypass_csrf_protection, register_plugin_assets_directory
 from CTFd.plugins.challenges import CHALLENGE_CLASSES, BaseChallenge
@@ -20,6 +20,10 @@ from CTFd.utils.dates import isoformat
 from CTFd.utils.decorators import admins_only, authed_only
 from CTFd.utils.modes import USERS_MODE, get_model
 from CTFd.utils.user import get_current_user, get_ip
+
+# LLM Verification Plugin module imports.
+from .remote_llm.client import ClientLLM
+from .llmv_logger import initialize_grtctfd_loggers
 
 
 # Get the logger for the LLM Verification plugin.
