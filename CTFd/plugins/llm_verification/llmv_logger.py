@@ -25,38 +25,6 @@ def initialize_grtctfd_loggers():
     llmv_logger = getLogger(__name__)
     # Write all LLM Verification Plugin logs to the log file.
     llmv_logger.addHandler(llm_verification_log)
-
-    ## Set up console handler for log records.
-    class ColorizedFormatter(Formatter):
-        """Colorized log record formatter that's keyed to the record's severity level."""
-        def __init__(self):
-            Formatter.__init__(self)
-            # Define the output format for each log record.
-            self.logline_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-            # Set the color for each log record severity level type.
-            self.severity_colors = {log_level: f'\033[1;{color_code}m{self.logline_format}\033[0m'
-                                                    for log_level, color_code
-                                                    in ((DEBUG, 90),  # Grey text.
-                                                        (INFO, 36),  # Cyan text.
-                                                        (WARNING, 33),  # Yellow text.
-                                                        (ERROR, 31),  # Red text.
-                                                        (CRITICAL, 41))}  # White text with red background.
-
-        def format(self, record) -> str:
-            """Take a log record and return a colorized log entry.
-
-            This overrides the `logging.Formatter.format` method and colorizes the log record.
-
-            Arguments:
-                record: The log record to format.
-            """
-            # Get the format for this log record based off of its severity level.
-            log_format = self.severity_colors[record.levelno]
-            # Set the formatter for this log record.
-            record_formatter = Formatter(log_format)
-            # Formate the log entry and return it.
-            return record_formatter.format(record)
-
     # Create a console logger for the LLM Verification Plugin.
     console_logger = StreamHandler(stream=sys.stdout)
     # todo: Make LLM Verification Plugin log severity level configurable via `config.json`.
@@ -70,3 +38,34 @@ def initialize_grtctfd_loggers():
     llmv_logger.propagate = False
     llmv_logger.info('Initialized logger for LLM Verification plugin.')
     return llmv_logger
+
+## Set up console handler for log records.
+class ColorizedFormatter(Formatter):
+    """Colorized log record formatter that's keyed to the record's severity level."""
+    def __init__(self):
+        Formatter.__init__(self)
+        # Define the output format for each log record.
+        self.logline_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        # Set the color for each log record severity level type.
+        self.severity_colors = {log_level: f'\033[1;{color_code}m{self.logline_format}\033[0m'
+                                                for log_level, color_code
+                                                in ((DEBUG, 90),  # Grey text.
+                                                    (INFO, 36),  # Cyan text.
+                                                    (WARNING, 33),  # Yellow text.
+                                                    (ERROR, 31),  # Red text.
+                                                    (CRITICAL, 41))}  # White text with red background.
+
+    def format(self, record) -> str:
+        """Take a log record and return a colorized log entry.
+
+        This overrides the `logging.Formatter.format` method and colorizes the log record.
+
+        Arguments:
+            record: The log record to format.
+        """
+        # Get the format for this log record based off of its severity level.
+        log_format = self.severity_colors[record.levelno]
+        # Set the formatter for this log record.
+        record_formatter = Formatter(log_format)
+        # Formate the log entry and return it.
+        return record_formatter.format(record)
