@@ -356,7 +356,7 @@ def load(app):
                                                                              .order_by(Submissions.date.desc())
                                                                              .slice(page_start, page_end)
                                                                              .all())
-        log.info(f'Showed (admin) pending answer submissions')
+        log.info(f'Showed (admin) {len(submissions)} pending answer submissions')
         return render_template('verify_submissions.html',
                                submissions=submissions,
                                page_count=page_count,
