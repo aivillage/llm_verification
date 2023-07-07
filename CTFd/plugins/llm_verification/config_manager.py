@@ -7,7 +7,7 @@ from pathlib import Path
 log = getLogger(__name__)
 
 
-def load_config(filename='llmv_config.json') -> dict:
+def load_llmv_config(filename='llmv_config.json') -> dict:
     """Load configuration from LLMV's config file.
 
     Arguments:

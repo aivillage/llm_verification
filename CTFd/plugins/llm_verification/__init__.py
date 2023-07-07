@@ -21,7 +21,7 @@ from CTFd.utils.user import get_current_user, get_ip
 
 # LLM Verification Plugin module imports.
 from .llmv_logger import initialize_grtctfd_loggers
-from .config_manager import load_config
+from .config_manager import load_llmv_config
 
 
 # Get the logger for the LLM Verification plugin.
@@ -198,7 +198,7 @@ def generate_text(prompt):
     """
     log.info(f'Received text generation request for prompt "{prompt}"')
     # Load the Vanilla Neox API key from the config file.
-    llmv_config = load_config()
+    llmv_config = load_llmv_config()
     neox_token = llmv_config['vanilla_neox_api_key']
     response = post(url='https://api-inference.huggingface.co/models/EleutherAI/gpt-neox-20b',
                               headers={'Authorization': f'Bearer {neox_token}'},
@@ -229,7 +229,7 @@ def load(app):
     """Load plugin config from TOML file and register plugin assets."""
     log.info('Initializing LLM Verification Plugin')
     # Ensure that the configuration file for the LLM Verification Plugin exists.
-    llmv_config = load_config()
+    llmv_config = load_llmv_config()
     log.debug('Starting CTFd database migrations')
     # Perform database migrations (if necessary).
     ctfd_migrations()
