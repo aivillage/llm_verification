@@ -319,10 +319,10 @@ def load(app):
         awarded = [{'provided': a.provided, 'date': isoformat(a.date)} for a in awarded]
         incorrect = [{'provided': i.provided, 'date': isoformat(i.date)} for i in incorrect ]
         response = {'success': True,
-                                'data': {'pending': pending,
-                                         'correct': correct,
-                                         'awarded': awarded,
-                                         'incorrect': incorrect}}
+                                    'data': {'pending': pending,
+                                            'correct': correct,
+                                            'awarded': awarded,
+                                            'incorrect': incorrect}}
         log.info(f'Showed user {current_user} '
                  f'their answer submissions for challenge "{challenge_id}"')
         return jsonify(response)
