@@ -119,6 +119,10 @@ If you experience any problems, or if you think you've found a
 bug, or have a feature request - please don't hesitate to reach
 out to support@ctfd.io.
 
+### 🙏🏻 Kudos
+
+Readme format inspired by [makeareadme.com](https://www.makeareadme.com).
+
 ## 🪪 License
 
 Must be 16 or older and have an adult in the car during operation.
