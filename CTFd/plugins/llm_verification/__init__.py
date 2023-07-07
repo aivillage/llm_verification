@@ -24,214 +24,9 @@ from .llmv_logger import initialize_grtctfd_loggers
 from .config_manager import load_llmv_config
 
 
-log = getLogger(__name__)
-
-class LlmChallenge(Challenges):
-    """SQLAlchemy Table model for LLM Challenges."""
-    __mapper_args__ = {'polymorphic_identity': 'llm_verification'}
-    __table_args__ = {'extend_existing': True}
-
-    id = db.Column(db.Integer,
-                        db.ForeignKey('challenges.id', ondelete='CASCADE'),
-                        primary_key=True)
-    preprompt = db.Column(db.Text)
-    llm = db.Column(db.Text)
-
-    def __init__(self, *args, **kwargs):
-        super(LlmChallenge, self).__init__(**kwargs)
-
-    @property
-    def html(self):
-        from CTFd.utils.config.pages import build_markdown
-        from CTFd.utils.helpers import markup
-        return markup(build_markdown(self.description))
-
-
-class Pending(Submissions):
-    __mapper_args__ = {'polymorphic_identity': 'pending'}
-
-class Awarded(Submissions):
-    __mapper_args__ = {'polymorphic_identity': 'awarded'}
-
-class GRTSubmission(db.Model):
-    """GRT CTFd SQLAlchemy table for answer submissions."""
-    __tablename__ = 'grt_submissions'
-    __table_args__ = {'extend_existing': True}
-
-    id = db.Column(db.Integer, primary_key=True)
-    submission_id = db.Column(db.Integer, db.ForeignKey('submissions.id', ondelete='CASCADE'))
-    challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id', ondelete='CASCADE'))
-    text = db.Column(db.Text)
-    prompt = db.Column(db.Text)
-
-class GRTSolves(db.Model):
-    """GRT CTFd SQLAlchemy table for solve attempts."""
-    __tablename__ = 'grt_solves'
-    __table_args__ = {'extend_existing': True}
-
-    id = db.Column(db.Integer, primary_key=True)
-    success = db.Column(db.Boolean)
-    challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id', ondelete='CASCADE'))
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'))
-    team_id = db.Column(db.Integer, db.ForeignKey('teams.id', ondelete='CASCADE'))
-    text = db.Column(db.Text)
-    prompt = db.Column(db.Text)
-    date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-
-    @hybrid_property
-    def account_id(self):
-        from CTFd.utils import get_config
-
-        user_mode = get_config('user_mode')
-        if user_mode == 'teams':
-            return self.team_id
-        elif user_mode == 'users':
-            return self.user_id
-
-
-class LlmSubmissionChallenge(BaseChallenge):
-    """Customized CTFd challenge type for LLM submissions."""
-    __version__ = '1.1.1'
-    id = 'llm_verification'  # Unique identifier used to register challenges
-    name = 'llm_verification'  # Name of a challenge type
-    # Handlebars templates used for each aspect of challenge editing & viewing
-    templates = {'create': '/plugins/llm_verification/assets/create.html',
-                                 'update': '/plugins/llm_verification/assets/update.html',
-                                 'view': '/plugins/llm_verification/assets/view.html',}
-    # Scripts that are loaded when a template is loaded
-    scripts = {'create': '/plugins/llm_verification/assets/create.js',
-                               'update': '/plugins/llm_verification/assets/update.js',
-                               'view': '/plugins/llm_verification/assets/view.js',}
-    # Route at which files are accessible. This must be registered using register_plugin_assets_directory()
-    route = '/plugins/llm_verification/assets/'
-    # Blueprint used to access the static_folder directory.
-    blueprint = Blueprint('llm_verification', __name__, template_folder='templates', static_folder='assets',)
-    challenge_model = LlmChallenge
-
-    @classmethod
-    def create(cls, request):
-        """Process the challenge creation request.
-
-        Arguments:
-            request: The Flask request object.
-
-        Returns:
-            Challenge: The newly created challenge.
-        """
-        data = request.form or request.get_json()
-        challenge = cls.challenge_model(**data)
-        db.session.add(challenge)
-        db.session.commit()
-        log.info(f'Created challenge: {data}')
-        return challenge
-
-    @staticmethod
-    def attempt(challenge, request):
-        """This method is not used as llm submissions are not solved with the compare() method.
-
-        Arguments:
-            challenge: The Challenge object from the database
-            request: The request the user submitted
-
-        Returns:
-            tuple (bool, str):  This will always be `False` and `'Submission under review'` because
-                llm submissions need manual review.
-        """
-        log.info('Rejected "attempt" because manual verification is needed')
-        return False, 'Submission under review'
-
-    @staticmethod
-    def solve(user, team, challenge, request):
-        """ This method is not used as llm submission challenges are not solved with flags.
-
-        Arguments:
-            team: The Team object from the database
-            challenge: The Challenge object from the database
-            request: The request the user submitted
-
-        Returns:
-            `None`
-        """
-        log.info('Rejected "solve" because manual verification is needed')
-        return None
-
-    @staticmethod
-    def fail(user, team, challenge, request):
-        """Mark an an attempt as "pending" by inserting "Pending" into the database.
-
-        Arguments:
-            team: The Team object from the database
-            challenge: The Challenge object from the database
-            request: The request the user submitted
-
-        Returns:
-            `None`
-        """
-        data = request.form or request.get_json()
-        submission = data['submission']
-        pending = Pending(user_id=user.id,
-                          team_id=team.id if team else None,
-                          challenge_id=challenge.id,
-                          ip=get_ip(request),
-                          provided=submission,)
-        db.session.add(pending)
-        db.session.commit()
-        grt = GRTSubmission(submission_id=pending.id,
-                            text=data['text'],
-                            prompt=data['prompt'],
-                            challenge_id=challenge.id,)
-        db.session.add(grt)
-        db.session.commit()
-        log.info(f'Fail: marked attempt as pending: {submission}')
-        return None
-
-def generate_text(prompt):
-    """Generate text from a prompt using the EleutherAI GPT-NeoX-20B model.
-
-    Arguments:
-        prompt: The prompt to generate text from.
-
-    Raises:
-        ValueError: If the Vanilla Neox API key is not set.
-        HTTPError: If the EleutherAI API returns a non-200 HTTP status code.
-
-    Returns:
-        str: Text generated by the prompt.
-    """
-    log.info(f'Received text generation request for prompt "{prompt}"')
-    # Load the Vanilla Neox API key from the config file.
-    llmv_config = load_llmv_config()
-    neox_token = llmv_config['vanilla_neox_api_key']
-    if neox_token == 'UNSET':
-        raise ValueError('Vanilla Neox API key is not set')
-    response = post(url='https://api-inference.huggingface.co/models/EleutherAI/gpt-neox-20b',
-                              headers={'Authorization': f'Bearer {neox_token}'},
-                              json={'inputs': prompt})
-    log.debug(f'Received {response.status_code} response from EleutherAI API')
-    # If it's a successful HTTP status code, then...
-    if response.status_code == 200:
-        json_response = response.json()
-        log.debug(f'Response: {json_response}')
-        generated_text = json_response[0]['generated_text']
-        # Remove newlines from the generated text.
-        oneline_generation = generated_text.replace('\n', ' ')
-        log.info(f'Received generated text from remote API: {oneline_generation}...')
-        response = oneline_generation
-    elif 400 <= response.status_code <= 599:
-        # ... raise an error.
-        raise HTTPError(f'EleutherAI API returned error status code {response.status_code}: '
-                        f'Response: {response.json()}')
-    # ... Otherwise, if it's an unrecognized HTTP status code, then...
-    else:
-        raise HTTPError(f'EleutherAI API returned unrecognized status code {response.status_code}: '
-                        f'Response: {response.json()}')
-        response = 'Error generating text.'
-    log.info(f'Completed text generation for prompt "{prompt}"')
-    return response
-
 def load(app):
     """Load plugin config from TOML file and register plugin assets."""
-    print('Initializing LLM Verification Plugin')
+    print('Loading LLM Verification Plugin')
     # Get the logger for the LLM Verification plugin.
     log = initialize_grtctfd_loggers()
     # Ensure that the configuration file for the LLM Verification Plugin exists.
@@ -246,7 +41,7 @@ def load(app):
     llm_verifications = Blueprint('llm_verifications', __name__, template_folder='templates')
     log.debug('Registered blueprints for LLM Verification Plugin')
     # Open the llm_config.toml file and get the host and port
-    log.info('Initialized LLM Verification Plugin')
+    log.info('Loaded LLM Verification Plugin')
 
     @llm_verifications.route('/generate', methods=['POST'])
     @bypass_csrf_protection
@@ -460,3 +255,207 @@ def load(app):
         return jsonify({'success': True})
 
     app.register_blueprint(llm_verifications)
+
+class LlmChallenge(Challenges):
+    """SQLAlchemy Table model for LLM Challenges."""
+    __mapper_args__ = {'polymorphic_identity': 'llm_verification'}
+    __table_args__ = {'extend_existing': True}
+
+    id = db.Column(db.Integer,
+                        db.ForeignKey('challenges.id', ondelete='CASCADE'),
+                        primary_key=True)
+    preprompt = db.Column(db.Text)
+    llm = db.Column(db.Text)
+
+    def __init__(self, *args, **kwargs):
+        super(LlmChallenge, self).__init__(**kwargs)
+
+    @property
+    def html(self):
+        from CTFd.utils.config.pages import build_markdown
+        from CTFd.utils.helpers import markup
+        return markup(build_markdown(self.description))
+
+
+class Pending(Submissions):
+    __mapper_args__ = {'polymorphic_identity': 'pending'}
+
+class Awarded(Submissions):
+    __mapper_args__ = {'polymorphic_identity': 'awarded'}
+
+class GRTSubmission(db.Model):
+    """GRT CTFd SQLAlchemy table for answer submissions."""
+    __tablename__ = 'grt_submissions'
+    __table_args__ = {'extend_existing': True}
+
+    id = db.Column(db.Integer, primary_key=True)
+    submission_id = db.Column(db.Integer, db.ForeignKey('submissions.id', ondelete='CASCADE'))
+    challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id', ondelete='CASCADE'))
+    text = db.Column(db.Text)
+    prompt = db.Column(db.Text)
+
+class GRTSolves(db.Model):
+    """GRT CTFd SQLAlchemy table for solve attempts."""
+    __tablename__ = 'grt_solves'
+    __table_args__ = {'extend_existing': True}
+
+    id = db.Column(db.Integer, primary_key=True)
+    success = db.Column(db.Boolean)
+    challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id', ondelete='CASCADE'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'))
+    team_id = db.Column(db.Integer, db.ForeignKey('teams.id', ondelete='CASCADE'))
+    text = db.Column(db.Text)
+    prompt = db.Column(db.Text)
+    date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+
+    @hybrid_property
+    def account_id(self):
+        from CTFd.utils import get_config
+
+        user_mode = get_config('user_mode')
+        if user_mode == 'teams':
+            return self.team_id
+        elif user_mode == 'users':
+            return self.user_id
+
+
+class LlmSubmissionChallenge(BaseChallenge):
+    """Customized CTFd challenge type for LLM submissions."""
+    __version__ = '1.1.1'
+    id = 'llm_verification'  # Unique identifier used to register challenges
+    name = 'llm_verification'  # Name of a challenge type
+    # Handlebars templates used for each aspect of challenge editing & viewing
+    templates = {'create': '/plugins/llm_verification/assets/create.html',
+                                 'update': '/plugins/llm_verification/assets/update.html',
+                                 'view': '/plugins/llm_verification/assets/view.html',}
+    # Scripts that are loaded when a template is loaded
+    scripts = {'create': '/plugins/llm_verification/assets/create.js',
+                               'update': '/plugins/llm_verification/assets/update.js',
+                               'view': '/plugins/llm_verification/assets/view.js',}
+    # Route at which files are accessible. This must be registered using register_plugin_assets_directory()
+    route = '/plugins/llm_verification/assets/'
+    # Blueprint used to access the static_folder directory.
+    blueprint = Blueprint('llm_verification', __name__, template_folder='templates', static_folder='assets',)
+    challenge_model = LlmChallenge
+
+    @classmethod
+    def create(cls, request):
+        """Process the challenge creation request.
+
+        Arguments:
+            request: The Flask request object.
+
+        Returns:
+            Challenge: The newly created challenge.
+        """
+        data = request.form or request.get_json()
+        challenge = cls.challenge_model(**data)
+        db.session.add(challenge)
+        db.session.commit()
+        log.info(f'Created challenge: {data}')
+        return challenge
+
+    @staticmethod
+    def attempt(challenge, request):
+        """This method is not used as llm submissions are not solved with the compare() method.
+
+        Arguments:
+            challenge: The Challenge object from the database
+            request: The request the user submitted
+
+        Returns:
+            tuple (bool, str):  This will always be `False` and `'Submission under review'` because
+                llm submissions need manual review.
+        """
+        log.info('Rejected "attempt" because manual verification is needed')
+        return False, 'Submission under review'
+
+    @staticmethod
+    def solve(user, team, challenge, request):
+        """ This method is not used as llm submission challenges are not solved with flags.
+
+        Arguments:
+            team: The Team object from the database
+            challenge: The Challenge object from the database
+            request: The request the user submitted
+
+        Returns:
+            `None`
+        """
+        log.info('Rejected "solve" because manual verification is needed')
+        return None
+
+    @staticmethod
+    def fail(user, team, challenge, request):
+        """Mark an an attempt as "pending" by inserting "Pending" into the database.
+
+        Arguments:
+            team: The Team object from the database
+            challenge: The Challenge object from the database
+            request: The request the user submitted
+
+        Returns:
+            `None`
+        """
+        data = request.form or request.get_json()
+        submission = data['submission']
+        pending = Pending(user_id=user.id,
+                          team_id=team.id if team else None,
+                          challenge_id=challenge.id,
+                          ip=get_ip(request),
+                          provided=submission,)
+        db.session.add(pending)
+        db.session.commit()
+        grt = GRTSubmission(submission_id=pending.id,
+                            text=data['text'],
+                            prompt=data['prompt'],
+                            challenge_id=challenge.id,)
+        db.session.add(grt)
+        db.session.commit()
+        log.info(f'Fail: marked attempt as pending: {submission}')
+        return None
+
+def generate_text(prompt):
+    """Generate text from a prompt using the EleutherAI GPT-NeoX-20B model.
+
+    Arguments:
+        prompt: The prompt to generate text from.
+
+    Raises:
+        ValueError: If the Vanilla Neox API key is not set.
+        HTTPError: If the EleutherAI API returns a non-200 HTTP status code.
+
+    Returns:
+        str: Text generated by the prompt.
+    """
+    log.info(f'Received text generation request for prompt "{prompt}"')
+    # Load the Vanilla Neox API key from the config file.
+    llmv_config = load_llmv_config()
+    neox_token = llmv_config['vanilla_neox_api_key']
+    if neox_token == 'UNSET':
+        raise ValueError('Vanilla Neox API key is not set')
+    response = post(url='https://api-inference.huggingface.co/models/EleutherAI/gpt-neox-20b',
+                              headers={'Authorization': f'Bearer {neox_token}'},
+                              json={'inputs': prompt})
+    log.debug(f'Received {response.status_code} response from EleutherAI API')
+    # If it's a successful HTTP status code, then...
+    if response.status_code == 200:
+        json_response = response.json()
+        log.debug(f'Response: {json_response}')
+        generated_text = json_response[0]['generated_text']
+        # Remove newlines from the generated text.
+        oneline_generation = generated_text.replace('\n', ' ')
+        log.info(f'Received generated text from remote API: {oneline_generation}...')
+        response = oneline_generation
+    elif 400 <= response.status_code <= 599:
+        # ... raise an error.
+        raise HTTPError(f'EleutherAI API returned error status code {response.status_code}: '
+                        f'Response: {response.json()}')
+    # ... Otherwise, if it's an unrecognized HTTP status code, then...
+    else:
+        raise HTTPError(f'EleutherAI API returned unrecognized status code {response.status_code}: '
+                        f'Response: {response.json()}')
+        response = 'Error generating text.'
+    log.info(f'Completed text generation for prompt "{prompt}"')
+    return response
+
