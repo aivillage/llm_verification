@@ -1,24 +1,18 @@
 """Wrapper around Huggingface."""
-
-from logging import getLogger
-from typing import (
-    List,
-    Dict,
-    Optional,
-)
 import grpclib
+from logging import getLogger
 from transformers import TextGenerationPipeline, AutoTokenizer, AutoModelForCausalLM
+from typing import Dict, List, Optional
 
 from .base_llm import AbstractLLM
 from .llm_rpc.api import GenerateRequest, GenerateReply, LLMTypeRequest, LLMTypeReply
 from .schema import Generation, LLMResult, pack_result
 from .keystore import ApiKeystore
+
 log = getLogger(__name__)
         
-'''
-This shouldn't exist, but for some reason the TextGenerationPipeline doesn't work when it's in the normal service class.
-'''
 class LLMService():
+    """ This shouldn't exist, but for some reason the TextGenerationPipeline doesn't work when it's in the normal service class.  """
     base_llm: AbstractLLM
     keystore: Optional[ApiKeystore]
 

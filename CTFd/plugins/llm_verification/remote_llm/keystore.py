@@ -1,13 +1,14 @@
-import select
 from logging import getLogger
+import select
 from typing import Optional
+import uuid
+
 from sqlalchemy import String, Boolean
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
-import uuid
 
 
 log = getLogger(__name__)
