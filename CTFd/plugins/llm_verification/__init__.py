@@ -144,8 +144,7 @@ class LlmSubmissionChallenge(BaseChallenge):
 
     @staticmethod
     def solve(user, team, challenge, request):
-        """
-        This method is not used as llm submission challenges are not solved with flags.
+        """ This method is not used as llm submission challenges are not solved with flags.
 
         Arguments:
             team: The Team object from the database
