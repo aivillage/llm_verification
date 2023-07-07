@@ -6,7 +6,6 @@ from json import load as json_load
 from logging import getLogger
 from requests.exceptions import HTTPError
 from pathlib import Path
-import toml
 from .remote_llm.client import ClientLLM
 import datetime
 from sqlalchemy.ext.hybrid import hybrid_property
