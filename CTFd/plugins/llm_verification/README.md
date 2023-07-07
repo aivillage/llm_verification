@@ -87,9 +87,9 @@ The LLMM Verification Plugin ("LLMV") is a [CTFd](https://github.com/CTFd/CTFd) 
 
 Use `docker-compose.dev.yml` for making code changes to CTFd or plugins. Add `--build` for non-code changes such as dependency changes in `requirements.txt` or entrypoint changes in `Dockerfile`. CTFd will be available at [https://localhost:8000](https://localhost:8000).
 
-```console
-$ docker compose -f docker-compose.dev.yml up --build
-```
+   ```console
+   $ docker compose -f docker-compose.dev.yml up --build
+   ```
 
 ### 👩🏼‍💻 Development Mode
 
@@ -101,17 +101,17 @@ The `Dockerfile.dev`, `docker-compose.dev.yml`, and `docker-entrypoint.dev.sh` a
 
 To use it, specify it with `-f` when invoking `docker compose up`.
 
-```console
-$ docker compose -f docker-compose.dev.yml up
-```
+   ```console
+   $ docker compose -f docker-compose.dev.yml up
+   ```
 
 ### 🏗️ Rebuilding
 
 For dependency and Dockerfile changes to take effect, add `--build`. This will take longer, though, because some layers will need to be rebuilt.
 
-```console
-$ docker compose -f docker-compose.dev.yml up --build
-```
+   ```console
+   $ docker compose -f docker-compose.dev.yml up --build
+   ```
 
 To start over from a clean slate, ensure that no CTFd containers are running with `docker ps` and `docker kill`. Then run `rm -rf ./.data`.
 
