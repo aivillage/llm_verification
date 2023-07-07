@@ -15,19 +15,20 @@
     </ul>
     <div class="tab-content">
         <div class="tab-pane fade show active" id="pills-new-submission" role="tabpanel">
-            <textarea id="challenge-prompt" class="challenge-prompt mb-3" type="text" name="answer" placeholder="Prompt" rows="5"></textarea>
-            <button id="challenge-generate" class="challenge-submit" type="submit">
-                Generate
-            </button>
-            <textarea id="challenge-input" class="challenge-input mb-3" type="text" name="answer" placeholder="Generated Text" rows="10" readonly></textarea>
-            <button id="challenge-submit" class="challenge-submit" type="submit">
-                Submit
-            </button>
+            <div class="tab-content">
+                <textarea id="challenge-prompt" class="challenge-prompt mb-3" type="text" name="answer" placeholder="Prompt" rows="5"></textarea>
+                <button id="challenge-generate" class="challenge-submit" type="submit">Generate</button>
+            </div>
+            <br>
+            <br>
+            <div class="tab-content">
+                <textarea id="challenge-input" class="challenge-input mb-3" type="text" name="answer" placeholder="Generated Text" rows="10" readonly></textarea>
+                <button id="challenge-submit" class="challenge-submit" type="submit">Submit</button>
+            </div>
         </div>
         <div class="tab-pane fade" id="pills-prev-submissions" role="tabpanel">
             <div class="row">
-                <div class="col-md-12" id="challenge-submissions">
-                </div>
+                <div class="col-md-12" id="challenge-submissions"></div>
             </div>
         </div>
     </div>

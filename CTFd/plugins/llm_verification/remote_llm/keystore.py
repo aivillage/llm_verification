@@ -1,4 +1,5 @@
 import select
+from logging import getLogger
 from typing import Optional
 from sqlalchemy import String, Boolean
 from sqlalchemy.orm import DeclarativeBase
@@ -7,6 +8,9 @@ from sqlalchemy.orm import mapped_column
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 import uuid
+
+
+log = getLogger(__name__)
 
 class Base(DeclarativeBase):
     pass
@@ -69,7 +73,7 @@ class ApiKeystore():
 
 # A simple CLI to add/remove keys.
 def main():
-    print("Editing Keystore")
+    log.debug("Editing Keystore")
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("db_path", type=str, help="The path to the database.")
@@ -82,24 +86,24 @@ def main():
     if args.add is not None:
         key = api_key_store.add_key(name=args.add)
         if key is None:
-            print("Failed to add key.")
+            log.debug("Failed to add key.")
         else:
-            print(f"Added key {key}")
+            log.debug(f"Added key {key}")
     elif args.remove is not None:
         if api_key_store.remove_key(name=args.remove):
-            print("Removed key.")
+            log.debug("Removed key.")
         else:
-            print("Failed to remove key.")
+            log.debug("Failed to remove key.")
     elif args.list:
-        print("Keys:")
+        log.debug("Keys:")
         for key in api_key_store.get_all_keys():
-            print(f" - {key}")
+            log.debug(f" - {key}")
     elif args.get is not None:
         key = api_key_store.get_key(name=args.get)
         if key is None:
-            print("Failed to get key.")
+            log.debug("Failed to get key.")
         else:
-            print(f"Key: {key}")
+            log.debug(f"Key: {key}")
 
 if __name__ == '__main__':
     main()

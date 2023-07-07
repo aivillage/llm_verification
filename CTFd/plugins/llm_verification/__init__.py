@@ -107,10 +107,7 @@ class LlmSubmissionChallenge(BaseChallenge):
     # Route at which files are accessible. This must be registered using register_plugin_assets_directory()
     route = '/plugins/llm_verification/assets/'
     # Blueprint used to access the static_folder directory.
-    blueprint = Blueprint('llm_verification',
-                          __name__,
-                          template_folder='templates',
-                          static_folder='assets',)
+    blueprint = Blueprint('llm_verification', __name__, template_folder='templates', static_folder='assets',)
     challenge_model = LlmChallenge
 
     @classmethod
@@ -127,6 +124,7 @@ class LlmSubmissionChallenge(BaseChallenge):
         challenge = cls.challenge_model(**data)
         db.session.add(challenge)
         db.session.commit()
+        log.info(f'Created challenge: {data}')
         return challenge
 
     @staticmethod
@@ -141,12 +139,12 @@ class LlmSubmissionChallenge(BaseChallenge):
             tuple (bool, str):  This will always be `False` and `'Submission under review'` because
                 llm submissions need manual review.
         """
+        log.info('Rejected "attempt" because manual verification is needed')
         return False, 'Submission under review'
 
     @staticmethod
     def solve(user, team, challenge, request):
-        """
-        This method is not used as llm submission challenges are not solved with flags.
+        """ This method is not used as llm submission challenges are not solved with flags.
 
         Arguments:
             team: The Team object from the database
@@ -156,6 +154,7 @@ class LlmSubmissionChallenge(BaseChallenge):
         Returns:
             `None`
         """
+        log.info('Rejected "solve" because manual verification is needed')
         return None
 
     @staticmethod
@@ -179,13 +178,13 @@ class LlmSubmissionChallenge(BaseChallenge):
                           provided=submission,)
         db.session.add(pending)
         db.session.commit()
-
         grt = GRTSubmission(submission_id=pending.id,
                             text=data['text'],
                             prompt=data['prompt'],
                             challenge_id=challenge.id,)
         db.session.add(grt)
         db.session.commit()
+        log.info(f'Fail: marked attempt as pending: {submission}')
         return None
 
 def generate_text(prompt):
@@ -228,10 +227,12 @@ def generate_text(prompt):
         raise HTTPError(f'EleutherAI API returned unrecognized status code {response.status_code}: '
                         f'Response: {response.json()}')
         response = 'Error generating text.'
+    log.info(f'Completed text generation for prompt "{prompt}"')
     return response
 
 def load(app):
     """Load plugin config from TOML file and register plugin assets."""
+    log.info('Initializing LLM Verification Plugin')
     log.debug('Starting database migrations')
     # Perform database migrations (if necessary).
     ctfd_migrations()
@@ -259,6 +260,7 @@ def load(app):
         log.debug(f'Created ClientLLM object for LLM "{llm_name}"')
         # and add the ClientLLM object to the LLMs dictionary.
         llms[llm_name] = client_llm
+    log.info('Initialized LLM Verification Plugin')
 
     @llm_verifications.route('/generate', methods=['POST'])
     @bypass_csrf_protection
@@ -268,26 +270,15 @@ def load(app):
         #client_llm = ClientLLM(host='127.0.0.1', port=50055)
         preprompt = challenge.preprompt
         complete_prompt = preprompt + request.json['prompt']
-        text = generate_text(complete_prompt)
-        print(text)
-        response = {'success': True, 'data': {'text': text}}
+        try:
+            generated_text = generate_text(complete_prompt)
+        except HTTPError as error:
+            log.error(f'Error generating text: {error}')
+            response = {'success': False, 'error_detail': error}
+            return jsonify(response)
+        response = {'success': True, 'data': {'text': generated_text}}
+        log.info(f'Generated text for challenge "{challenge.name}"')
         return jsonify(response)
-        #except Exception as e:
-        #    print(e)
-        #    return jsonify({'success': False, 'data': {'text': ''}})
-        #llm = llms.get(challenge.llm, llms[default_llm])
-        #try:
-        #    generated = llm.sync_generate_text(prompts=[preprompt + prompt])
-        #    print(generated)
-        #    if len(generated.generations) == 0:
-        #        return jsonify({'success': False, 'data': {'text': ''}})
-        #    text = generated.generations[0][0].text
-        #    response = {'success': True, 'data': {'text': text,}}
-        #    return jsonify(response)
-        #except Exception as e:
-        #    print(e)
-        #    raise e
-        #    return jsonify({'success': False, 'data': {'text': ''}})
 
     @llm_verifications.route('/submissions/<challenge_id>', methods=['GET'])
     @authed_only
@@ -324,14 +315,20 @@ def load(app):
                                                 Awarded.challenge_id == challenge_id).all()
 
         pending = [{'provided': p.provided, 'date': isoformat(p.date)} for p in pending]
+        log.debug(f'User "{current_user.id}" has {len(pending)} pending submissions for challenge "{challenge_id}"')
         correct = [{'provided': c.provided, 'date': isoformat(c.date)} for c in correct]
+        log.debug(f'User "{current_user.id}" has {len(correct)} correct submissions for challenge "{challenge_id}"')
         awarded = [{'provided': a.provided, 'date': isoformat(a.date)} for a in awarded]
+        log.debug(f'User "{current_user.id}" has {len(awarded)} awarded submissions for challenge "{challenge_id}"')
         incorrect = [{'provided': i.provided, 'date': isoformat(i.date)} for i in incorrect ]
+        log.debug(f'User "{current_user.id}" has {len(incorrect)} incorrect submissions for challenge "{challenge_id}"')
         response = {'success': True,
-                                'data': {'pending': pending,
-                                         'correct': correct,
-                                         'awarded': awarded,
-                                         'incorrect': incorrect}}
+                                    'data': {'pending': pending,
+                                             'correct': correct,
+                                             'awarded': awarded,
+                                             'incorrect': incorrect}}
+        log.info(f'Showed user {current_user.id} '
+                 f'their answer submissions for challenge "{challenge_id}"')
         return jsonify(response)
 
     @llm_verifications.route('/admin/submissions/pending', methods=['GET'])
@@ -363,6 +360,7 @@ def load(app):
                                                                              .order_by(Submissions.date.desc())
                                                                              .slice(page_start, page_end)
                                                                              .all())
+        log.info(f'Showed (admin) {len(submissions)} pending answer submissions')
         return render_template('verify_submissions.html',
                                submissions=submissions,
                                page_count=page_count,
@@ -395,6 +393,7 @@ def load(app):
                                                                                       .order_by(GRTSolves.date.desc())
                                                                                       .slice(page_start, page_end)
                                                                                       .all())
+        log.info(f'Showed (admin) solved answer submissions')
         return render_template('solved_submissions.html',
                                 submissions=submissions,
                                 page_count=page_count,
