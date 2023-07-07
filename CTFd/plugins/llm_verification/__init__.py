@@ -233,33 +233,16 @@ def generate_text(prompt):
 def load(app):
     """Load plugin config from TOML file and register plugin assets."""
     log.info('Initializing LLM Verification Plugin')
-    log.debug('Starting database migrations')
+    log.debug('Starting CTFd database migrations')
     # Perform database migrations (if necessary).
     ctfd_migrations()
-    log.debug('Finished database migrations')
+    log.debug('Completed CTFd database migrations')
     CHALLENGE_CLASSES['llm_verification'] = LlmSubmissionChallenge
     register_plugin_assets_directory(app, base_path='/plugins/llm_verification/assets/')
-    log.debug('Registered plugin assets directory')
+    log.debug('Registered plugin assets directory for LLM Verification Plugin')
     llm_verifications = Blueprint('llm_verifications', __name__, template_folder='templates')
+    log.debug('Registered blueprints for LLM Verification Plugin')
     # Open the llm_config.toml file and get the host and port
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    log.debug(f'Path to llm_verification __init__.py file: {dir_path}')
-    config_path = os.path.join(dir_path, 'llm_config.toml')
-    # Load the TOML config file.
-    with open(config_path, 'r') as f:
-        llm_config = toml.load(f)
-    llms = {}
-    default_llm = llm_config['default_llm']
-    log.debug(f'Set default LLM to "{default_llm}"')
-    # For each LLM in the config file...
-    for llm_name, config in llm_config['llms'].items():
-        # ... create a ClientLLM object...
-        client_llm = ClientLLM(host=config['host'],
-                               port=config['port'],
-                               api_key=config['api_key'])
-        log.debug(f'Created ClientLLM object for LLM "{llm_name}"')
-        # and add the ClientLLM object to the LLMs dictionary.
-        llms[llm_name] = client_llm
     log.info('Initialized LLM Verification Plugin')
 
     @llm_verifications.route('/generate', methods=['POST'])
