@@ -1,11 +1,11 @@
 # Thank You for purchasing an Official CTFd Plugin!
 
-Within this plugin you will find the plugin files for installation.
+Within this plugin, you will find the plugin files for installation.
 
 ## Installation
 
-1. Copy the `llm_verification` folder that containes this `README.md` file to the
-   `CTFd/plugins` direcotry.
+1. Copy the `llm_verification` folder that contains this `README.md` file to the
+   `CTFd/plugins` directory.
 
 2. Start CTFd and create a challenge. You should see `llm_verification` as an
    option in the `Challenge Type` dropdown.
@@ -44,7 +44,7 @@ Since the repo directory's already mounted as a [volume](https://docs.docker.com
 
 The `Dockerfile.dev`, `docker-compose.dev.yml`, and `docker-entrypoint.dev.sh` are near-exact copies of `Dockerfile`, `docker-compose.yml`, and `docker-entrypoint.sh`. `Dockerfile.dev` uses a different entrypoint (`docker-entrypoint.dev.sh`) and `docker-compose.dev.yml` uses a [different Dockerfile for builds](https://docs.docker.com/compose/compose-file/build/#illustrative-example). They work together to start the application with Flask instead of Gunicorn (via `docker-entrypoint.dev.sh`).
 
-To use it, specify it with `-f` when invoking `docker compose up`. 
+To use it, specify it with `-f` when invoking `docker compose up`.
 
 ```console
 $ docker compose -f docker-compose.dev.yml up
