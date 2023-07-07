@@ -1,8 +1,0 @@
-default_llm = "VanillaNeox"
-
-[llms]
-
-[llms.VanillaNeox]
-host = "devgrt.aivillage.org"
-port = 50055
-api_key = "03fe44d1-297d-4296-a709-042452941fe8"
