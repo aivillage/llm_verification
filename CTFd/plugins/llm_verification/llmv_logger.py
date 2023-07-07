@@ -68,5 +68,5 @@ def initialize_grtctfd_loggers():
     llmv_logger.addHandler(console_logger)
     # Don't pass log records to ancestor loggers.
     llmv_logger.propagate = False
-    llmv_logger.info('Initialized LLM Verification plugin logger.')
+    llmv_logger.info('Initialized logger for LLM Verification plugin.')
     return llmv_logger
