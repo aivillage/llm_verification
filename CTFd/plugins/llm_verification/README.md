@@ -4,13 +4,21 @@ The LLMM Verification Plugin ("LLMV") is a [CTFd](https://github.com/CTFd/CTFd) 
 
 ## 🖥️ Installation
 
-Copy the `llm_verification` folder that contains this `README.md` file to `CTFd/plugins/`.
+1. Copy the `llm_verification` folder that contains this `README.md` file to `CTFd/plugins/`.
 
-To confirm that LLMV installed successfully, look for this message after running `docker compose up`.
+2. Copy the template config file (`llmv_config.template.json`) from `CTFd/plugins/llm_verification/ and remove `.template` from the filename.
 
-```
-INFO - Initialized LLM Verification Plugin
-```
+   ```console
+   $ cp CTFd/plugins/llm_verification/llmv_config.template.json CTFd/plugins/llm_verification/llmv_config.json
+   ```
+
+3. Replace `"UNSET"` values `llmv_config.json` with the values that you desire.
+
+4. Confirm that LLMV installed successfully. Look for this message after running `docker compose up`.
+
+   ```
+   INFO - Initialized LLM Verification Plugin
+   ```
 
 ## ⛳️ Usage
 
