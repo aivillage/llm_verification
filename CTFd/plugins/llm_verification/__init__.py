@@ -107,10 +107,7 @@ class LlmSubmissionChallenge(BaseChallenge):
     # Route at which files are accessible. This must be registered using register_plugin_assets_directory()
     route = '/plugins/llm_verification/assets/'
     # Blueprint used to access the static_folder directory.
-    blueprint = Blueprint('llm_verification',
-                          __name__,
-                          template_folder='templates',
-                          static_folder='assets',)
+    blueprint = Blueprint('llm_verification', __name__, template_folder='templates', static_folder='assets',)
     challenge_model = LlmChallenge
 
     @classmethod
