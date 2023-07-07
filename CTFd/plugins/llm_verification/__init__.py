@@ -258,7 +258,8 @@ def load(app):
             generated_text = generate_text(complete_prompt)
         except HTTPError as error:
             log.error(f'Error generating text: {error}')
-            response = {'success': False, 'error_detail': error}
+            # Send the error message from the HTTPError as the response to the user.
+            response = {'success': False, 'data': {'text': str(error)}}
             return jsonify(response)
         response = {'success': True, 'data': {'text': generated_text}}
         log.info(f'Generated text for challenge "{challenge.name}"')
