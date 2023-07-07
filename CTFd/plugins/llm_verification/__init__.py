@@ -270,27 +270,15 @@ def load(app):
         #client_llm = ClientLLM(host='127.0.0.1', port=50055)
         preprompt = challenge.preprompt
         complete_prompt = preprompt + request.json['prompt']
-        text = generate_text(complete_prompt)
-        print(text)
-        response = {'success': True, 'data': {'text': text}}
+        try:
+            generated_text = generate_text(complete_prompt)
+        except HTTPError as error:
+            log.error(f'Error generating text: {error}')
+            response = {'success': False, 'error_detail': error}
+            return jsonify(response)
+        response = {'success': True, 'data': {'text': generated_text}}
         log.info(f'Generated text for challenge "{challenge.name}"')
         return jsonify(response)
-        #except Exception as e:
-        #    print(e)
-        #    return jsonify({'success': False, 'data': {'text': ''}})
-        #llm = llms.get(challenge.llm, llms[default_llm])
-        #try:
-        #    generated = llm.sync_generate_text(prompts=[preprompt + prompt])
-        #    print(generated)
-        #    if len(generated.generations) == 0:
-        #        return jsonify({'success': False, 'data': {'text': ''}})
-        #    text = generated.generations[0][0].text
-        #    response = {'success': True, 'data': {'text': text,}}
-        #    return jsonify(response)
-        #except Exception as e:
-        #    print(e)
-        #    raise e
-        #    return jsonify({'success': False, 'data': {'text': ''}})
 
     @llm_verifications.route('/submissions/<challenge_id>', methods=['GET'])
     @authed_only
