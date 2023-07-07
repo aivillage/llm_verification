@@ -323,7 +323,7 @@ def load(app):
                                             'correct': correct,
                                             'awarded': awarded,
                                             'incorrect': incorrect}}
-        log.info(f'Showed user {current_user} '
+        log.info(f'Showed user {current_user.id} '
                  f'their answer submissions for challenge "{challenge_id}"')
         return jsonify(response)
 
