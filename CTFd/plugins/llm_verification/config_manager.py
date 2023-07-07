@@ -25,7 +25,8 @@ def load_config(filename='llmv_config.json') -> dict:
         # Load LLMV's settings from its configuration file.
         llmv_config = json_load(config_file)
     except FileNotFoundError as file_not_found_error:
-        log.warning(f'LLM Verification Plugin config file not found at "{config_file}"')
+        log.warning(f'LLM Verification Plugin config file not found at "{config_file}"'
+                    f'Use the config file template at "{config_file.with_suffix(".template.json")}"')
         # Re-raise the missing config error so that the user knows that the config file is missing.
         raise file_not_found_error
     return llmv_config
