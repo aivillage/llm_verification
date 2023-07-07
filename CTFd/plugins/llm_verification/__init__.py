@@ -315,9 +315,13 @@ def load(app):
                                                 Awarded.challenge_id == challenge_id).all()
 
         pending = [{'provided': p.provided, 'date': isoformat(p.date)} for p in pending]
+        log.debug(f'User "{current_user.id}" has {len(pending)} pending submissions for challenge "{challenge_id}"')
         correct = [{'provided': c.provided, 'date': isoformat(c.date)} for c in correct]
+        log.debug(f'User "{current_user.id}" has {len(correct)} correct submissions for challenge "{challenge_id}"')
         awarded = [{'provided': a.provided, 'date': isoformat(a.date)} for a in awarded]
+        log.debug(f'User "{current_user.id}" has {len(awarded)} awarded submissions for challenge "{challenge_id}"')
         incorrect = [{'provided': i.provided, 'date': isoformat(i.date)} for i in incorrect ]
+        log.debug(f'User "{current_user.id}" has {len(incorrect)} incorrect submissions for challenge "{challenge_id}"')
         response = {'success': True,
                                     'data': {'pending': pending,
                                             'correct': correct,
