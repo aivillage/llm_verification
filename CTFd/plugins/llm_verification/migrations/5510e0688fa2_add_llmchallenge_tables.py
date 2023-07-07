@@ -51,7 +51,8 @@ def upgrade(op=None):
             sa.PrimaryKeyConstraint("id"),
         )
     except sa.exc.InternalError as e:
-        print(str(e))
+        #print(str(e))
+        pass
 
 
 def downgrade(op=None):
