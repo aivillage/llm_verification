@@ -204,6 +204,8 @@ def generate_text(prompt):
     # Load the Vanilla Neox API key from the config file.
     llmv_config = load_llmv_config()
     neox_token = llmv_config['vanilla_neox_api_key']
+    if neox_token == 'UNSET':
+        raise ValueError('Vanilla Neox API key is not set')
     response = post(url='https://api-inference.huggingface.co/models/EleutherAI/gpt-neox-20b',
                               headers={'Authorization': f'Bearer {neox_token}'},
                               json={'inputs': prompt})
