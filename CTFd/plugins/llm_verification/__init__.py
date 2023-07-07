@@ -1,9 +1,8 @@
 from flask import Blueprint, jsonify, render_template, request
 
-import os, requests
-
 from json import load as json_load
 from logging import getLogger
+from requests import post
 from requests.exceptions import HTTPError
 from pathlib import Path
 from .remote_llm.client import ClientLLM
@@ -204,9 +203,9 @@ def generate_text(prompt):
     with open(config_file, 'r') as infile:
         llmv_config = json_load(infile)
     neox_token = llmv_config['vanilla_neox_api_key']
-    response = requests.post(url='https://api-inference.huggingface.co/models/EleutherAI/gpt-neox-20b',
-                                       headers={'Authorization': f'Bearer {neox_token}'},
-                                       json={'inputs': prompt})
+    response = post(url='https://api-inference.huggingface.co/models/EleutherAI/gpt-neox-20b',
+                              headers={'Authorization': f'Bearer {neox_token}'},
+                              json={'inputs': prompt})
     log.debug(f'Received {response.status_code} response from EleutherAI API')
     # If it's a successful HTTP status code, then...
     if response.status_code == 200:
