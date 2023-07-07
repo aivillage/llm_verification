@@ -1,15 +1,14 @@
 """Wrapper around Huggingface."""
 from logging import getLogger
-from typing import (
-    List,
-    Optional,
-)
+from typing import List, Optional
+
+import asyncio
 from grpclib.client import Channel
 
 from .llm_rpc.api import RemoteLLMStub, GenerateReplyGenerationList
 from .schema import Generation, LLMResult
 
-import asyncio
+
 try:
     loop = asyncio.get_event_loop()
 except RuntimeError as e:

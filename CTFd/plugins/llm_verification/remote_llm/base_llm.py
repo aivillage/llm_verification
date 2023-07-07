@@ -1,4 +1,3 @@
-
 import abc
 from typing import List, Optional
 
@@ -12,4 +11,3 @@ class AbstractLLM(object):
     @abc.abstractmethod
     def generate(self, prompts: List[str], stop: Optional[List[str]] = None) -> LLMResult:
         pass
-

@@ -3,12 +3,8 @@ try:
     __all__ = ['Generation', 'LLMResult']
 except ImportError:
     from dataclasses import dataclass
-    from typing import (
-        Any,
-        List,
-        Dict,
-        Optional,
-    )
+    from typing import Any, List, Dict, Optional
+    
     @dataclass
     class Generation:
         text: str

@@ -1,13 +1,11 @@
 """Wrapper around Huggingface."""
-from typing import (
-    List,
-    Optional,
-)
+from typing import List, Optional
 from transformers import TextGenerationPipeline, AutoTokenizer, AutoModelForCausalLM
 
 from .base_llm import AbstractLLM
 from .schema import Generation, LLMResult
 from logging import getLogger
+
 
 log = getLogger(__name__)
 

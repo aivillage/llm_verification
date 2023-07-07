@@ -1,20 +1,17 @@
 """Wrapper around OpenAI APIs."""
 from logging import getLogger
-from typing import (
-    Any,
-    List,
-    Optional,
-)
+from typing import Any, List, Optional
+
+import asyncio
+import nest_asyncio
 
 from langchain.llms.base import BaseLLM
 from .llm_rpc.api import GenerateReplyGenerationList
 from .schema import Generation, LLMResult, unpack_result
 from .client import ClientLLM
 
-import asyncio
-import nest_asyncio
-nest_asyncio.apply()
 
+nest_asyncio.apply()
 log = getLogger(__name__)
 
 
