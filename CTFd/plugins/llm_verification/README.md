@@ -32,7 +32,7 @@ Thanks again for supporting the CTFd Project!
 
 ### tl;dr
 
-Use `docker-compose.dev.yml` for making code changes to CTFd or plugins. Add `--build` for non-code changes such as dependency changes in `requirements.txt` or entrypoint changes in `Dockerfile`.
+Use `docker-compose.dev.yml` for making code changes to CTFd or plugins. Add `--build` for non-code changes such as dependency changes in `requirements.txt` or entrypoint changes in `Dockerfile`. CTFd will be available at [https://localhost:8000](https://localhost:8000).
 
 ```console
 $ docker compose -f docker-compose.dev.yml up --build
@@ -55,3 +55,21 @@ For dependency and Dockerfile changes to take effect, add `--build`. This will t
 ```console
 $ docker compose -f docker-compose.dev.yml up --build
 ```
+
+To start over from a clean slate, ensure that no CTFd containers are running with `docker ps` and `docker kill`. Then run `rm -rf ./.data`.
+
+To make logs output in the correct timezone, use the `TZ` environment variable.
+
+For example, use the timezone of the system:
+
+```console
+$ TZ=$(date +%Z) docker-compose up
+```
+
+Or, use Pacific Daylight Time (PDT):
+
+```console
+$ TZ=PDT docker-compose up
+```
+
+In practice, `TZ=$(date +%Z) docker compose -f docker-compose.dev.yml up` suits most code-related changes.

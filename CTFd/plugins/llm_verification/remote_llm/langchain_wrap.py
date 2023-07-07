@@ -1,5 +1,5 @@
 """Wrapper around OpenAI APIs."""
-import logging
+from logging import getLogger
 from typing import (
     Any,
     List,
@@ -15,7 +15,7 @@ import asyncio
 import nest_asyncio
 nest_asyncio.apply()
 
-logger = logging.getLogger(__name__)
+log = getLogger(__name__)
 
 
 class ClientLangchain(BaseLLM):
@@ -26,6 +26,7 @@ class ClientLangchain(BaseLLM):
     
     def __init__(self, client: ClientLLM):
         super().__init__(client=client)
+        log.info('Initialized ClientLangchain.')
 
     def _generate(
         self, prompts: List[str], stop: Optional[List[str]] = None
