@@ -67,18 +67,13 @@ def add_routes() -> Blueprint:
                 submission_mappings[ctfd_model] = ctfd_model.query.filter(ctfd_model.team_id == current_user.team_id,
                                                                           ctfd_model.challenge_id == challenge_id).all()
 
-        pending = submission_mappings[Pending]
-        correct = submission_mappings[Solves]
-        awarded = submission_mappings[Awarded]
-        incorrect = submission_mappings[Fails]
-
-        pending = [{'provided': p.provided, 'date': isoformat(p.date)} for p in pending]
+        pending = [{'provided': p.provided, 'date': isoformat(p.date)} for p in submission_mappings[Pending]]
         log.debug(f'User "{current_user.id}" has {len(pending)} pending submissions for challenge "{challenge_id}"')
-        correct = [{'provided': c.provided, 'date': isoformat(c.date)} for c in correct]
+        correct = [{'provided': c.provided, 'date': isoformat(c.date)} for c in submission_mappings[Solves]]
         log.debug(f'User "{current_user.id}" has {len(correct)} correct submissions for challenge "{challenge_id}"')
-        awarded = [{'provided': a.provided, 'date': isoformat(a.date)} for a in awarded]
+        awarded = [{'provided': a.provided, 'date': isoformat(a.date)} for a in submission_mappings[Awarded]]
         log.debug(f'User "{current_user.id}" has {len(awarded)} awarded submissions for challenge "{challenge_id}"')
-        incorrect = [{'provided': i.provided, 'date': isoformat(i.date)} for i in incorrect ]
+        incorrect = [{'provided': i.provided, 'date': isoformat(i.date)} for i in submission_mappings[Fails]]
         log.debug(f'User "{current_user.id}" has {len(incorrect)} incorrect submissions for challenge "{challenge_id}"')
         response = {'success': True,
                                     'data': {'pending': pending,
