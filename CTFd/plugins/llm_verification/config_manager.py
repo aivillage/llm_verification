@@ -6,7 +6,6 @@ from pathlib import Path
 
 log = getLogger(__name__)
 
-
 def load_llmv_config(filename='llmv_config.json') -> dict:
     """Load configuration from LLMV's config file.
 
@@ -24,8 +23,7 @@ def load_llmv_config(filename='llmv_config.json') -> dict:
     try:
         # Load LLMV's settings from its configuration file.
         llmv_config = json_loads(config_file.read_text())
-        log.info(f'LLM Verification Plugin config loaded from "{config_file}"')
-
+        log.info(f'LLMV config loaded from "{config_file}"')
     except FileNotFoundError as file_not_found_error:
         log.warning(f'LLM Verification Plugin config file not found at "{config_file}" '
                     f'Use the config file template at "{config_file.with_suffix(".template.json")}"')
