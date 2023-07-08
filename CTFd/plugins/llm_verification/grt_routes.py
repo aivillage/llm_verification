@@ -56,41 +56,21 @@ def add_routes() -> Blueprint:
         log.debug(f'Configured user mode: "{get_config("user_mode")}"')
         log.debug(f'Current user mode: "{USERS_MODE}"')
 
-        # If CTFd's configured for "users..."
-        if get_config('user_mode') == USERS_MODE:
-            pending = Pending.query.filter(Pending.user_id == current_user.id,
-                                                Pending.challenge_id == challenge_id).all()
-        # Otherwise, assuming that CTFd's configured for "teams..."
-        else:
-            pending = Pending.query.filter(Pending.team_id == current_user.team_id,
-                                                Pending.challenge_id == challenge_id).all()
+        submission_mappings = {Pending: None, Solves: None, Awarded: None, Fails: None}
+        for ctfd_model in submission_mappings:
+            # If CTFd's configured for "users..."
+            if get_config('user_mode') == USERS_MODE:
+                submission_mappings[ctfd_model] = ctfd_model.query.filter(ctfd_model.user_id == current_user.id,
+                                                                          ctfd_model.challenge_id == challenge_id).all()
+            # Otherwise, assuming that CTFd's configured for "teams..."
+            else:
+                submission_mappings[ctfd_model] = ctfd_model.query.filter(ctfd_model.team_id == current_user.team_id,
+                                                                          ctfd_model.challenge_id == challenge_id).all()
 
-        # If CTFd's configured for "users..."
-        if get_config('user_mode') == USERS_MODE:
-            correct = Solves.query.filter(Solves.user_id == current_user.id,
-                                               Solves.challenge_id == challenge_id).all()
-        # Otherwise, assuming that CTFd's configured for "teams..."
-        else:
-            correct = Solves.query.filter(Solves.team_id == current_user.team_id,
-                                               Solves.challenge_id == challenge_id).all()
-
-        # If CTFd's configured for "users..."
-        if get_config('user_mode') == USERS_MODE:
-            incorrect = Fails.query.filter(Fails.user_id == current_user.id,
-                                                Fails.challenge_id == challenge_id).all()
-        # Otherwise, assuming that CTFd's configured for "teams..."
-        else:
-            incorrect = Fails.query.filter(Fails.team_id == current_user.team_id,
-                                                Fails.challenge_id == challenge_id).all()
-
-        # If CTFd's configured for "users..."
-        if get_config('user_mode') == USERS_MODE:
-            awarded = Awarded.query.filter(Awarded.user_id == current_user.id,
-                                                Awarded.challenge_id == challenge_id).all()
-        # Otherwise, assuming that CTFd's configured for "teams..."
-        else:
-            awarded = Awarded.query.filter(Awarded.team_id == current_user.team_id,
-                                                Awarded.challenge_id == challenge_id).all()
+        pending = submission_mappings[Pending]
+        correct = submission_mappings[Solves]
+        awarded = submission_mappings[Awarded]
+        incorrect = submission_mappings[Fails]
 
         pending = [{'provided': p.provided, 'date': isoformat(p.date)} for p in pending]
         log.debug(f'User "{current_user.id}" has {len(pending)} pending submissions for challenge "{challenge_id}"')
