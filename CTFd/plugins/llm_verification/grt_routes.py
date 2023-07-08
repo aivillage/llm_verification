@@ -70,8 +70,8 @@ def add_routes() -> Blueprint:
             else:
                 # ... then raise an error.
                 raise ValueError(f'Invalid user mode: "{get_config("user_mode")}" '
-                                    f'is not "{USERS_MODE}" '
-                                    f'or "{TEAMS_MODE}"')
+                                 f'is not "{USERS_MODE}" '
+                                 f'or "{TEAMS_MODE}"')
             # If CTFd's configured for "users..."
             if get_config('user_mode') == USERS_MODE:
                 submission_mappings[ctfd_model] = ctfd_model.query.filter(model_filter == user_filter,
