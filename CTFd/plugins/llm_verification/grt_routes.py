@@ -78,9 +78,6 @@ def add_routes() -> Blueprint:
             # Query the database for the user's answer submissions for this challenge.
             submission_mappings[ctfd_model] = ctfd_model.query.filter(mode_uid == current_uid,
                                                                       ctfd_model.challenge_id == challenge_id).all()
-            log.debug(f'Challenge "{challenge_id}" '
-                      f'answer submissions for model "{ctfd_model.__tablename__}:" '
-                      f'{submission_mappings[ctfd_model]}')
             # For each answer submission of a given type (e.g. "Pending", "Solves", "Awarded", "Fails")...
             for query_result in submission_mappings[ctfd_model]:
                 # ... find the associated GRTSubmission so we can extract generated text for the "Previous Submissions" UI Pill.
@@ -88,7 +85,7 @@ def add_routes() -> Blueprint:
                 log.debug(f'Submission generated text: "{associated_answer.text}"')
             log.debug(f'User "{current_user.name}" '
                       f'has {len(submission_mappings[ctfd_model])} '
-                      f'{ctfd_model.__tablename__} submissions for challenge "{challenge_id}"')
+                      f'{ctfd_model.__tablename__} answer submissions for challenge "{challenge_id}"')
 
             # Extract the values of the `provided` and `date` columns from each answer submission.
             extracted_submissions[ctfd_model] = [{'provided': answer_submission.provided,
