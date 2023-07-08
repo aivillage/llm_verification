@@ -90,7 +90,8 @@ challenge.postRender = function() {
     <div class="card-body">\
         <blockquote class="blockquote mb-0">\
             <p>{0}</p>\
-            <small class="text-muted">{1}</small>\
+            <p>{1}</p>\
+            <small class="text-muted">{2}</small>\
         </blockquote>\
     </div>\
   </div>';
@@ -124,6 +125,7 @@ challenge.postRender = function() {
         var entry = $(
           submission_template.format(
             htmlEntities(submission.provided),
+            htmlEntities(submission.generated_text),
             Moment(submission.date).fromNow()
           )
         );
@@ -140,6 +142,7 @@ challenge.postRender = function() {
         var entry = $(
           submission_template.format(
             htmlEntities(submission.provided),
+            htmlEntities(submission.generated_text),
             Moment(submission.date).fromNow()
           )
         );
@@ -156,6 +159,7 @@ challenge.postRender = function() {
         var entry = $(
           submission_template.format(
             htmlEntities(submission.provided),
+            htmlEntities(submission.generated_text),
             Moment(submission.date).fromNow()
           )
         );
@@ -172,6 +176,7 @@ challenge.postRender = function() {
         var entry = $(
           submission_template.format(
             htmlEntities(submission.provided),
+            htmlEntities(submission.generated_text),
             Moment(submission.date).fromNow()
           )
         );
