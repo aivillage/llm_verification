@@ -49,8 +49,7 @@ def add_routes() -> Blueprint:
     def submissions_for_challenge(challenge_id):
         """Define a route for for showing users their answer submissions."""
         # Identify the user who would like to see their answer submissions.
-        current_user = get_current_user()
-        log.debug(f'User "{current_user.name}" '
+        log.debug(f'User "{get_current_user().name}" '
                   f'requested their answer submissions for challenge "{challenge_id}"')
         log.debug(f'Configured user mode: "{get_config("user_mode")}"')
         log.debug(f'Current user mode (can be "team" or "user"): "{USERS_MODE}"')
@@ -63,12 +62,12 @@ def add_routes() -> Blueprint:
             if get_config('user_mode') == USERS_MODE:
                 # ... then define a query filter for the "user" `USER_MODE`.
                 mode_uid = ctfd_model.user_id
-                current_uid = current_user.id
+                current_uid = get_current_user().id
             # Otherwise, if CTFd's configured for "teams..."
             elif get_config('user_mode') == TEAMS_MODE:
                 # ... then define a query filter for the "team" `USER_MODE`.
                 mode_uid = ctfd_model.team_id
-                current_uid = current_user.team_id
+                current_uid = get_current_user().team_id
             # Otherwise, if CTFd's configured for neither "users" nor "teams"...
             else:
                 # ... then raise an error.
@@ -83,7 +82,7 @@ def add_routes() -> Blueprint:
                 # ... find the associated GRTSubmission so we can extract generated text for the "Previous Submissions" UI Pill.
                 associated_answer = GRTSubmission.query.filter_by(submission_id=query_result.id).first()
                 log.debug(f'Submission generated text: "{associated_answer.text}"')
-            log.debug(f'User "{current_user.name}" '
+            log.debug(f'User "{get_current_user().name}" '
                       f'has {len(submission_mappings[ctfd_model])} '
                       f'{ctfd_model.__tablename__} answer submissions for challenge "{challenge_id}"')
 
@@ -100,7 +99,7 @@ def add_routes() -> Blueprint:
                                              'correct': extracted_submissions[Solves],
                                              'awarded': extracted_submissions[Awarded],
                                              'incorrect': extracted_submissions[Fails]}}
-        log.info(f'Showed user {current_user.name} '
+        log.info(f'Showed user {get_current_user().name} '
                  f'their answer submissions for challenge "{challenge_id}"')
         return jsonify(response)
 
