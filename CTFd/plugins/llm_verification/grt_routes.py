@@ -72,6 +72,7 @@ def add_routes() -> Blueprint:
                 raise ValueError(f'Invalid user mode: "{get_config("user_mode")}" '
                                  f'is not "{USERS_MODE}" '
                                  f'or "{TEAMS_MODE}"')
+            # Query the database for the user's answer submissions for this challenge.
             submission_mappings[ctfd_model] = ctfd_model.query.filter(mode_uid == current_uid,
                                                                       ctfd_model.challenge_id == challenge_id).all()
         query_results = {Pending: None, Solves: None, Awarded: None, Fails: None}
