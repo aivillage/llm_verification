@@ -57,10 +57,10 @@ def add_routes() -> Blueprint:
         log.debug(f'Current user mode: "{USERS_MODE}"')
         if get_config('user_mode') == USERS_MODE:
             pending = Pending.query.filter_by(challenge_id=challenge_id,
-                                                    user_id=current_user.id).all()
+                                                   user_id=current_user.id).all()
         else:
             pending = Pending.query.filter_by(challenge_id=challenge_id,
-                                                    team_id=current_user.team_id).all()
+                                                   team_id=current_user.team_id).all()
 
         if get_config('user_mode') == USERS_MODE:
             correct = Solves.query.filter(Solves.user_id == current_user.id,
@@ -93,9 +93,9 @@ def add_routes() -> Blueprint:
         log.debug(f'User "{current_user.id}" has {len(incorrect)} incorrect submissions for challenge "{challenge_id}"')
         response = {'success': True,
                                     'data': {'pending': pending,
-                                                'correct': correct,
-                                                'awarded': awarded,
-                                                'incorrect': incorrect}}
+                                             'correct': correct,
+                                             'awarded': awarded,
+                                             'incorrect': incorrect}}
         log.info(f'Showed user {current_user.name} '
                  f'their answer submissions for challenge "{challenge_id}"')
         return jsonify(response)
