@@ -19,8 +19,8 @@ def initialize_grtctfd_loggers(module_name):
     # Use the module name as the logger name so this logger applies to all files in LLMV.
     log = getLogger(module_name)
     # Assume that CTFd's log folder already exists (defined in `CTFd/utils/initialization/__init__.py`) and store logfiles there.
-    log_dir = current_app.config["LOG_FOLDER"]
-    llmv_logfile = Path(log_dir, "llmv_verification.log")
+    ctfd_logdir = current_app.config["LOG_FOLDER"]
+    llmv_logfile = Path(ctfd_logdir, "llmv_verification.log")
     # Ensure that the log file exists.
     llmv_logfile.touch(exist_ok=True)
     llm_verification_log = RotatingFileHandler(llmv_logfile,
