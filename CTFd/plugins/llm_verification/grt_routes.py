@@ -93,10 +93,10 @@ def add_routes() -> Blueprint:
             log.debug(f'Extracted "{ctfd_model}" '
                       f'submissions: {answer_submissions[ctfd_model]["extracted_results"]}')
         response = {'success': True,
-                    'data': {'pending': answer_submissions[Pending]['extracted_results'],
-                             'correct': answer_submissions[Solves]['extracted_results'],
-                             'awarded': answer_submissions[Awarded]['extracted_results'],
-                             'incorrect': answer_submissions[Fails]['extracted_results']}}
+                                    'data': {'pending': answer_submissions[Pending]['extracted_results'],
+                                            'correct': answer_submissions[Solves]['extracted_results'],
+                                            'awarded': answer_submissions[Awarded]['extracted_results'],
+                                            'incorrect': answer_submissions[Fails]['extracted_results']}}
         log.info(f'Showed user "{get_current_user().name}" '
                  f'their answer submissions for challenge "{challenge_id}"')
         return jsonify(response)
