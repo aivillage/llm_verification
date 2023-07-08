@@ -79,7 +79,7 @@ def add_routes() -> Blueprint:
             submission_mappings[ctfd_model] = ctfd_model.query.filter(mode_uid == current_uid,
                                                                       ctfd_model.challenge_id == challenge_id).all()
             log.debug(f'Challenge "{challenge_id}" '
-                      f'answer submissions for model "{ctfd_model}:" '
+                      f'answer submissions for model "{ctfd_model.__tablename__}:" '
                       f'{submission_mappings[ctfd_model]}')
             # For each answer submission of a given type (e.g. "Pending", "Solves", "Awarded", "Fails")...
             for query_result in submission_mappings[ctfd_model]:
@@ -94,6 +94,9 @@ def add_routes() -> Blueprint:
             extracted_submissions[ctfd_model] = [{'provided': answer_submission.provided,
                                                   'date': isoformat(answer_submission.date)}
                                                   for answer_submission in submission_mappings[ctfd_model]]
+        for submission_type in extracted_submissions:
+            log.debug(f'Extracted "{submission_type.__tablename__}" '
+                      f'submissions: {extracted_submissions[submission_type]}')
         log.debug(f'Extracted answer submissions: {extracted_submissions}')
         response = {'success': True,
                                     'data': {'pending': extracted_submissions[Pending],
