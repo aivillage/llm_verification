@@ -59,12 +59,12 @@ def add_routes() -> Blueprint:
             # If CTFd's configured for "users..."
             if get_config('user_mode') == USERS_MODE:
                 # ... then define a query filter for the "user" `USER_MODE`.
-                model_filter = ctfd_model.user_id
+                mode_uid = ctfd_model.user_id
                 user_filter = current_user.id
             # Otherwise, if CTFd's configured for "teams..."
             elif get_config('user_mode') == TEAMS_MODE:
                 # ... then define a query filter for the "team" `USER_MODE`.
-                model_filter = ctfd_model.team_id
+                mode_uid = ctfd_model.team_id
                 user_filter = current_user.team_id
             # Otherwise, if CTFd's configured for neither "users" nor "teams"...
             else:
@@ -72,14 +72,8 @@ def add_routes() -> Blueprint:
                 raise ValueError(f'Invalid user mode: "{get_config("user_mode")}" '
                                  f'is not "{USERS_MODE}" '
                                  f'or "{TEAMS_MODE}"')
-            # If CTFd's configured for "users..."
-            if get_config('user_mode') == USERS_MODE:
-                submission_mappings[ctfd_model] = ctfd_model.query.filter(model_filter == user_filter,
-                                                                          ctfd_model.challenge_id == challenge_id).all()
-            # Otherwise, assuming that CTFd's configured for "teams..."
-            else:
-                submission_mappings[ctfd_model] = ctfd_model.query.filter(model_filter == user_filter,
-                                                                          ctfd_model.challenge_id == challenge_id).all()
+            submission_mappings[ctfd_model] = ctfd_model.query.filter(mode_uid == user_filter,
+                                                                      ctfd_model.challenge_id == challenge_id).all()
         query_results = {Pending: None, Solves: None, Awarded: None, Fails: None}
         for ctfd_model in submission_mappings:
             query_results[ctfd_model] = [{'provided': answer_submission.provided,
