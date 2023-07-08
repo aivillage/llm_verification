@@ -60,10 +60,10 @@ def add_routes() -> Blueprint:
 
         if get_config('user_mode') == USERS_MODE:
             correct = Solves.query.filter(Solves.user_id == current_user.id,
-                                                Solves.challenge_id == challenge_id).all()
+                                               Solves.challenge_id == challenge_id).all()
         else:
             correct = Solves.query.filter(Solves.team_id == current_user.team_id,
-                                                Solves.challenge_id == challenge_id).all()
+                                               Solves.challenge_id == challenge_id).all()
 
         if get_config('user_mode') == USERS_MODE:
             incorrect = Fails.query.filter(Fails.user_id == current_user.id,
