@@ -54,12 +54,13 @@ def add_routes() -> Blueprint:
         # Make a place to put answer submissions from the database.
         answer_submissions = {Pending: {'query_results': None,
                                                                         'extracted_results': None},
-                                                              Solves: {'query_results': None,
-                                                                       'extracted_results': None},
+                                                              Solves:  {'query_results': None,
+                                                                        'extracted_results': None},
                                                               Awarded: {'query_results': None,
                                                                         'extracted_results': None},
-                                                              Fails: {'query_results': None,
-                                                                      'extracted_results': None}}
+                                                              Fails:   {'query_results': None,
+                                                                        'extracted_results': None}}
+        # For each answer submission of a given type (e.g. "Pending", "Solves", "Awarded", "Fails")...
         for ctfd_model in answer_submissions:
             # If CTFd's configured for "users..."
             if get_config('user_mode') == USERS_MODE:
@@ -80,27 +81,23 @@ def add_routes() -> Blueprint:
             # Query the database for the user's answer submissions for this challenge.
             answer_submissions[ctfd_model]['query_results'] = ctfd_model.query.filter(mode_uid == current_uid,
                                                                                       ctfd_model.challenge_id == challenge_id).all()
-            # For each answer submission of a given type (e.g. "Pending", "Solves", "Awarded", "Fails")...
-            for query_result in answer_submissions[ctfd_model]['query_results']:
-                # ... find the associated GRTSubmission so we can extract generated text for the "Previous Submissions" UI Pill.
-                associated_answer = GRTSubmission.query.filter_by(submission_id=query_result.id).first()
-                log.debug(f'Submission generated text: "{associated_answer.text}"')
             log.debug(f'User "{get_current_user().name}" '
-                      f'has {len(answer_submissions[ctfd_model]["query_results"])} '
-                      f'{ctfd_model.__tablename__} answer submissions for challenge "{challenge_id}"')
-
+                      f'has {len(answer_submissions[ctfd_model]["query_results"])} "{ctfd_model}" '
+                      f'answer submissions for challenge "{challenge_id}"')
             # Extract the values of the `provided` and `date` columns from each answer submission.
             answer_submissions[ctfd_model]['extracted_results'] = [{'provided': answer_submission.provided,
-                                                                    'date': isoformat(answer_submission.date)}
-                                                                    for answer_submission in answer_submissions[ctfd_model]["query_results"]]
-        log.debug(f'Extracted "{ctfd_model.__tablename__}" '
-                  f'submissions: {answer_submissions[ctfd_model]["extracted_results"]}')
+                                                                    'date': isoformat(answer_submission.date),
+                                                                    'generated_text': GRTSubmission.query.filter_by(submission_id=answer_submission.id).first().text}
+                                                                    for answer_submission 
+                                                                    in answer_submissions[ctfd_model]["query_results"]]
+            log.debug(f'Extracted "{ctfd_model}" '
+                      f'submissions: {answer_submissions[ctfd_model]["extracted_results"]}')
         response = {'success': True,
                     'data': {'pending': answer_submissions[Pending]['extracted_results'],
                              'correct': answer_submissions[Solves]['extracted_results'],
                              'awarded': answer_submissions[Awarded]['extracted_results'],
                              'incorrect': answer_submissions[Fails]['extracted_results']}}
-        log.info(f'Showed user {get_current_user().name} '
+        log.info(f'Showed user "{get_current_user().name}" '
                  f'their answer submissions for challenge "{challenge_id}"')
         return jsonify(response)
 
