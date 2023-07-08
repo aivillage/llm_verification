@@ -160,9 +160,9 @@ def add_routes() -> Blueprint:
                                                                                         .all())
         log.info(f'Showed (admin) solved answer submissions')
         return render_template('solved_submissions.html',
-                                submissions=submissions,
-                                page_count=page_count,
-                                curr_page=curr_page)
+                               submissions=submissions,
+                               page_count=page_count,
+                               curr_page=curr_page)
 
     @llm_verifications.route('/admin/verify_submissions/<submission_id>/<status>', methods=['POST'])
     @admins_only
@@ -172,62 +172,62 @@ def add_routes() -> Blueprint:
         grt_submission = GRTSubmission.query.filter_by(id=submission_id).first_or_404()
         if status == 'solve':
             solve = Solves(user_id=submission.user_id,
-                            team_id=submission.team_id,
-                            challenge_id=submission.challenge_id,
-                            ip=submission.ip,
-                            provided=submission.provided,
-                            date=submission.date)
+                           team_id=submission.team_id,
+                           challenge_id=submission.challenge_id,
+                           ip=submission.ip,
+                           provided=submission.provided,
+                           date=submission.date)
             db.session.add(solve)
             # Get rid of pending submissions for the challenge
             Submissions.query.filter(Submissions.challenge_id == submission.challenge_id,
-                                        Submissions.team_id == submission.team_id,
-                                        Submissions.user_id == submission.user_id,
-                                        Submissions.type == 'pending').delete()
+                                     Submissions.team_id == submission.team_id,
+                                     Submissions.user_id == submission.user_id,
+                                     Submissions.type == 'pending').delete()
             solve = GRTSolves(success=True,
-                                challenge_id=submission.challenge_id,
-                                text=grt_submission.text,
-                                prompt=grt_submission.prompt,
-                                date=submission.date,
-                                user_id=submission.user_id,
-                                team_id=submission.team_id)
+                              challenge_id=submission.challenge_id,
+                              text=grt_submission.text,
+                              prompt=grt_submission.prompt,
+                              date=submission.date,
+                              user_id=submission.user_id,
+                              team_id=submission.team_id)
             db.session.add(solve)
         elif status == 'award':
             awarded = Awarded(user_id=submission.user_id,
-                                team_id=submission.team_id,
-                                challenge_id=submission.challenge_id,
-                                ip=submission.ip,
-                                provided=submission.provided)
+                              team_id=submission.team_id,
+                              challenge_id=submission.challenge_id,
+                              ip=submission.ip,
+                              provided=submission.provided)
             award = Awards(user_id=submission.user_id,
-                            team_id=submission.team_id,
-                            name='Submission',
-                            description='Correct Submission for {name}'.format(name=submission.challenge.name),
-                            value=request.args.get('value', 0),
-                            category=submission.challenge.category)
+                           team_id=submission.team_id,
+                           name='Submission',
+                           description='Correct Submission for {name}'.format(name=submission.challenge.name),
+                           value=request.args.get('value', 0),
+                           category=submission.challenge.category)
             db.session.add(awarded)
             db.session.add(award)
             solve = GRTSolves(success=True,
-                                challenge_id=submission.challenge_id,
-                                text=grt_submission.text,
-                                prompt=grt_submission.prompt,
-                                date=submission.date,
-                                user_id=submission.user_id,
-                                team_id=submission.team_id)
+                              challenge_id=submission.challenge_id,
+                              text=grt_submission.text,
+                              prompt=grt_submission.prompt,
+                              date=submission.date,
+                              user_id=submission.user_id,
+                              team_id=submission.team_id)
             db.session.add(solve)
         elif status == 'fail':
             wrong = Fails(user_id=submission.user_id,
-                            team_id=submission.team_id,
-                            challenge_id=submission.challenge_id,
-                            ip=submission.ip,
-                            provided=submission.provided,
-                            date=submission.date)
+                          team_id=submission.team_id,
+                          challenge_id=submission.challenge_id,
+                          ip=submission.ip,
+                          provided=submission.provided,
+                          date=submission.date)
             db.session.add(wrong)
             solve = GRTSolves(success=False,
-                                challenge_id=submission.challenge_id,
-                                text=grt_submission.text,
-                                prompt=grt_submission.prompt,
-                                date=submission.date,
-                                user_id=submission.user_id,
-                                team_id=submission.team_id)
+                              challenge_id=submission.challenge_id,
+                              text=grt_submission.text,
+                              prompt=grt_submission.prompt,
+                              date=submission.date,
+                              user_id=submission.user_id,
+                              team_id=submission.team_id)
             db.session.add(solve)
         else:
             return jsonify({'success': False})
