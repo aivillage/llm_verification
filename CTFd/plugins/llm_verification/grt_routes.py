@@ -60,19 +60,19 @@ def add_routes() -> Blueprint:
             if get_config('user_mode') == USERS_MODE:
                 # ... then define a query filter for the "user" `USER_MODE`.
                 mode_uid = ctfd_model.user_id
-                user_filter = current_user.id
+                current_uid = current_user.id
             # Otherwise, if CTFd's configured for "teams..."
             elif get_config('user_mode') == TEAMS_MODE:
                 # ... then define a query filter for the "team" `USER_MODE`.
                 mode_uid = ctfd_model.team_id
-                user_filter = current_user.team_id
+                current_uid = current_user.team_id
             # Otherwise, if CTFd's configured for neither "users" nor "teams"...
             else:
                 # ... then raise an error.
                 raise ValueError(f'Invalid user mode: "{get_config("user_mode")}" '
                                  f'is not "{USERS_MODE}" '
                                  f'or "{TEAMS_MODE}"')
-            submission_mappings[ctfd_model] = ctfd_model.query.filter(mode_uid == user_filter,
+            submission_mappings[ctfd_model] = ctfd_model.query.filter(mode_uid == current_uid,
                                                                       ctfd_model.challenge_id == challenge_id).all()
         query_results = {Pending: None, Solves: None, Awarded: None, Fails: None}
         for ctfd_model in submission_mappings:
