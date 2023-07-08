@@ -31,7 +31,6 @@ def add_routes() -> Blueprint:
     def generate_for_challenge():
         """Add a route to CTFd for generating text from a prompt."""
         challenge = LlmChallenge.query.filter_by(id=request.json['challenge_id']).first_or_404()
-        #client_llm = ClientLLM(host='127.0.0.1', port=50055)
         preprompt = challenge.preprompt
         complete_prompt = preprompt + request.json['prompt']
         try:
