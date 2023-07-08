@@ -51,6 +51,10 @@ def add_routes() -> Blueprint:
         """Define a route for for showing users their answer submissions."""
         # Identify the user who would like to see their answer submissions.
         current_user = get_current_user()
+        log.debug(f'User "{current_user.name}" '
+                  f'requested their answer submissions for challenge "{challenge_id}"')
+        log.debug(f'Configured user mode: "{get_config("user_mode")}"')
+        log.debug(f'Current user mode: "{USERS_MODE}"')
         if get_config('user_mode') == USERS_MODE:
             pending = Pending.query.filter_by(challenge_id=challenge_id,
                                                     user_id=current_user.id).all()
@@ -92,8 +96,8 @@ def add_routes() -> Blueprint:
                                                 'correct': correct,
                                                 'awarded': awarded,
                                                 'incorrect': incorrect}}
-        log.info(f'Showed user {current_user.id} '
-                    f'their answer submissions for challenge "{challenge_id}"')
+        log.info(f'Showed user {current_user.name} '
+                 f'their answer submissions for challenge "{challenge_id}"')
         return jsonify(response)
 
     @llm_verifications.route('/admin/submissions/pending', methods=['GET'])
