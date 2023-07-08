@@ -55,6 +55,8 @@ def add_routes() -> Blueprint:
         log.debug(f'Configured user mode: "{get_config("user_mode")}"')
         log.debug(f'Current user mode (can be "team" or "user"): "{USERS_MODE}"')
         submission_mappings = {Pending: None, Solves: None, Awarded: None, Fails: None}
+        # Make a place to put extracted values from each answer submission.
+        extracted_submissions = {Pending: None, Solves: None, Awarded: None, Fails: None}
         for ctfd_model in submission_mappings:
             # If CTFd's configured for "users..."
             if get_config('user_mode') == USERS_MODE:
@@ -75,19 +77,18 @@ def add_routes() -> Blueprint:
             # Query the database for the user's answer submissions for this challenge.
             submission_mappings[ctfd_model] = ctfd_model.query.filter(mode_uid == current_uid,
                                                                       ctfd_model.challenge_id == challenge_id).all()
-        query_results = {Pending: None, Solves: None, Awarded: None, Fails: None}
-        for ctfd_model in submission_mappings:
-            query_results[ctfd_model] = [{'provided': answer_submission.provided,
-                                          'date': isoformat(answer_submission.date)}
-                                         for answer_submission in submission_mappings[ctfd_model]]
+            # Extract the values of the `provided` and `date` columns from each answer submission.
+            extracted_submissions[ctfd_model] = [{'provided': answer_submission.provided,
+                                                  'date': isoformat(answer_submission.date)}
+                                                  for answer_submission in submission_mappings[ctfd_model]]
             log.debug(f'User "{current_user.name}" '
-                      f'has {len(query_results[ctfd_model])} '
+                      f'has {len(extracted_submissions[ctfd_model])} '
                       f'{ctfd_model.__tablename__} submissions for challenge "{challenge_id}"')
         response = {'success': True,
-                                    'data': {'pending': query_results[Pending],
-                                             'correct': query_results[Solves],
-                                             'awarded': query_results[Awarded],
-                                             'incorrect': query_results[Fails]}}
+                                    'data': {'pending': extracted_submissions[Pending],
+                                             'correct': extracted_submissions[Solves],
+                                             'awarded': extracted_submissions[Awarded],
+                                             'incorrect': extracted_submissions[Fails]}}
         log.info(f'Showed user {current_user.name} '
                  f'their answer submissions for challenge "{challenge_id}"')
         return jsonify(response)
