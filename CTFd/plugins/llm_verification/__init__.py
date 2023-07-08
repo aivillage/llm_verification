@@ -24,24 +24,23 @@ from .llmv_logger import initialize_grtctfd_loggers
 from .config_manager import load_llmv_config
 
 
+log = getLogger(__name__)
+
 def load(app):
     """Load plugin config from TOML file and register plugin assets."""
     print('Loading LLM Verification Plugin')
     # Get the logger for the LLM Verification plugin.
-    log = initialize_grtctfd_loggers()
-    # Ensure that the configuration file for the LLM Verification Plugin exists.
-    llmv_config = load_llmv_config()
-    log.debug('Starting CTFd database migrations')
+    log = initialize_grtctfd_loggers(module_name=__name__)
     # Perform database migrations (if necessary).
     ctfd_migrations()
-    log.debug('Completed CTFd database migrations')
+    log.debug('Performed CTFd database migrations')
     CHALLENGE_CLASSES['llm_verification'] = LlmSubmissionChallenge
     register_plugin_assets_directory(app, base_path='/plugins/llm_verification/assets/')
-    log.debug('Registered plugin assets directory for LLM Verification Plugin')
+    log.debug('Registered LLMV plugin assets directory with CTFd')
     llm_verifications = Blueprint('llm_verifications', __name__, template_folder='templates')
-    log.debug('Registered blueprints for LLM Verification Plugin')
+    log.debug('Registered LLMV blueprints with CTFd')
     # Open the llm_config.toml file and get the host and port
-    log.info('Loaded LLM Verification Plugin')
+    log.info('Loaded LLM Verification Plugin "LLMV"')
 
     @llm_verifications.route('/generate', methods=['POST'])
     @bypass_csrf_protection
