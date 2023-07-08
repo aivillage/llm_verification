@@ -72,10 +72,10 @@ def add_routes() -> Blueprint:
                       f'answer submissions for challenge "{challenge_id}"')
             # Extract the values of the `provided` and `date` columns from each answer submission.
             answer_submissions[submission_type]['extracted_results'] = [{'provided': answer_submission.provided,
-                                                                    'date': isoformat(answer_submission.date),
-                                                                    'generated_text': GRTSubmission.query.filter_by(submission_id=answer_submission.id).first().text}
-                                                                    for answer_submission 
-                                                                    in answer_submissions[submission_type]["query_results"]]
+                                                                         'date': isoformat(answer_submission.date),
+                                                                         'generated_text': GRTSubmission.query.filter_by(submission_id=answer_submission.id).first().text}
+                                                                         for answer_submission 
+                                                                         in answer_submissions[submission_type]["query_results"]]
             log.debug(f'Extracted "{submission_type}" '
                       f'submissions: {answer_submissions[submission_type]["extracted_results"]}')
         response = {'success': True,
