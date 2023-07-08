@@ -52,9 +52,13 @@ def add_routes() -> Blueprint:
         log.debug(f'User "{get_current_user().name}" '
                   f'requested their answer submissions for challenge "{challenge_id}"')
         # Make a place to put answer submissions from the database.
-        answer_submissions = {Pending: None, Solves: None, Awarded: None, Fails: None}
+        answer_submissions = {Pending: {'query_results': None},
+                                                              Solves: {'query_results': None},
+                                                              Awarded: {'query_results': None},
+                                                              Fails: {'query_results': None}}
         # Make a place to put extracted values from each answer submission.
         extracted_submissions = {Pending: None, Solves: None, Awarded: None, Fails: None}
+
         for ctfd_model in answer_submissions:
             # If CTFd's configured for "users..."
             if get_config('user_mode') == USERS_MODE:
@@ -73,21 +77,21 @@ def add_routes() -> Blueprint:
                                  f'is not "{USERS_MODE}" '
                                  f'or "{TEAMS_MODE}"')
             # Query the database for the user's answer submissions for this challenge.
-            answer_submissions[ctfd_model] = ctfd_model.query.filter(mode_uid == current_uid,
-                                                                      ctfd_model.challenge_id == challenge_id).all()
+            answer_submissions[ctfd_model]['query_results'] = ctfd_model.query.filter(mode_uid == current_uid,
+                                                                                      ctfd_model.challenge_id == challenge_id).all()
             # For each answer submission of a given type (e.g. "Pending", "Solves", "Awarded", "Fails")...
-            for query_result in answer_submissions[ctfd_model]:
+            for query_result in answer_submissions[ctfd_model]['query_results']:
                 # ... find the associated GRTSubmission so we can extract generated text for the "Previous Submissions" UI Pill.
                 associated_answer = GRTSubmission.query.filter_by(submission_id=query_result.id).first()
                 log.debug(f'Submission generated text: "{associated_answer.text}"')
             log.debug(f'User "{get_current_user().name}" '
-                      f'has {len(answer_submissions[ctfd_model])} '
+                      f'has {len(answer_submissions[ctfd_model]["query_results"])} '
                       f'{ctfd_model.__tablename__} answer submissions for challenge "{challenge_id}"')
 
             # Extract the values of the `provided` and `date` columns from each answer submission.
             extracted_submissions[ctfd_model] = [{'provided': answer_submission.provided,
                                                   'date': isoformat(answer_submission.date)}
-                                                  for answer_submission in answer_submissions[ctfd_model]]
+                                                  for answer_submission in answer_submissions[ctfd_model]["query_results"]]
         for submission_type in extracted_submissions:
             log.debug(f'Extracted "{submission_type.__tablename__}" '
                       f'submissions: {extracted_submissions[submission_type]}')
