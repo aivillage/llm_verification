@@ -84,6 +84,7 @@ def add_routes() -> Blueprint:
             log.debug(f'User "{current_user.name}" '
                       f'has {len(extracted_submissions[ctfd_model])} '
                       f'{ctfd_model.__tablename__} submissions for challenge "{challenge_id}"')
+        log.debug(f'Extracted answer submissions: {extracted_submissions}')
         response = {'success': True,
                                     'data': {'pending': extracted_submissions[Pending],
                                              'correct': extracted_submissions[Solves],
