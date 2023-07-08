@@ -58,12 +58,12 @@ def add_routes() -> Blueprint:
 
         # If CTFd's configured for "users..."
         if get_config('user_mode') == USERS_MODE:
-            pending = Pending.query.filter_by(user_id=current_user.id,
-                                                   challenge_id=challenge_id).all()
+            pending = Pending.query.filter(Pending.user_id == current_user.id,
+                                                Pending.challenge_id == challenge_id).all()
         # Otherwise, assuming that CTFd's configured for "teams..."
         else:
-            pending = Pending.query.filter_by(team_id=current_user.team_id,
-                                                   challenge_id=challenge_id).all()
+            pending = Pending.query.filter(Pending.team_id == current_user.team_id,
+                                                Pending.challenge_id == challenge_id).all()
 
         # If CTFd's configured for "users..."
         if get_config('user_mode') == USERS_MODE:
