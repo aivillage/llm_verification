@@ -55,30 +55,39 @@ def add_routes() -> Blueprint:
                   f'requested their answer submissions for challenge "{challenge_id}"')
         log.debug(f'Configured user mode: "{get_config("user_mode")}"')
         log.debug(f'Current user mode: "{USERS_MODE}"')
+
+        # If CTFd's configured for "users..."
         if get_config('user_mode') == USERS_MODE:
             pending = Pending.query.filter_by(challenge_id=challenge_id,
                                                    user_id=current_user.id).all()
+        # Otherwise, assuming that CTFd's configured for "teams..."
         else:
             pending = Pending.query.filter_by(challenge_id=challenge_id,
                                                    team_id=current_user.team_id).all()
 
+        # If CTFd's configured for "users..."
         if get_config('user_mode') == USERS_MODE:
             correct = Solves.query.filter(Solves.user_id == current_user.id,
                                                Solves.challenge_id == challenge_id).all()
+        # Otherwise, assuming that CTFd's configured for "teams..."
         else:
             correct = Solves.query.filter(Solves.team_id == current_user.team_id,
                                                Solves.challenge_id == challenge_id).all()
 
+        # If CTFd's configured for "users..."
         if get_config('user_mode') == USERS_MODE:
             incorrect = Fails.query.filter(Fails.user_id == current_user.id,
                                                 Fails.challenge_id == challenge_id).all()
+        # Otherwise, assuming that CTFd's configured for "teams..."
         else:
             incorrect = Fails.query.filter(Fails.team_id == current_user.team_id,
                                                 Fails.challenge_id == challenge_id).all()
 
+        # If CTFd's configured for "users..."
         if get_config('user_mode') == USERS_MODE:
             awarded = Awarded.query.filter(Awarded.user_id == current_user.id,
                                                 Awarded.challenge_id == challenge_id).all()
+        # Otherwise, assuming that CTFd's configured for "teams..."
         else:
             awarded = Awarded.query.filter(Awarded.team_id == current_user.team_id,
                                                 Awarded.challenge_id == challenge_id).all()
