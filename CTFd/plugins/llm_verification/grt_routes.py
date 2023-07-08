@@ -52,13 +52,14 @@ def add_routes() -> Blueprint:
         log.debug(f'User "{get_current_user().name}" '
                   f'requested their answer submissions for challenge "{challenge_id}"')
         # Make a place to put answer submissions from the database.
-        answer_submissions = {Pending: {'query_results': None},
-                                                              Solves: {'query_results': None},
-                                                              Awarded: {'query_results': None},
-                                                              Fails: {'query_results': None}}
-        # Make a place to put extracted values from each answer submission.
-        extracted_submissions = {Pending: None, Solves: None, Awarded: None, Fails: None}
-
+        answer_submissions = {Pending: {'query_results': None,
+                                                                        'extracted_results': None},
+                                                              Solves: {'query_results': None,
+                                                                       'extracted_results': None},
+                                                              Awarded: {'query_results': None,
+                                                                        'extracted_results': None},
+                                                              Fails: {'query_results': None,
+                                                                      'extracted_results': None}}
         for ctfd_model in answer_submissions:
             # If CTFd's configured for "users..."
             if get_config('user_mode') == USERS_MODE:
@@ -89,18 +90,16 @@ def add_routes() -> Blueprint:
                       f'{ctfd_model.__tablename__} answer submissions for challenge "{challenge_id}"')
 
             # Extract the values of the `provided` and `date` columns from each answer submission.
-            extracted_submissions[ctfd_model] = [{'provided': answer_submission.provided,
-                                                  'date': isoformat(answer_submission.date)}
-                                                  for answer_submission in answer_submissions[ctfd_model]["query_results"]]
-        for submission_type in extracted_submissions:
-            log.debug(f'Extracted "{submission_type.__tablename__}" '
-                      f'submissions: {extracted_submissions[submission_type]}')
-        log.debug(f'Extracted answer submissions: {extracted_submissions}')
+            answer_submissions[ctfd_model]['extracted_results'] = [{'provided': answer_submission.provided,
+                                                                    'date': isoformat(answer_submission.date)}
+                                                                    for answer_submission in answer_submissions[ctfd_model]["query_results"]]
+        log.debug(f'Extracted "{ctfd_model.__tablename__}" '
+                  f'submissions: {answer_submissions[ctfd_model]["extracted_results"]}')
         response = {'success': True,
-                                    'data': {'pending': extracted_submissions[Pending],
-                                             'correct': extracted_submissions[Solves],
-                                             'awarded': extracted_submissions[Awarded],
-                                             'incorrect': extracted_submissions[Fails]}}
+                    'data': {'pending': answer_submissions[Pending]['extracted_results'],
+                             'correct': answer_submissions[Solves]['extracted_results'],
+                             'awarded': answer_submissions[Awarded]['extracted_results'],
+                             'incorrect': answer_submissions[Fails]['extracted_results']}}
         log.info(f'Showed user {get_current_user().name} '
                  f'their answer submissions for challenge "{challenge_id}"')
         return jsonify(response)
