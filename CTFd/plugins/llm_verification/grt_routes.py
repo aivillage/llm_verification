@@ -52,30 +52,26 @@ def add_routes() -> Blueprint:
         log.debug(f'User "{get_current_user().name}" '
                   f'requested their answer submissions for challenge "{challenge_id}"')
         # Make a place to put answer submissions from the database.
-        answer_submissions = {Pending: {'query_results': None,
-                                                                        'extracted_results': None},
-                                                              Solves:  {'query_results': None,
-                                                                        'extracted_results': None},
-                                                              Awarded: {'query_results': None,
-                                                                        'extracted_results': None},
-                                                              Fails:   {'query_results': None,
-                                                                        'extracted_results': None}}
+        answer_submissions = {Pending: {'extracted_results': None},
+                                                              Solves:  {'extracted_results': None},
+                                                              Awarded: {'extracted_results': None},
+                                                              Fails:   {'extracted_results': None}}
         # For each answer submission of a given type (e.g. "Pending", "Solves", "Awarded", "Fails")...
         for submission_type in answer_submissions:
             # Define query filters for the current user/team and the current user/team's ID.
             mode_uid, current_uid = get_filter_by_mode(submission_type)
             # Query the database for the user's answer submissions for this challenge.
-            answer_submissions[submission_type]['query_results'] = submission_type.query.filter(mode_uid == current_uid,
-                                                                                                submission_type.challenge_id == challenge_id).all()
+            query_results = submission_type.query.filter(mode_uid == current_uid,
+                                                              submission_type.challenge_id == challenge_id).all()
             log.debug(f'User "{get_current_user().name}" '
-                      f'has {len(answer_submissions[submission_type]["query_results"])} "{submission_type}" '
+                      f'has {len(query_results)} "{submission_type}" '
                       f'answer submissions for challenge "{challenge_id}"')
             # Extract the values of the `provided` and `date` columns from each answer submission.
             answer_submissions[submission_type]['extracted_results'] = [{'provided': answer_submission.provided,
                                                                          'date': isoformat(answer_submission.date),
                                                                          'generated_text': GRTSubmission.query.filter_by(submission_id=answer_submission.id).first().text}
                                                                          for answer_submission 
-                                                                         in answer_submissions[submission_type]["query_results"]]
+                                                                         in query_results]
             log.debug(f'Extracted "{submission_type}" '
                       f'submissions: {answer_submissions[submission_type]["extracted_results"]}')
         response = {'success': True,
