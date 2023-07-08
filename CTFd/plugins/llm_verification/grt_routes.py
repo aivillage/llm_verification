@@ -54,6 +54,7 @@ def add_routes() -> Blueprint:
                   f'requested their answer submissions for challenge "{challenge_id}"')
         log.debug(f'Configured user mode: "{get_config("user_mode")}"')
         log.debug(f'Current user mode (can be "team" or "user"): "{USERS_MODE}"')
+        # Make a place to put answer submissions from the database.
         submission_mappings = {Pending: None, Solves: None, Awarded: None, Fails: None}
         # Make a place to put extracted values from each answer submission.
         extracted_submissions = {Pending: None, Solves: None, Awarded: None, Fails: None}
