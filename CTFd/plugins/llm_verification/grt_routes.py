@@ -55,7 +55,6 @@ def add_routes() -> Blueprint:
                   f'requested their answer submissions for challenge "{challenge_id}"')
         log.debug(f'Configured user mode: "{get_config("user_mode")}"')
         log.debug(f'Current user mode: "{USERS_MODE}"')
-
         submission_mappings = {Pending: None, Solves: None, Awarded: None, Fails: None}
         for ctfd_model in submission_mappings:
             # If CTFd's configured for "users..."
@@ -66,20 +65,19 @@ def add_routes() -> Blueprint:
             else:
                 submission_mappings[ctfd_model] = ctfd_model.query.filter(ctfd_model.team_id == current_user.team_id,
                                                                           ctfd_model.challenge_id == challenge_id).all()
-
-        pending = [{'provided': p.provided, 'date': isoformat(p.date)} for p in submission_mappings[Pending]]
-        log.debug(f'User "{current_user.id}" has {len(pending)} pending submissions for challenge "{challenge_id}"')
-        correct = [{'provided': c.provided, 'date': isoformat(c.date)} for c in submission_mappings[Solves]]
-        log.debug(f'User "{current_user.id}" has {len(correct)} correct submissions for challenge "{challenge_id}"')
-        awarded = [{'provided': a.provided, 'date': isoformat(a.date)} for a in submission_mappings[Awarded]]
-        log.debug(f'User "{current_user.id}" has {len(awarded)} awarded submissions for challenge "{challenge_id}"')
-        incorrect = [{'provided': i.provided, 'date': isoformat(i.date)} for i in submission_mappings[Fails]]
-        log.debug(f'User "{current_user.id}" has {len(incorrect)} incorrect submissions for challenge "{challenge_id}"')
+        query_results = {Pending: None, Solves: None, Awarded: None, Fails: None}
+        for ctfd_model in submission_mappings:
+            query_results[ctfd_model] = [{'provided': answer_submission.provided,
+                                          'date': isoformat(answer_submission.date)}
+                                         for answer_submission in submission_mappings[ctfd_model]]
+            log.debug(f'User "{current_user.name}" '
+                      f'has {len(query_results[ctfd_model])} '
+                      f'{ctfd_model.__tablename__} submissions for challenge "{challenge_id}"')
         response = {'success': True,
-                                    'data': {'pending': pending,
-                                             'correct': correct,
-                                             'awarded': awarded,
-                                             'incorrect': incorrect}}
+                                    'data': {'pending': query_results[Pending],
+                                             'correct': query_results[Solves],
+                                             'awarded': query_results[Awarded],
+                                             'incorrect': query_results[Fails]}}
         log.info(f'Showed user {current_user.name} '
                  f'their answer submissions for challenge "{challenge_id}"')
         return jsonify(response)
