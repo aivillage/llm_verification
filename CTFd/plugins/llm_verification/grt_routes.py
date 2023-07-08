@@ -151,12 +151,12 @@ def add_routes() -> Blueprint:
                                                         Challenges.name.label('challenge_name'),
                                                         Challenges.description.label('challenge_description'),
                                                         Model.name.label('team_name')).select_from(GRTSolves)
-                                                                                        .filter_by(**filters)
-                                                                                        .join(Challenges)
-                                                                                        .join(Model)
-                                                                                        .order_by(GRTSolves.date.desc())
-                                                                                        .slice(page_start, page_end)
-                                                                                        .all())
+                                                                                      .filter_by(**filters)
+                                                                                      .join(Challenges)
+                                                                                      .join(Model)
+                                                                                      .order_by(GRTSolves.date.desc())
+                                                                                      .slice(page_start, page_end)
+                                                                                      .all())
         log.info(f'Showed (admin) solved answer submissions')
         return render_template('solved_submissions.html',
                                submissions=submissions,
