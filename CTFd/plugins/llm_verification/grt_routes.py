@@ -61,23 +61,23 @@ def add_routes() -> Blueprint:
                                                               Fails:   {'query_results': None,
                                                                         'extracted_results': None}}
         # For each answer submission of a given type (e.g. "Pending", "Solves", "Awarded", "Fails")...
-        for ctfd_model in answer_submissions:
+        for submission_type in answer_submissions:
             # Define query filters for the current user/team and the current user/team's ID.
-            mode_uid, current_uid = get_filter_by_mode(ctfd_model)
+            mode_uid, current_uid = get_filter_by_mode(submission_type)
             # Query the database for the user's answer submissions for this challenge.
-            answer_submissions[ctfd_model]['query_results'] = ctfd_model.query.filter(mode_uid == current_uid,
-                                                                                      ctfd_model.challenge_id == challenge_id).all()
+            answer_submissions[submission_type]['query_results'] = submission_type.query.filter(mode_uid == current_uid,
+                                                                                                submission_type.challenge_id == challenge_id).all()
             log.debug(f'User "{get_current_user().name}" '
-                      f'has {len(answer_submissions[ctfd_model]["query_results"])} "{ctfd_model}" '
+                      f'has {len(answer_submissions[submission_type]["query_results"])} "{submission_type}" '
                       f'answer submissions for challenge "{challenge_id}"')
             # Extract the values of the `provided` and `date` columns from each answer submission.
-            answer_submissions[ctfd_model]['extracted_results'] = [{'provided': answer_submission.provided,
+            answer_submissions[submission_type]['extracted_results'] = [{'provided': answer_submission.provided,
                                                                     'date': isoformat(answer_submission.date),
                                                                     'generated_text': GRTSubmission.query.filter_by(submission_id=answer_submission.id).first().text}
                                                                     for answer_submission 
-                                                                    in answer_submissions[ctfd_model]["query_results"]]
-            log.debug(f'Extracted "{ctfd_model}" '
-                      f'submissions: {answer_submissions[ctfd_model]["extracted_results"]}')
+                                                                    in answer_submissions[submission_type]["query_results"]]
+            log.debug(f'Extracted "{submission_type}" '
+                      f'submissions: {answer_submissions[submission_type]["extracted_results"]}')
         response = {'success': True,
                                     'data': {'pending': answer_submissions[Pending]['extracted_results'],
                                              'correct': answer_submissions[Solves]['extracted_results'],
