@@ -109,22 +109,22 @@ def add_routes() -> Blueprint:
         page_count = int(sub_count / results_per_page) + (sub_count % results_per_page > 0)
         Model = get_model()
         submissions = (Submissions.query.add_columns(Submissions.id,
-                                                            Submissions.type,
-                                                            Submissions.challenge_id,
-                                                            Submissions.provided,
-                                                            Submissions.account_id,
-                                                            Submissions.date,
-                                                            Challenges.name.label('challenge_name'),
-                                                            Model.name.label('team_name'),
-                                                            GRTSubmission.prompt,
-                                                            GRTSubmission.text).select_from(Submissions)
-                                                                                .filter_by(**filters)
-                                                                                .join(Challenges)
-                                                                                .join(Model)
-                                                                                .join(GRTSubmission, GRTSubmission.id == Submissions.id)
-                                                                                .order_by(Submissions.date.desc())
-                                                                                .slice(page_start, page_end)
-                                                                                .all())
+                                                          Submissions.type,
+                                                          Submissions.challenge_id,
+                                                          Submissions.provided,
+                                                          Submissions.account_id,
+                                                          Submissions.date,
+                                                          Challenges.name.label('challenge_name'),
+                                                          Model.name.label('team_name'),
+                                                          GRTSubmission.prompt,
+                                                          GRTSubmission.text).select_from(Submissions)
+                                                                             .filter_by(**filters)
+                                                                             .join(Challenges)
+                                                                             .join(Model)
+                                                                             .join(GRTSubmission, GRTSubmission.id == Submissions.id)
+                                                                             .order_by(Submissions.date.desc())
+                                                                             .slice(page_start, page_end)
+                                                                             .all())
         log.info(f'Showed (admin) {len(submissions)} pending answer submissions')
         return render_template('verify_submissions.html',
                                 submissions=submissions,
