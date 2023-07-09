@@ -60,14 +60,16 @@ def retrieve_submissions(submission_type, challenge_id, user_id) -> list[dict[st
               f'has {len(query_results)} "{submission_type}" '
               f'answer submissions for challenge "{challenge_id}"')
     answer_submissions = []
+    # For each answer submission that was submitted for this submission type (`e.g.` `Pending`, `Solves`, `Awarded`, or `Fails`)...`):
     for answer_submission in query_results:
+        # ... retrieve the answer submissions's corresponding GRTSubmission entry.
         answer_query = GRTSubmission.query.filter_by(submission_id=answer_submission.id).first()
         if answer_query == None:
             log.warn(f'Found no GRTSubmission entry for answer submission "{answer_submission.id}" '
                      f'on challenge "{challenge_id}" '
                      f'for user "{get_current_user().name}," '
-                     f'so defaultingt to "None" for the "prompt" and "generated_text" fields.')
-        # Extract the values of the `provided` and `date` columns from each answer submission.
+                     f'so defaulting to "None" for the "prompt" and "generated_text" fields.')
+        # Extract the answer submission's prompt and the text that it generated.
         answer_submissions.append({'prompt': answer_query.prompt if answer_query else 'None',
                                    'date': isoformat(answer_submission.date),
                                    'generated_text': answer_query.text if answer_query else 'None'})
