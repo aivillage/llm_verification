@@ -9,6 +9,9 @@ from requests.exceptions import HTTPError
 # LLM Verification Plugin module imports.
 from .config_manager import load_llmv_config
 
+
+log = getLogger(__name__)
+
 def generate_text(prompt):
     """Generate text from a prompt using the EleutherAI GPT-NeoX-20B model.
 
