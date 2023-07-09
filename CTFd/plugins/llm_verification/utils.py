@@ -63,7 +63,7 @@ def retrieve_submissions(submission_type, challenge_id, user_id) -> list[dict[st
     for answer_submission in query_results:
         answer_query = GRTSubmission.query.filter_by(submission_id=answer_submission.id).first()
         # Extract the values of the `provided` and `date` columns from each answer submission.
-        answer_submissions.append({'provided': answer_submission.provided,
+        answer_submissions.append({'prompt': answer_query.prompt,
                                    'date': isoformat(answer_submission.date),
                                    'generated_text': answer_query.text})
     log.debug(f'Extracted "{submission_type}" '
