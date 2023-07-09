@@ -42,14 +42,13 @@ def get_filter_by_mode(ctfd_model):
     return mode_uid, current_uid
 
 
-def retrieve_submissions(submission_type, challenge_id, user_id) -> list[dict[str, str]]:
+def retrieve_submissions(submission_type, challenge_id) -> list[dict[str, str]]:
     """Query the database for a user's answer submissions to a challenge.
 
     Arguments:
         submission_type(CTFd model, required): Type of answer submission.
             Choose from `Pending`, `Solves`, `Awarded`, or `Fails`.
         challenge_id(int, required): ID of the challenge that answers were submitted for.
-        user_id(int, required): ID of the user who submitted answers to the challenge.
     """
     # Create answer-submission-type-specific query filters for the current user/team.
     mode_uid, current_uid = get_filter_by_mode(ctfd_model=submission_type)

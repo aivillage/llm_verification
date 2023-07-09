@@ -64,8 +64,7 @@ def add_routes() -> Blueprint:
                   f'requested their answer submissions for challenge "{challenge_id}"')
         # Query the database for the user's answer submissions for this challenge.
         collected_submissions = {type_label: retrieve_submissions(submission_type=submission_type,
-                                                                  challenge_id=challenge_id,
-                                                                  user_id=get_current_user().id)
+                                                                  challenge_id=challenge_id)
                                  for type_label, submission_type in (('pending', Pending),
                                                                      ('correct', Solves),
                                                                      ('awarded', Awarded),
