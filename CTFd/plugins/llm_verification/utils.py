@@ -83,10 +83,14 @@ def retrieve_submissions(submission_type, challenge_id) -> list[dict[str, str]]:
         if issubclass(submission_type, Pending):
             # ... retrieve the answer submissions's corresponding GRTSubmission entry.
             answer_query = GRTSubmission.query.filter_by(submission_id=answer_submission.id).first()
+            # Pending answer submissions haven't been graded yet.
+            date_graded = None
         # Otherwise, if the submission type is "awarded," "fails," or "solves"...
         elif issubclass(submission_type, (Awarded, Fails, Solves)):
             # ... retrieve the answer submissions's corresponding GRTSolves entry.
             answer_query = GRTSolves.query.filter_by(challenge_id=challenge_id).first()
+            # Retrieve the date that the answer submission was graded.
+            date_graded = isoformat(answer_query.date)
         else:
             raise TypeError(f'Submission type: "{submission_type}" '
                             f'is not an instance of "{Pending}," "{Solves}," "{Awarded}," or "{Fails}"')
@@ -96,7 +100,8 @@ def retrieve_submissions(submission_type, challenge_id) -> list[dict[str, str]]:
                      f'for user "{get_current_user().name}"')
         # Extract the answer submission's prompt and the text that it generated.
         answer_submissions.append({'prompt': answer_query.prompt,
-                                   'date': isoformat(answer_submission.date),
+                                   'date_submitted': isoformat(answer_submission.date),
+                                   'date_solved': date_graded,
                                    'generated_text': answer_query.text})
     log.debug(f'Extracted "{submission_type}" submissions: {answer_submissions}')
     return answer_submissions
