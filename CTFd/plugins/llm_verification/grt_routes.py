@@ -241,7 +241,7 @@ def add_routes() -> Blueprint:
             # ... then return a 400 status code and don't clear the answer submission from the CTFd "Submissions" table.
             raise BadRequest(f'Invalid argument "{status}" '
                              f'passed to parameter "status" for marking answer submission "{submission_id}"')
-        # Delete the answer submission from CTFd's "Submissions" table.
+        # Delete the answer submission from CTFd's "Submissions" table, which also cascade-deletes the answer submission from the GRTSubmissions table.
         db.session.delete(ctfd_submission)
         log.debug(f'Deleted user "{ctfd_submission.user_id}"\'s '
                   f'answer submission "{submission_id}" '
