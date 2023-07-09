@@ -8,7 +8,6 @@ from requests.exceptions import HTTPError
 # CTFd imports.
 from CTFd.models import Awards, Challenges, Fails, Solves, Submissions, db
 from CTFd.plugins import bypass_csrf_protection
-from CTFd.utils.dates import isoformat
 from CTFd.utils.decorators import admins_only, authed_only
 from CTFd.utils.modes import get_model
 from CTFd.utils.user import get_current_user
@@ -16,7 +15,7 @@ from CTFd.utils.user import get_current_user
 # LLM Verification Plugin module imports.
 from .grt_models import GRTSubmission, GRTSolves, LlmChallenge, Pending, Awarded
 from .remote_llm import generate_text
-from .utils import get_filter_by_mode
+from .utils import retrieve_submissions
 
 
 log = getLogger(__name__)
@@ -51,35 +50,6 @@ def add_routes() -> Blueprint:
         # Identify the user who would like to see their answer submissions.
         log.debug(f'User "{get_current_user().name}" '
                   f'requested their answer submissions for challenge "{challenge_id}"')
-
-
-        def retrieve_submissions(submission_type, challenge_id, user_id) -> list[dict[str, str]]:
-            """Query the database for a user's answer submissions to a challenge.
-
-            Arguments:
-                submission_type(CTFd model, required): Type of answer submission.
-                    Choose from `Pending`, `Solves`, `Awarded`, or `Fails`.
-                challenge_id(int, required): ID of the challenge that answers were submitted for.
-                user_id(int, required): ID of the user who submitted answers to the challenge.
-            """
-            # Create answer-submission-type-specific query filters for the current user/team.
-            mode_uid, current_uid = get_filter_by_mode(ctfd_model=submission_type)
-            # Query the database for the user's answer submissions for this challenge.
-            query_results = submission_type.query.filter(mode_uid == current_uid,
-                                                              submission_type.challenge_id == challenge_id).all()
-            log.debug(f'User "{get_current_user().name}" '
-                      f'has {len(query_results)} "{submission_type}" '
-                      f'answer submissions for challenge "{challenge_id}"')
-            # Extract the values of the `provided` and `date` columns from each answer submission.
-            answer_submissions = [{'provided': answer_submission.provided,
-                                                         'date': isoformat(answer_submission.date),
-                                                         'generated_text': GRTSubmission.query.filter_by(submission_id=answer_submission.id).first().text}
-                                                         for answer_submission 
-                                                         in query_results]
-            log.debug(f'Extracted "{submission_type}" '
-                      f'submissions: {answer_submissions}')
-            return answer_submissions
-
         # Query the database for the user's answer submissions for this challenge.
         collected_submissions = {type_label: retrieve_submissions(submission_type=submission_type,
                                                                   challenge_id=challenge_id,
@@ -106,22 +76,22 @@ def add_routes() -> Blueprint:
         page_count = int(sub_count / results_per_page) + (sub_count % results_per_page > 0)
         Model = get_model()
         submissions = (Submissions.query.add_columns(Submissions.id,
-                                                          Submissions.type,
-                                                          Submissions.challenge_id,
-                                                          Submissions.provided,
-                                                          Submissions.account_id,
-                                                          Submissions.date,
-                                                          Challenges.name.label('challenge_name'),
-                                                          Model.name.label('team_name'),
-                                                          GRTSubmission.prompt,
-                                                          GRTSubmission.text).select_from(Submissions)
-                                                                             .filter_by(**filters)
-                                                                             .join(Challenges)
-                                                                             .join(Model)
-                                                                             .join(GRTSubmission, GRTSubmission.id == Submissions.id)
-                                                                             .order_by(Submissions.date.desc())
-                                                                             .slice(page_start, page_end)
-                                                                             .all())
+                                                     Submissions.type,
+                                                     Submissions.challenge_id,
+                                                     Submissions.provided,
+                                                     Submissions.account_id,
+                                                     Submissions.date,
+                                                     Challenges.name.label('challenge_name'),
+                                                     Model.name.label('team_name'),
+                                                     GRTSubmission.prompt,
+                                                     GRTSubmission.text).select_from(Submissions)
+                                                                        .filter_by(**filters)
+                                                                        .join(Challenges)
+                                                                        .join(Model)
+                                                                        .join(GRTSubmission, GRTSubmission.id == Submissions.id)
+                                                                        .order_by(Submissions.date.desc())
+                                                                        .slice(page_start, page_end)
+                                                                        .all())
         log.info(f'Showed (admin) {len(submissions)} pending answer submissions')
         return render_template('verify_submissions.html',
                                 submissions=submissions,
@@ -141,20 +111,20 @@ def add_routes() -> Blueprint:
         page_count = int(sub_count / results_per_page) + (sub_count % results_per_page > 0)
         Model = get_model()
         submissions = (GRTSolves.query.add_columns(GRTSolves.id,
-                                                        GRTSolves.challenge_id,
-                                                        GRTSolves.prompt,
-                                                        GRTSolves.account_id,
-                                                        GRTSolves.text,
-                                                        GRTSolves.date,
-                                                        Challenges.name.label('challenge_name'),
-                                                        Challenges.description.label('challenge_description'),
-                                                        Model.name.label('team_name')).select_from(GRTSolves)
-                                                                                      .filter_by(**filters)
-                                                                                      .join(Challenges)
-                                                                                      .join(Model)
-                                                                                      .order_by(GRTSolves.date.desc())
-                                                                                      .slice(page_start, page_end)
-                                                                                      .all())
+                                                   GRTSolves.challenge_id,
+                                                   GRTSolves.prompt,
+                                                   GRTSolves.account_id,
+                                                   GRTSolves.text,
+                                                   GRTSolves.date,
+                                                   Challenges.name.label('challenge_name'),
+                                                   Challenges.description.label('challenge_description'),
+                                                   Model.name.label('team_name')).select_from(GRTSolves)
+                                                                                 .filter_by(**filters)
+                                                                                 .join(Challenges)
+                                                                                 .join(Model)
+                                                                                 .order_by(GRTSolves.date.desc())
+                                                                                 .slice(page_start, page_end)
+                                                                                 .all())
         log.info(f'Showed (admin) solved answer submissions')
         return render_template('solved_submissions.html',
                                submissions=submissions,
