@@ -53,7 +53,7 @@ def add_routes() -> Blueprint:
                   f'requested their answer submissions for challenge "{challenge_id}"')
 
 
-        def retrieve_answer_submissions(submission_type, challenge_id, user_id) -> list[dict[str, str]]:
+        def retrieve_submissions(submission_type, challenge_id, user_id) -> list[dict[str, str]]:
             """Query the database for a user's answer submissions to a challenge.
 
             Arguments:
@@ -80,20 +80,15 @@ def add_routes() -> Blueprint:
                       f'submissions: {answer_submissions}')
             return answer_submissions
 
-
-        response = {'success': True,
-                                    'data': {'pending':   retrieve_answer_submissions(submission_type=Pending,
-                                                                                      challenge_id=challenge_id,
-                                                                                      user_id=get_current_user().id),
-                                             'correct':   retrieve_answer_submissions(submission_type=Solves,
-                                                                                      challenge_id=challenge_id,
-                                                                                      user_id=get_current_user().id),
-                                             'awarded':   retrieve_answer_submissions(submission_type=Awarded,
-                                                                                      challenge_id=challenge_id,
-                                                                                      user_id=get_current_user().id),
-                                             'incorrect': retrieve_answer_submissions(submission_type=Fails,
-                                                                                      challenge_id=challenge_id,
-                                                                                      user_id=get_current_user().id)}}
+        # Query the database for the user's answer submissions for this challenge.
+        collected_submissions = {type_label: retrieve_submissions(submission_type=submission_type,
+                                                                  challenge_id=challenge_id,
+                                                                  user_id=get_current_user().id)
+                                 for type_label, submission_type in (('pending', Pending),
+                                                                     ('correct', Solves),
+                                                                     ('awarded', Awarded),
+                                                                     ('incorrect', Fails))}
+        response = {'success': True, 'data': collected_submissions}
         log.info(f'Showed user "{get_current_user().name}" '
                  f'their answer submissions for challenge "{challenge_id}"')
         return jsonify(response)
