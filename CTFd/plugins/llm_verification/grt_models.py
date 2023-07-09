@@ -127,7 +127,7 @@ class LlmSubmissionChallenge(BaseChallenge):
             tuple (bool, str):  This will always be `False` and `'Submission under review'` because
                 llm submissions need manual review.
         """
-        log.info('Rejected "attempt" because manual verification is needed')
+        log.info('Attempt: Rejected "attempt" because manual verification is needed')
         return False, 'Submission under review'
 
     @staticmethod
@@ -144,7 +144,7 @@ class LlmSubmissionChallenge(BaseChallenge):
         Returns:
             `None`
         """
-        log.info('Rejected "solve" because manual verification is needed')
+        log.info('Solve: Rejected "solve" because manual verification is needed')
         return None
 
     @staticmethod
