@@ -62,6 +62,7 @@ def retrieve_submissions(submission_type, challenge_id) -> list[dict[str, str]]:
     log.debug(f'User "{get_current_user().name}" '
               f'has {len(query_results)} "{submission_type}" '
               f'answer submissions for challenge "{challenge_id}"')
+    # Make a place to put answer submissions of the given submission type for this challenge.
     answer_submissions = []
     # For each answer submission that was submitted for this submission type (`e.g.` `Pending`, `Solves`, `Awarded`, or `Fails`)...`):
     for answer_submission in query_results:
