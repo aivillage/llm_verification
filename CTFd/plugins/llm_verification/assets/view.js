@@ -124,7 +124,7 @@ challenge.postRender = function() {
         var submission = correct[index];
         var entry = $(
           submission_template.format(
-            htmlEntities(submission.provided),
+            htmlEntities(submission.prompt),
             htmlEntities(submission.generated_text),
             Moment(submission.date).fromNow()
           )
@@ -141,7 +141,7 @@ challenge.postRender = function() {
         var submission = awarded[index];
         var entry = $(
           submission_template.format(
-            htmlEntities(submission.provided),
+            htmlEntities(submission.prompt),
             htmlEntities(submission.generated_text),
             Moment(submission.date).fromNow()
           )
@@ -158,7 +158,7 @@ challenge.postRender = function() {
         var submission = pending[index];
         var entry = $(
           submission_template.format(
-            htmlEntities(submission.provided),
+            htmlEntities(submission.prompt),
             htmlEntities(submission.generated_text),
             Moment(submission.date).fromNow()
           )
@@ -175,7 +175,7 @@ challenge.postRender = function() {
         var submission = incorrect[index];
         var entry = $(
           submission_template.format(
-            htmlEntities(submission.provided),
+            htmlEntities(submission.prompt),
             htmlEntities(submission.generated_text),
             Moment(submission.date).fromNow()
           )
