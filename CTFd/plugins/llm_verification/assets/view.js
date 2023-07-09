@@ -34,6 +34,12 @@ function Moment(d) {
           fuzzy = Math.floor(delta / hour) + " hours ago";
       } else if (delta < day * 2) {
           fuzzy = "yesterday";
+      } else if (delta < day * 3) {
+          fuzzy = "two days ago";
+      } else if (delta < day * 4) {
+          fuzzy = "three days ago";
+      } else {
+          fuzzy = "more than three days ago";
       }
       return fuzzy;
   };
