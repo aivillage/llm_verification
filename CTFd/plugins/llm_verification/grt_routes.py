@@ -146,9 +146,12 @@ def add_routes() -> Blueprint:
     @admins_only
     def verify_submissions(submission_id, status):
         """Add a route for admins to mark answer attempts as correct or incorrect."""
+        # Retrieve the answer submission from CTFd's "Submissions" table.
         submission = Submissions.query.filter_by(id=submission_id).first_or_404()
+        # Retrieve the answer submission from the GRT's "GRTSubmissions" table.
         grt_submission = GRTSubmission.query.filter_by(id=submission_id).first_or_404()
         if status == 'solve':
+            # Note that the answer submission solved its challenge in the Solves table.
             solve = Solves(user_id=submission.user_id,
                            team_id=submission.team_id,
                            challenge_id=submission.challenge_id,
@@ -156,11 +159,12 @@ def add_routes() -> Blueprint:
                            provided=submission.provided,
                            date=submission.date)
             db.session.add(solve)
-            # Get rid of pending submissions for the challenge
+            # Remove all the user's remaining pending answer submissions for the challenge that the submission was for.
             Submissions.query.filter(Submissions.challenge_id == submission.challenge_id,
                                      Submissions.team_id == submission.team_id,
                                      Submissions.user_id == submission.user_id,
                                      Submissions.type == 'pending').delete()
+            # Add the user's (correct) answer submission solution to the GRTSolves table.
             solve = GRTSolves(success=True,
                               challenge_id=submission.challenge_id,
                               text=grt_submission.text,
@@ -170,11 +174,13 @@ def add_routes() -> Blueprint:
                               team_id=submission.team_id)
             db.session.add(solve)
         elif status == 'award':
+            # Note that the submission solved its challenge in the (GRT) Awarded table.
             awarded = Awarded(user_id=submission.user_id,
                               team_id=submission.team_id,
                               challenge_id=submission.challenge_id,
                               ip=submission.ip,
                               provided=submission.provided)
+            # Note that the submission solved its challenge in the Awards table and assign the grader's points to the user.
             award = Awards(user_id=submission.user_id,
                            team_id=submission.team_id,
                            name='Submission',
@@ -183,6 +189,7 @@ def add_routes() -> Blueprint:
                            category=submission.challenge.category)
             db.session.add(awarded)
             db.session.add(award)
+            # Add the user's (correct) answer submission solution to the GRTSolves table.
             solve = GRTSolves(success=True,
                               challenge_id=submission.challenge_id,
                               text=grt_submission.text,
@@ -191,7 +198,9 @@ def add_routes() -> Blueprint:
                               user_id=submission.user_id,
                               team_id=submission.team_id)
             db.session.add(solve)
+        # Otherwise, if the answer submission was marked "incorrect"...
         elif status == 'fail':
+            # Note that the answer submission failed its challenge in the Fails table.
             wrong = Fails(user_id=submission.user_id,
                           team_id=submission.team_id,
                           challenge_id=submission.challenge_id,
@@ -199,6 +208,7 @@ def add_routes() -> Blueprint:
                           provided=submission.provided,
                           date=submission.date)
             db.session.add(wrong)
+            # Add the user's (incorrect) answer submission solution to the GRTSolves table.
             solve = GRTSolves(success=False,
                               challenge_id=submission.challenge_id,
                               text=grt_submission.text,
@@ -207,8 +217,11 @@ def add_routes() -> Blueprint:
                               user_id=submission.user_id,
                               team_id=submission.team_id)
             db.session.add(solve)
+        # Otherwise, if the admin doesn't want to "solve," "award," or "fail" the answer submission...
         else:
+            # ... then do nothing and return an error.
             return jsonify({'success': False})
+        # Delete the answer submission from CTFd's "Submissions" table.
         db.session.delete(submission)
         db.session.commit()
         db.session.close()
