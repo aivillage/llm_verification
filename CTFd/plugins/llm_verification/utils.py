@@ -59,12 +59,13 @@ def retrieve_submissions(submission_type, challenge_id, user_id) -> list[dict[st
     log.debug(f'User "{get_current_user().name}" '
               f'has {len(query_results)} "{submission_type}" '
               f'answer submissions for challenge "{challenge_id}"')
-    # Extract the values of the `provided` and `date` columns from each answer submission.
-    answer_submissions = [{'provided': answer_submission.provided,
-                           'date': isoformat(answer_submission.date),
-                           'generated_text': GRTSubmission.query.filter_by(submission_id=answer_submission.id).first().text}
-                           for answer_submission
-                           in query_results]
+    answer_submissions = []
+    for answer_submission in query_results:
+        answer_query = GRTSubmission.query.filter_by(submission_id=answer_submission.id).first()
+        # Extract the values of the `provided` and `date` columns from each answer submission.
+        answer_submissions.append({'provided': answer_submission.provided,
+                                   'date': isoformat(answer_submission.date),
+                                   'generated_text': answer_query.text})
     log.debug(f'Extracted "{submission_type}" '
-                f'submissions: {answer_submissions}')
+              f'submissions: {answer_submissions}')
     return answer_submissions
