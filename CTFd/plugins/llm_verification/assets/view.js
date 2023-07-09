@@ -90,7 +90,8 @@ challenge.postRender = function() {
     <div class="card-body">\
         <blockquote class="blockquote mb-0">\
             <p>{0}</p>\
-            <small class="text-muted">{1}</small>\
+            <p>{1}</p>\
+            <small class="text-muted">{2}</small>\
         </blockquote>\
     </div>\
   </div>';
@@ -120,11 +121,12 @@ challenge.postRender = function() {
       $("#challenge-submissions").append($("<br>"));
       $("#challenge-submissions").append($("<h3>Correct</h3>"));
       for (var index = 0; index < correct.length; index++) {
-        var s = correct[index];
+        var submission = correct[index];
         var entry = $(
           submission_template.format(
-            htmlEntities(s.provided),
-            Moment(s.date).fromNow()
+            htmlEntities(submission.prompt),
+            htmlEntities(submission.generated_text),
+            Moment(submission.date).fromNow()
           )
         );
         $("#challenge-submissions").append(entry);
@@ -136,11 +138,12 @@ challenge.postRender = function() {
 
       $("#challenge-submissions").append($("<h3>Awarded</h3>"));
       for (var index = 0; index < awarded.length; index++) {
-        var s = awarded[index];
+        var submission = awarded[index];
         var entry = $(
           submission_template.format(
-            htmlEntities(s.provided),
-            Moment(s.date).fromNow()
+            htmlEntities(submission.prompt),
+            htmlEntities(submission.generated_text),
+            Moment(submission.date).fromNow()
           )
         );
         $("#challenge-submissions").append(entry);
@@ -152,11 +155,12 @@ challenge.postRender = function() {
 
       $("#challenge-submissions").append($("<h3>Pending</h3>"));
       for (var index = 0; index < pending.length; index++) {
-        var s = pending[index];
+        var submission = pending[index];
         var entry = $(
           submission_template.format(
-            htmlEntities(s.provided),
-            Moment(s.date).fromNow()
+            htmlEntities(submission.prompt),
+            htmlEntities(submission.generated_text),
+            Moment(submission.date).fromNow()
           )
         );
         $("#challenge-submissions").append(entry);
@@ -168,11 +172,12 @@ challenge.postRender = function() {
 
       $("#challenge-submissions").append($("<h3>Incorrect</h3>"));
       for (var index = 0; index < incorrect.length; index++) {
-        var s = incorrect[index];
+        var submission = incorrect[index];
         var entry = $(
           submission_template.format(
-            htmlEntities(s.provided),
-            Moment(s.date).fromNow()
+            htmlEntities(submission.prompt),
+            htmlEntities(submission.generated_text),
+            Moment(submission.date).fromNow()
           )
         );
         $("#challenge-submissions").append(entry);
