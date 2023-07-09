@@ -69,7 +69,6 @@ class LlmChallenge(Challenges):
         from CTFd.utils.helpers import markup
         return markup(build_markdown(self.description))
 
-
 class Pending(Submissions):
     __mapper_args__ = {'polymorphic_identity': 'pending'}
 
