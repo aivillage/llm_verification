@@ -45,6 +45,19 @@ def get_filter_by_mode(ctfd_model):
 def retrieve_submissions(submission_type, challenge_id) -> list[dict[str, str]]:
     """Query the database for a user's answer submissions to a challenge.
 
+    When a user submits an answer for a challenge, it's added to the 
+    `GRTSubmissions` table. When an administrator marks a "pending" challenge as
+    `Correct` (`submission_type` `"solve"`), `Award` (`submission_type`
+    `"award"`), or `Fail` (`submission_type` `"fail"`), the `GRTSubmissions`
+    table entry is deleted and a new  entry is made in the
+    `GRTSolves` table.
+
+    With this in mind, when we retrieve an answer submissions's prompt and
+    generated text, we need to query different tables for the same information.
+    If the answer submission is "pending," we need to query the `GRTSubmissions`
+    table. If the answer submission is "solved," "awarded," or "failed," then we
+    need to query the `GRTSolves` table.
+
     Arguments:
         submission_type(CTFd model, required): Type of answer submission.
             Choose from `Pending`, `Solves`, `Awarded`, or `Fails`.
