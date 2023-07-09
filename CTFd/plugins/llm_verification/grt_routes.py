@@ -27,20 +27,30 @@ def add_routes() -> Blueprint:
 
     @llm_verifications.route('/generate', methods=['POST'])
     @bypass_csrf_protection
+    @authed_only
     def generate_for_challenge():
         """Add a route to CTFd for generating text from a prompt."""
+        log.info(f'Received text generation request from user "{get_current_user().name}" '
+                 f'for challenge ID "{request.json["challenge_id"]}"')
         challenge = LlmChallenge.query.filter_by(id=request.json['challenge_id']).first_or_404()
         preprompt = challenge.preprompt
+        log.debug(f'Found pre-prompt "{preprompt}" '
+                  f'for challenge {request.json["challenge_id"]} "{challenge.name}"')
+        log.debug(f'User "{get_current_user().name}" '
+                  f'submitted prompt: "{request.json["prompt"]}"')
         complete_prompt = preprompt + request.json['prompt']
+        log.debug(f'Combined pre-prompt and user-provided-prompt: "{complete_prompt}"')
         try:
             generated_text = generate_text(complete_prompt)
+            generation_succeeded = True
         except HTTPError as error:
-            log.error(f'Error generating text: {error}')
+            log.error(f'Remote LLM experienced an error when generating text: {error}')
             # Send the error message from the HTTPError as the response to the user.
-            response = {'success': False, 'data': {'text': str(error)}}
-            return jsonify(response)
-        response = {'success': True, 'data': {'text': generated_text}}
-        log.info(f'Generated text for challenge "{challenge.name}"')
+            generated_text = str(error)
+            generation_succeeded = False
+        response = {'success': generation_succeeded, 'data': {'text': generated_text}}
+        log.info(f'Generated text for user "{get_current_user().name}" '
+                 f'for challenge "{challenge.name}"')
         return jsonify(response)
 
     @llm_verifications.route('/submissions/<challenge_id>', methods=['GET'])
