@@ -96,7 +96,7 @@ class LlmSubmissionChallenge(BaseChallenge):
 
     @classmethod
     def create(cls, request):
-        """Process the challenge creation request.
+        """Process a challenge creation request submitted by an administrator.
 
         Arguments:
             request: The Flask request object.
@@ -113,7 +113,11 @@ class LlmSubmissionChallenge(BaseChallenge):
 
     @staticmethod
     def attempt(challenge, request):
-        """This method is not used as llm submissions are not solved with the compare() method.
+        """Filler method to satisfy the BaseChallenge interface.
+
+        Normally, this would be used to check a user's submitted answer against the challenge's
+        correct answer "flag" with the `compare()` method. However, Llm submissions are not solved
+        with flags.
 
         Arguments:
             challenge: The Challenge object from the database
@@ -128,7 +132,9 @@ class LlmSubmissionChallenge(BaseChallenge):
 
     @staticmethod
     def solve(user, team, challenge, request):
-        """ This method is not used as llm submission challenges are not solved with flags.
+        """Filler method to satisfy BaseChallenge interface.
+
+        This method is not used as LLM answer submissions are not solved with flags.
 
         Arguments:
             team: The Team object from the database
