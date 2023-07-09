@@ -43,7 +43,6 @@ class GRTSolves(db.Model):
     @hybrid_property
     def account_id(self):
         from CTFd.utils import get_config
-
         user_mode = get_config('user_mode')
         if user_mode == 'teams':
             return self.team_id
@@ -56,8 +55,8 @@ class LlmChallenge(Challenges):
     __table_args__ = {'extend_existing': True}
 
     id = db.Column(db.Integer,
-                        db.ForeignKey('challenges.id', ondelete='CASCADE'),
-                        primary_key=True)
+                   db.ForeignKey('challenges.id', ondelete='CASCADE'),
+                   primary_key=True)
     preprompt = db.Column(db.Text)
     llm = db.Column(db.Text)
 
