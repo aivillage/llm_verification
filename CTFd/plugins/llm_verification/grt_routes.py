@@ -4,6 +4,7 @@ from logging import getLogger
 # Third-party imports.
 from flask import Blueprint, jsonify, render_template, request
 from requests.exceptions import HTTPError
+from werkzeug.exceptions import BadRequest
 
 # CTFd imports.
 from CTFd.models import Awards, Challenges, Fails, Solves, Submissions, db
@@ -145,7 +146,20 @@ def add_routes() -> Blueprint:
     @llm_verifications.route('/admin/verify_submissions/<submission_id>/<status>', methods=['POST'])
     @admins_only
     def verify_submissions(submission_id, status):
-        """Add a route for admins to mark answer attempts as correct or incorrect."""
+        """Add a route for admins to mark answer attempts as correct or incorrect.
+
+        Arguments:
+            submission_id (int): The ID of the answer submission to mark.
+            status (str): The status to mark the answer submission with.
+                Choose from `solve`, `fail`, or `incorrect`.
+
+        Raises:
+            BadRequest: If the status is not `solve`, `fail`, or `incorrect`, which translates
+                to a 400 status code.
+
+        Returns:
+            JSON(dict): {'success': True}
+        """
         # Retrieve the answer submission from CTFd's "Submissions" table.
         ctfd_submission = Submissions.query.filter_by(id=submission_id).first_or_404()
         # Retrieve the answer submission from the GRT's "GRTSubmissions" table.
@@ -207,8 +221,9 @@ def add_routes() -> Blueprint:
             db.session.add(grt_solve)
         # Otherwise, if the admin doesn't want to "solve," "award," or "fail" the answer submission...
         else:
-            # ... then do nothing and return an error.
-            return jsonify({'success': False})
+            # ... then return a 400 status code and don't clear the answer submission from the CTFd "Submissions" table.
+            raise BadRequest(f'Invalid argument "{status}" '
+                             f'passed to parameter "status" for marking answer submission "{submission_id}"')
         # Delete the answer submission from CTFd's "Submissions" table.
         db.session.delete(ctfd_submission)
         db.session.commit()
