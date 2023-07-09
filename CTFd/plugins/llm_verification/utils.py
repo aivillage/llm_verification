@@ -80,15 +80,12 @@ def retrieve_submissions(submission_type, challenge_id) -> list[dict[str, str]]:
     # For each answer submission that was submitted for this submission type (`e.g.` `Pending`, `Solves`, `Awarded`, or `Fails`)...`):
     for answer_submission in query_results:
         # If the submission type is "pending"...
-        if submission_type is Pending:
+        if issubclass(submission_type, Pending):
             # ... retrieve the answer submissions's corresponding GRTSubmission entry.
             answer_query = GRTSubmission.query.filter_by(submission_id=answer_submission.id).first()
         # Otherwise, if the submission type is "awarded," "fails," or "solves"...
-        elif submission_type is Awarded:
-            answer_query = GRTSolves.query.filter_by(challenge_id=challenge_id).first()
-        elif submission_type is Fails:
-            answer_query = GRTSolves.query.filter_by(challenge_id=challenge_id).first()
-        elif submission_type is Solves:
+        elif issubclass(submission_type, (Awarded, Fails, Solves)):
+            # ... retrieve the answer submissions's corresponding GRTSolves entry.
             answer_query = GRTSolves.query.filter_by(challenge_id=challenge_id).first()
         else:
             raise TypeError(f'Submission type: "{submission_type}" '
