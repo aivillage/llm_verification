@@ -82,12 +82,12 @@ class LlmSubmissionChallenge(BaseChallenge):
     name = 'llm_verification'  # Name of a challenge type
     # Handlebars templates used for each aspect of challenge editing & viewing
     templates = {'create': '/plugins/llm_verification/assets/create.html',
-                                 'update': '/plugins/llm_verification/assets/update.html',
-                                 'view': '/plugins/llm_verification/assets/view.html',}
+                           'update': '/plugins/llm_verification/assets/update.html',
+                           'view': '/plugins/llm_verification/assets/view.html',}
     # Scripts that are loaded when a template is loaded
     scripts = {'create': '/plugins/llm_verification/assets/create.js',
-                               'update': '/plugins/llm_verification/assets/update.js',
-                               'view': '/plugins/llm_verification/assets/view.js',}
+                         'update': '/plugins/llm_verification/assets/update.js',
+                         'view': '/plugins/llm_verification/assets/view.js',}
     # Route at which files are accessible. This must be registered using register_plugin_assets_directory()
     route = '/plugins/llm_verification/assets/'
     # Blueprint used to access the static_folder directory.
