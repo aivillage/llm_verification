@@ -70,15 +70,15 @@ def retrieve_submissions(submission_type, challenge_id) -> list[dict[str, str]]:
     # Create answer-submission-type-specific query filters for the current user/team.
     mode_uid, current_uid = get_filter_by_mode(ctfd_model=submission_type)
     # Query the database for the user's answer submissions for this challenge.
-    query_results = submission_type.query.filter(mode_uid == current_uid,
+    answer_submissions = submission_type.query.filter(mode_uid == current_uid,
                                                  submission_type.challenge_id == challenge_id).all()
     log.debug(f'User "{get_current_user().name}" '
-              f'has {len(query_results)} "{submission_type}" '
+              f'has {len(answer_submissions)} "{submission_type}" '
               f'answer submissions for challenge "{challenge_id}"')
     # Make a place to put answer submissions of the given submission type for this challenge.
     answer_submissions = []
     # For each answer submission that was submitted for this submission type (`e.g.` `Pending`, `Solves`, `Awarded`, or `Fails`)...`):
-    for answer_submission in query_results:
+    for answer_submission in answer_submissions:
         # If the submission type is "pending"...
         if issubclass(submission_type, Pending):
             # ... retrieve the answer submissions's corresponding GRTSubmission entry.
