@@ -4,6 +4,7 @@ from logging import getLogger
 # Third-party imports.
 from flask import Blueprint, jsonify, render_template, request
 from requests.exceptions import HTTPError
+from werkzeug.exceptions import BadRequest
 
 # CTFd imports.
 from CTFd.models import Awards, Challenges, Fails, Solves, Submissions, db
@@ -15,7 +16,7 @@ from CTFd.utils.user import get_current_user
 # LLM Verification Plugin module imports.
 from .grt_models import GRTSubmission, GRTSolves, LlmChallenge, Pending, Awarded
 from .remote_llm import generate_text
-from .utils import retrieve_submissions
+from .utils import create_grt_solve_entry, retrieve_submissions
 
 
 log = getLogger(__name__)
@@ -63,8 +64,7 @@ def add_routes() -> Blueprint:
                   f'requested their answer submissions for challenge "{challenge_id}"')
         # Query the database for the user's answer submissions for this challenge.
         collected_submissions = {type_label: retrieve_submissions(submission_type=submission_type,
-                                                                  challenge_id=challenge_id,
-                                                                  user_id=get_current_user().id)
+                                                                  challenge_id=challenge_id)
                                  for type_label, submission_type in (('pending', Pending),
                                                                      ('correct', Solves),
                                                                      ('awarded', Awarded),
@@ -145,74 +145,108 @@ def add_routes() -> Blueprint:
     @llm_verifications.route('/admin/verify_submissions/<submission_id>/<status>', methods=['POST'])
     @admins_only
     def verify_submissions(submission_id, status):
-        """Add a route for admins to mark answer attempts as correct or incorrect."""
-        submission = Submissions.query.filter_by(id=submission_id).first_or_404()
+        """Add a route for admins to mark answer attempts as correct or incorrect.
+
+        Arguments:
+            submission_id (int): The ID of the answer submission to mark.
+            status (str): The status to mark the answer submission with.
+                Choose from `solve`, `fail`, or `incorrect`.
+
+        Raises:
+            BadRequest: If the status is not `solve`, `fail`, or `incorrect`, which translates
+                to a 400 status code.
+
+        Returns:
+            JSON(dict): {'success': True}
+        """
+        log.info(f'Admin "{get_current_user().name}" '
+                 f'marked answer submission "{submission_id}" '
+                 f'as "{status}"')
+        # Retrieve the answer submission from the (CTFd) "Submissions" table.
+        ctfd_submission = Submissions.query.filter_by(id=submission_id).first_or_404()
+        # Retrieve the answer submission from the "GRTSubmissions" table.
         grt_submission = GRTSubmission.query.filter_by(id=submission_id).first_or_404()
         if status == 'solve':
-            solve = Solves(user_id=submission.user_id,
-                           team_id=submission.team_id,
-                           challenge_id=submission.challenge_id,
-                           ip=submission.ip,
-                           provided=submission.provided,
-                           date=submission.date)
+            # Note that the answer submission solved its challenge in the Solves table.
+            solve = Solves(user_id=ctfd_submission.user_id,
+                           team_id=ctfd_submission.team_id,
+                           challenge_id=ctfd_submission.challenge_id,
+                           ip=ctfd_submission.ip,
+                           provided=ctfd_submission.provided,
+                           date=ctfd_submission.date)
             db.session.add(solve)
-            # Get rid of pending submissions for the challenge
-            Submissions.query.filter(Submissions.challenge_id == submission.challenge_id,
-                                     Submissions.team_id == submission.team_id,
-                                     Submissions.user_id == submission.user_id,
+            log.debug(f'Added user "{ctfd_submission.user_id}"\'s '
+                      f'answer submission "{submission_id}" '
+                      f'to the Solves table')
+            # Remove the user's other "pending" answer submissions for this challenge from the (CTfd) "Submissions" table.
+            Submissions.query.filter(Submissions.challenge_id == ctfd_submission.challenge_id,
+                                     Submissions.team_id == ctfd_submission.team_id,
+                                     Submissions.user_id == ctfd_submission.user_id,
                                      Submissions.type == 'pending').delete()
-            solve = GRTSolves(success=True,
-                              challenge_id=submission.challenge_id,
-                              text=grt_submission.text,
-                              prompt=grt_submission.prompt,
-                              date=submission.date,
-                              user_id=submission.user_id,
-                              team_id=submission.team_id)
-            db.session.add(solve)
+            log.debug(f'Removed user "{ctfd_submission.user_id}"\'s '
+                      f'remaining pending answer submissions for challenge "{ctfd_submission.challenge_id}"')
+            # Add the user's (correct) answer submission solution to the GRTSolves table.
+            grt_solve = create_grt_solve_entry(solve_status=True,
+                                               ctfd_submission=ctfd_submission,
+                                               grt_submission=grt_submission)
+            db.session.add(grt_solve)
         elif status == 'award':
-            awarded = Awarded(user_id=submission.user_id,
-                              team_id=submission.team_id,
-                              challenge_id=submission.challenge_id,
-                              ip=submission.ip,
-                              provided=submission.provided)
-            award = Awards(user_id=submission.user_id,
-                           team_id=submission.team_id,
-                           name='Submission',
-                           description='Correct Submission for {name}'.format(name=submission.challenge.name),
-                           value=request.args.get('value', 0),
-                           category=submission.challenge.category)
+            # Note that the submission solved its challenge in the (GRT) Awarded table.
+            awarded = Awarded(user_id=ctfd_submission.user_id,
+                              team_id=ctfd_submission.team_id,
+                              challenge_id=ctfd_submission.challenge_id,
+                              ip=ctfd_submission.ip,
+                              provided=ctfd_submission.provided)
             db.session.add(awarded)
+            log.debug(f'Added user "{ctfd_submission.user_id}"\'s '
+                      f'answer submission "{submission_id}" '
+                      f'to GRT\'s Awarded table')
+            # Note that the submission solved its challenge in the (CTFd) Awards table and assign the grader's points to the user.
+            award = Awards(user_id=ctfd_submission.user_id,
+                           team_id=ctfd_submission.team_id,
+                           name='Submission',
+                           description='Correct Submission for {name}'.format(name=ctfd_submission.challenge.name),
+                           value=request.args.get('value', 0),
+                           category=ctfd_submission.challenge.category)
             db.session.add(award)
-            solve = GRTSolves(success=True,
-                              challenge_id=submission.challenge_id,
-                              text=grt_submission.text,
-                              prompt=grt_submission.prompt,
-                              date=submission.date,
-                              user_id=submission.user_id,
-                              team_id=submission.team_id)
-            db.session.add(solve)
+            log.debug(f'Added user "{ctfd_submission.user_id}"\'s '
+                      f'answer submission "{submission_id}" '
+                      f'to CTFd\'s Awards table')
+            # Add the user's (correct) answer submission solution to the GRTSolves table.
+            grt_solve = create_grt_solve_entry(solve_status=True,
+                                               ctfd_submission=ctfd_submission,
+                                               grt_submission=grt_submission)
+            db.session.add(grt_solve)
+        # Otherwise, if the answer submission was marked "incorrect"...
         elif status == 'fail':
-            wrong = Fails(user_id=submission.user_id,
-                          team_id=submission.team_id,
-                          challenge_id=submission.challenge_id,
-                          ip=submission.ip,
-                          provided=submission.provided,
-                          date=submission.date)
+            # Note that the answer submission failed its challenge in the (CTFd) Fails table.
+            wrong = Fails(user_id=ctfd_submission.user_id,
+                          team_id=ctfd_submission.team_id,
+                          challenge_id=ctfd_submission.challenge_id,
+                          ip=ctfd_submission.ip,
+                          provided=ctfd_submission.provided,
+                          date=ctfd_submission.date)
             db.session.add(wrong)
-            solve = GRTSolves(success=False,
-                              challenge_id=submission.challenge_id,
-                              text=grt_submission.text,
-                              prompt=grt_submission.prompt,
-                              date=submission.date,
-                              user_id=submission.user_id,
-                              team_id=submission.team_id)
-            db.session.add(solve)
+            log.debug(f'Added user "{ctfd_submission.user_id}"\'s '
+                      f'answer submission "{submission_id}" '
+                      f'to CTFd\'s Fails table')
+            # Add the user's (incorrect) answer submission solution to the GRTSolves table.
+            grt_solve = create_grt_solve_entry(solve_status=False,
+                                               ctfd_submission=ctfd_submission,
+                                               grt_submission=grt_submission)
+            db.session.add(grt_solve)
+        # Otherwise, if the admin doesn't want to "solve," "award," or "fail" the answer submission...
         else:
-            return jsonify({'success': False})
-        db.session.delete(submission)
+            # ... then return a 400 status code and don't clear the answer submission from the CTFd "Submissions" table.
+            raise BadRequest(f'Invalid argument "{status}" '
+                             f'passed to parameter "status" for marking answer submission "{submission_id}"')
+        # Delete the answer submission from CTFd's "Submissions" table, which also cascade-deletes the answer submission from the GRTSubmissions table.
+        db.session.delete(ctfd_submission)
+        log.debug(f'Deleted user "{ctfd_submission.user_id}"\'s '
+                  f'answer submission "{submission_id}" '
+                  f'to CTFd\'s Submissions table')
         db.session.commit()
         db.session.close()
-        log.info(f'Marked answer submission "{submission_id}" as "{status}"')
         return jsonify({'success': True})
 
     return llm_verifications

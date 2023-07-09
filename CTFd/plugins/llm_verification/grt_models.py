@@ -1,4 +1,4 @@
-"""Modified versions of CTFd's models."""
+"""Modified versions of CTFd's database models."""
 # Standard library imports.
 import datetime
 from logging import getLogger
@@ -82,12 +82,12 @@ class LlmSubmissionChallenge(BaseChallenge):
     name = 'llm_verification'  # Name of a challenge type
     # Handlebars templates used for each aspect of challenge editing & viewing
     templates = {'create': '/plugins/llm_verification/assets/create.html',
-                                 'update': '/plugins/llm_verification/assets/update.html',
-                                 'view': '/plugins/llm_verification/assets/view.html',}
+                           'update': '/plugins/llm_verification/assets/update.html',
+                           'view': '/plugins/llm_verification/assets/view.html',}
     # Scripts that are loaded when a template is loaded
     scripts = {'create': '/plugins/llm_verification/assets/create.js',
-                               'update': '/plugins/llm_verification/assets/update.js',
-                               'view': '/plugins/llm_verification/assets/view.js',}
+                         'update': '/plugins/llm_verification/assets/update.js',
+                         'view': '/plugins/llm_verification/assets/view.js',}
     # Route at which files are accessible. This must be registered using register_plugin_assets_directory()
     route = '/plugins/llm_verification/assets/'
     # Blueprint used to access the static_folder directory.
@@ -96,7 +96,7 @@ class LlmSubmissionChallenge(BaseChallenge):
 
     @classmethod
     def create(cls, request):
-        """Process the challenge creation request.
+        """Process a challenge creation request submitted by an administrator.
 
         Arguments:
             request: The Flask request object.
@@ -113,7 +113,11 @@ class LlmSubmissionChallenge(BaseChallenge):
 
     @staticmethod
     def attempt(challenge, request):
-        """This method is not used as llm submissions are not solved with the compare() method.
+        """Filler method to satisfy the BaseChallenge interface.
+
+        Normally, this would be used to check a user's submitted answer against the challenge's
+        correct answer "flag" with the `compare()` method. However, Llm submissions are not solved
+        with flags.
 
         Arguments:
             challenge: The Challenge object from the database
@@ -123,12 +127,14 @@ class LlmSubmissionChallenge(BaseChallenge):
             tuple (bool, str):  This will always be `False` and `'Submission under review'` because
                 llm submissions need manual review.
         """
-        log.info('Rejected "attempt" because manual verification is needed')
+        log.info('Attempt: Rejected "attempt" because manual verification is needed')
         return False, 'Submission under review'
 
     @staticmethod
     def solve(user, team, challenge, request):
-        """ This method is not used as llm submission challenges are not solved with flags.
+        """Filler method to satisfy BaseChallenge interface.
+
+        This method is not used as LLM answer submissions are not solved with flags.
 
         Arguments:
             team: The Team object from the database
@@ -138,7 +144,7 @@ class LlmSubmissionChallenge(BaseChallenge):
         Returns:
             `None`
         """
-        log.info('Rejected "solve" because manual verification is needed')
+        log.info('Solve: Rejected "solve" because manual verification is needed')
         return None
 
     @staticmethod
