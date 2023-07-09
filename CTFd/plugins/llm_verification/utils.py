@@ -49,6 +49,10 @@ def retrieve_submissions(submission_type, challenge_id) -> list[dict[str, str]]:
         submission_type(CTFd model, required): Type of answer submission.
             Choose from `Pending`, `Solves`, `Awarded`, or `Fails`.
         challenge_id(int, required): ID of the challenge that answers were submitted for.
+
+    Returns:
+        answer_submissions(list[dict[str, str]]): A list of answer submissions
+            for the given submission type.
     """
     # Create answer-submission-type-specific query filters for the current user/team.
     mode_uid, current_uid = get_filter_by_mode(ctfd_model=submission_type)
