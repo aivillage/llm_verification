@@ -2,13 +2,14 @@
 from logging import getLogger
 
 # CTFd imports.
+from CTFd.models import Fails, Solves
 from CTFd.utils import get_config
 from CTFd.utils.dates import isoformat
 from CTFd.utils.modes import USERS_MODE, TEAMS_MODE
 from CTFd.utils.user import get_current_user
 
 # LLM Verification Plugin module imports.
-from .grt_models import GRTSolves, GRTSubmission
+from .grt_models import Awarded, GRTSolves, GRTSubmission, Pending
 
 
 log = getLogger(__name__)
@@ -64,8 +65,7 @@ def retrieve_submissions(submission_type, challenge_id) -> list[dict[str, str]]:
         challenge_id(int, required): ID of the challenge that answers were submitted for.
 
     Returns:
-        answer_submissions(list[dict[str, str]]): A list of answer submissions
-            for the given submission type.
+        answer_submissions(list[dict[str, str]]): A list of answer submissions for the given submission type.
     """
     # Create answer-submission-type-specific query filters for the current user/team.
     mode_uid, current_uid = get_filter_by_mode(ctfd_model=submission_type)
@@ -79,19 +79,29 @@ def retrieve_submissions(submission_type, challenge_id) -> list[dict[str, str]]:
     answer_submissions = []
     # For each answer submission that was submitted for this submission type (`e.g.` `Pending`, `Solves`, `Awarded`, or `Fails`)...`):
     for answer_submission in query_results:
-        # ... retrieve the answer submissions's corresponding GRTSubmission entry.
-        answer_query = GRTSubmission.query.filter_by(submission_id=answer_submission.id).first()
+        # If the submission type is "pending"...
+        if submission_type is Pending:
+            # ... retrieve the answer submissions's corresponding GRTSubmission entry.
+            answer_query = GRTSubmission.query.filter_by(submission_id=answer_submission.id).first()
+        # Otherwise, if the submission type is "awarded," "fails," or "solves"...
+        elif submission_type is Awarded:
+            answer_query = GRTSolves.query.filter_by(challenge_id=challenge_id).first()
+        elif submission_type is Fails:
+            answer_query = GRTSolves.query.filter_by(challenge_id=challenge_id).first()
+        elif submission_type is Solves:
+            answer_query = GRTSolves.query.filter_by(challenge_id=challenge_id).first()
+        else:
+            raise TypeError(f'Submission type: "{submission_type}" '
+                            f'is not an instance of "{Pending}," "{Solves}," "{Awarded}," or "{Fails}"')
         if answer_query == None:
-            log.warn(f'Found no GRTSubmission entry for answer submission "{answer_submission.id}" '
+            log.warn(f'Found no GRTSubmission/GRTSolves entry for answer submission "{answer_submission.id}" '
                      f'on challenge "{challenge_id}" '
-                     f'for user "{get_current_user().name}," '
-                     f'so defaulting to "None" for the "prompt" and "generated_text" fields.')
+                     f'for user "{get_current_user().name}"')
         # Extract the answer submission's prompt and the text that it generated.
-        answer_submissions.append({'prompt': answer_query.prompt if answer_query else 'None',
+        answer_submissions.append({'prompt': answer_query.prompt,
                                    'date': isoformat(answer_submission.date),
-                                   'generated_text': answer_query.text if answer_query else 'None'})
-    log.debug(f'Extracted "{submission_type}" '
-              f'submissions: {answer_submissions}')
+                                   'generated_text': answer_query.text})
+    log.debug(f'Extracted "{submission_type}" submissions: {answer_submissions}')
     return answer_submissions
 
 
