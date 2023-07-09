@@ -1,4 +1,4 @@
-"""Modified versions of CTFd's models."""
+"""Modified versions of CTFd's database models."""
 # Standard library imports.
 import datetime
 from logging import getLogger
