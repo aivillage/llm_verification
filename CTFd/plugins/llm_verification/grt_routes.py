@@ -38,7 +38,8 @@ def add_routes() -> Blueprint:
                   f'for challenge {request.json["challenge_id"]} "{challenge.name}"')
         log.debug(f'User "{get_current_user().name}" '
                   f'submitted prompt: "{request.json["prompt"]}"')
-        complete_prompt = preprompt + request.json['prompt']
+        # Combine the pre-prompt and user-provided prompt with a space between them.
+        complete_prompt = f'{preprompt} {request.json["prompt"]}'
         log.debug(f'Combined pre-prompt and user-provided-prompt: "{complete_prompt}"')
         try:
             generated_text = generate_text(complete_prompt)
