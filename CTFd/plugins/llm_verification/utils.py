@@ -8,7 +8,7 @@ from CTFd.utils.modes import USERS_MODE, TEAMS_MODE
 from CTFd.utils.user import get_current_user
 
 # LLM Verification Plugin module imports.
-from .grt_models import GRTSubmission
+from .grt_models import GRTSolves, GRTSubmission
 
 
 log = getLogger(__name__)
@@ -74,3 +74,25 @@ def retrieve_submissions(submission_type, challenge_id, user_id) -> list[dict[st
     log.debug(f'Extracted "{submission_type}" '
               f'submissions: {answer_submissions}')
     return answer_submissions
+
+
+def create_grt_solve_entry(solve_status, ctfd_submission, grt_submission):
+    """Create a database entry for a challenge solve.
+    
+    Arguments:
+        solve_status(bool, required): Whether the challenge was solved.
+        ctfd_submission(CTFd model, required): CTFd database entry for the challenge submission.
+        grt_submission(GRTSubmission, required): GRT database entry for the challenge submission.
+
+    Returns:
+        solve_entry(GRTSolves): Database entry for the challenge solve.
+    """
+    solve_entry= GRTSolves(success=solve_status,
+                           challenge_id=ctfd_submission.challenge_id,
+                           text=grt_submission.text,
+                           prompt=grt_submission.prompt,
+                           date=ctfd_submission.date,
+                           user_id=ctfd_submission.user_id,
+                           team_id=ctfd_submission.team_id)
+    log.debug(f'Created GRTSolves entry: {solve_entry}')
+    return solve_entry

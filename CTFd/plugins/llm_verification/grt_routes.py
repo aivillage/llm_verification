@@ -15,7 +15,7 @@ from CTFd.utils.user import get_current_user
 # LLM Verification Plugin module imports.
 from .grt_models import GRTSubmission, GRTSolves, LlmChallenge, Pending, Awarded
 from .remote_llm import generate_text
-from .utils import retrieve_submissions
+from .utils import create_grt_solve_entry, retrieve_submissions
 
 
 log = getLogger(__name__)
@@ -165,14 +165,10 @@ def add_routes() -> Blueprint:
                                      Submissions.user_id == submission.user_id,
                                      Submissions.type == 'pending').delete()
             # Add the user's (correct) answer submission solution to the GRTSolves table.
-            solve = GRTSolves(success=True,
-                              challenge_id=submission.challenge_id,
-                              text=grt_submission.text,
-                              prompt=grt_submission.prompt,
-                              date=submission.date,
-                              user_id=submission.user_id,
-                              team_id=submission.team_id)
-            db.session.add(solve)
+            grt_solve = create_grt_solve_entry(solve_status=True,
+                                               ctfd_submission=submission,
+                                               grt_submission=grt_submission)
+            db.session.add(grt_solve)
         elif status == 'award':
             # Note that the submission solved its challenge in the (GRT) Awarded table.
             awarded = Awarded(user_id=submission.user_id,
@@ -190,14 +186,10 @@ def add_routes() -> Blueprint:
             db.session.add(awarded)
             db.session.add(award)
             # Add the user's (correct) answer submission solution to the GRTSolves table.
-            solve = GRTSolves(success=True,
-                              challenge_id=submission.challenge_id,
-                              text=grt_submission.text,
-                              prompt=grt_submission.prompt,
-                              date=submission.date,
-                              user_id=submission.user_id,
-                              team_id=submission.team_id)
-            db.session.add(solve)
+            grt_solve = create_grt_solve_entry(solve_status=True,
+                                               ctfd_submission=submission,
+                                               grt_submission=grt_submission)
+            db.session.add(grt_solve)
         # Otherwise, if the answer submission was marked "incorrect"...
         elif status == 'fail':
             # Note that the answer submission failed its challenge in the Fails table.
@@ -209,14 +201,10 @@ def add_routes() -> Blueprint:
                           date=submission.date)
             db.session.add(wrong)
             # Add the user's (incorrect) answer submission solution to the GRTSolves table.
-            solve = GRTSolves(success=False,
-                              challenge_id=submission.challenge_id,
-                              text=grt_submission.text,
-                              prompt=grt_submission.prompt,
-                              date=submission.date,
-                              user_id=submission.user_id,
-                              team_id=submission.team_id)
-            db.session.add(solve)
+            grt_solve = create_grt_solve_entry(solve_status=False,
+                                               ctfd_submission=submission,
+                                               grt_submission=grt_submission)
+            db.session.add(grt_solve)
         # Otherwise, if the admin doesn't want to "solve," "award," or "fail" the answer submission...
         else:
             # ... then do nothing and return an error.
