@@ -119,7 +119,9 @@ To start over from a clean slate, ensure that no CTFd containers are running wit
 
 ### 🔌 Compatibility
 
-**Compatible with CTFd v3.0.0**
+(Presumably) **Compatible with CTFd `v3.0.0`**
+
+Built with CTFd `v3.5.1`
 
 ### 🛟 Support
 
