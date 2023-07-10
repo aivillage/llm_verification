@@ -101,7 +101,7 @@ def retrieve_submissions(submission_type, challenge_id) -> list[dict[str, str]]:
         # Extract the answer submission's prompt and the text that it generated.
         answer_submissions.append({'prompt': answer_query.prompt,
                                    'date_submitted': isoformat(answer_submission.date),
-                                   'date_solved': date_graded,
+                                   'date_graded': date_graded,
                                    'generated_text': answer_query.text})
     log.debug(f'Extracted "{submission_type}" submissions: {answer_submissions}')
     return answer_submissions

@@ -98,6 +98,20 @@ challenge.postRender = function() {
             <p>{0}</p>\
             <p>{1}</p>\
             <small class="text-muted">submitted {2}</small>\
+            <br>\
+            <small class="text-muted">graded {3}</small>\
+        </blockquote>\
+    </div>\
+  </div>';
+
+  // Define a template for pending submissions that doesn't include "graded."
+  var pending_submission_template =
+    '<div class="card bg-light mb-4">\
+    <div class="card-body">\
+        <blockquote class="blockquote mb-0">\
+            <p>{0}</p>\
+            <p>{1}</p>\
+            <small class="text-muted">submitted {2}</small>\
         </blockquote>\
     </div>\
   </div>';
@@ -132,7 +146,8 @@ challenge.postRender = function() {
           submission_template.format(
             htmlEntities(submission.prompt),
             htmlEntities(submission.generated_text),
-            Moment(submission.date_submitted).fromNow()
+            Moment(submission.date_submitted).fromNow(),
+            Moment(submission.date_graded).fromNow()
           )
         );
         $("#challenge-submissions").append(entry);
@@ -149,7 +164,8 @@ challenge.postRender = function() {
           submission_template.format(
             htmlEntities(submission.prompt),
             htmlEntities(submission.generated_text),
-            Moment(submission.date_submitted).fromNow()
+            Moment(submission.date_submitted).fromNow(),
+            Moment(submission.date_graded).fromNow()
           )
         );
         $("#challenge-submissions").append(entry);
@@ -163,10 +179,10 @@ challenge.postRender = function() {
       for (var index = 0; index < pending.length; index++) {
         var submission = pending[index];
         var entry = $(
-          submission_template.format(
+          pending_submission_template.format(
             htmlEntities(submission.prompt),
             htmlEntities(submission.generated_text),
-            Moment(submission.date_submitted).fromNow()
+            Moment(submission.date_submitted).fromNow(),
           )
         );
         $("#challenge-submissions").append(entry);
@@ -183,7 +199,8 @@ challenge.postRender = function() {
           submission_template.format(
             htmlEntities(submission.prompt),
             htmlEntities(submission.generated_text),
-            Moment(submission.date_submitted).fromNow()
+            Moment(submission.date_submitted).fromNow(),
+            Moment(submission.date_graded).fromNow()
           )
         );
         $("#challenge-submissions").append(entry);
