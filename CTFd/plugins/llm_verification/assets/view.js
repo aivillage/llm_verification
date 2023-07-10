@@ -34,6 +34,12 @@ function Moment(d) {
           fuzzy = Math.floor(delta / hour) + " hours ago";
       } else if (delta < day * 2) {
           fuzzy = "yesterday";
+      } else if (delta < day * 3) {
+          fuzzy = "two days ago";
+      } else if (delta < day * 4) {
+          fuzzy = "three days ago";
+      } else {
+          fuzzy = "more than three days ago";
       }
       return fuzzy;
   };
@@ -90,7 +96,22 @@ challenge.postRender = function() {
     <div class="card-body">\
         <blockquote class="blockquote mb-0">\
             <p>{0}</p>\
-            <small class="text-muted">{1}</small>\
+            <p>{1}</p>\
+            <small class="text-muted">submitted {2}</small>\
+            <br>\
+            <small class="text-muted">graded {3}</small>\
+        </blockquote>\
+    </div>\
+  </div>';
+
+  // Define a template for pending submissions that doesn't include "graded."
+  var pending_submission_template =
+    '<div class="card bg-light mb-4">\
+    <div class="card-body">\
+        <blockquote class="blockquote mb-0">\
+            <p>{0}</p>\
+            <p>{1}</p>\
+            <small class="text-muted">submitted {2}</small>\
         </blockquote>\
     </div>\
   </div>';
@@ -120,11 +141,13 @@ challenge.postRender = function() {
       $("#challenge-submissions").append($("<br>"));
       $("#challenge-submissions").append($("<h3>Correct</h3>"));
       for (var index = 0; index < correct.length; index++) {
-        var s = correct[index];
+        var submission = correct[index];
         var entry = $(
           submission_template.format(
-            htmlEntities(s.provided),
-            Moment(s.date).fromNow()
+            htmlEntities(submission.prompt),
+            htmlEntities(submission.generated_text),
+            Moment(submission.date_submitted).fromNow(),
+            Moment(submission.date_graded).fromNow()
           )
         );
         $("#challenge-submissions").append(entry);
@@ -136,11 +159,13 @@ challenge.postRender = function() {
 
       $("#challenge-submissions").append($("<h3>Awarded</h3>"));
       for (var index = 0; index < awarded.length; index++) {
-        var s = awarded[index];
+        var submission = awarded[index];
         var entry = $(
           submission_template.format(
-            htmlEntities(s.provided),
-            Moment(s.date).fromNow()
+            htmlEntities(submission.prompt),
+            htmlEntities(submission.generated_text),
+            Moment(submission.date_submitted).fromNow(),
+            Moment(submission.date_graded).fromNow()
           )
         );
         $("#challenge-submissions").append(entry);
@@ -152,11 +177,12 @@ challenge.postRender = function() {
 
       $("#challenge-submissions").append($("<h3>Pending</h3>"));
       for (var index = 0; index < pending.length; index++) {
-        var s = pending[index];
+        var submission = pending[index];
         var entry = $(
-          submission_template.format(
-            htmlEntities(s.provided),
-            Moment(s.date).fromNow()
+          pending_submission_template.format(
+            htmlEntities(submission.prompt),
+            htmlEntities(submission.generated_text),
+            Moment(submission.date_submitted).fromNow(),
           )
         );
         $("#challenge-submissions").append(entry);
@@ -168,11 +194,13 @@ challenge.postRender = function() {
 
       $("#challenge-submissions").append($("<h3>Incorrect</h3>"));
       for (var index = 0; index < incorrect.length; index++) {
-        var s = incorrect[index];
+        var submission = incorrect[index];
         var entry = $(
           submission_template.format(
-            htmlEntities(s.provided),
-            Moment(s.date).fromNow()
+            htmlEntities(submission.prompt),
+            htmlEntities(submission.generated_text),
+            Moment(submission.date_submitted).fromNow(),
+            Moment(submission.date_graded).fromNow()
           )
         );
         $("#challenge-submissions").append(entry);
