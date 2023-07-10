@@ -9,7 +9,7 @@ from CTFd.plugins.migrations import upgrade as ctfd_migrations
 # LLM Verification Plugin module imports.
 from .llmv_logger import initialize_grtctfd_loggers
 from .grt_models import LlmSubmissionChallenge
-from .grt_routes import add_routes 
+from .grt_routes import add_routes
 
 
 log = getLogger(__name__)
