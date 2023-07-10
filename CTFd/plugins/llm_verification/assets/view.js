@@ -97,7 +97,7 @@ challenge.postRender = function() {
         <blockquote class="blockquote mb-0">\
             <p>{0}</p>\
             <p>{1}</p>\
-            <small class="text-muted">{2}</small>\
+            <small class="text-muted">submitted {2}</small>\
         </blockquote>\
     </div>\
   </div>';
