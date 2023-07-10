@@ -1,91 +1,138 @@
-# ![](https://github.com/CTFd/CTFd/blob/master/CTFd/themes/core/static/img/logo.png?raw=true)
+# 🤖 LLM Verification Plugin
 
-![CTFd MySQL CI](https://github.com/CTFd/CTFd/workflows/CTFd%20MySQL%20CI/badge.svg?branch=master)
-![Linting](https://github.com/CTFd/CTFd/workflows/Linting/badge.svg?branch=master)
-[![MajorLeagueCyber Discourse](https://img.shields.io/discourse/status?server=https%3A%2F%2Fcommunity.majorleaguecyber.org%2F)](https://community.majorleaguecyber.org/)
-[![Documentation Status](https://api.netlify.com/api/v1/badges/6d10883a-77bb-45c1-a003-22ce1284190e/deploy-status)](https://docs.ctfd.io)
+The LLMM Verification Plugin ("LLMV") is a [CTFd](https://github.com/CTFd/CTFd) plugin that adds a new challenge type called "LLM Verification." This new challenge type tasks users with creating prompts for external LLM APIs (such as [gpt-neox-20b](https://huggingface.co/EleutherAI/gpt-neox-20b)) that generate cheeky responses. These responses are reviewed manually by graders, who assign points based on how successfully the answer managed to subvert the model.
 
-## What is CTFd?
+## 🖥️ Installation
 
-CTFd is a Capture The Flag framework focusing on ease of use and customizability. It comes with everything you need to run a CTF and it's easy to customize with plugins and themes.
+1. Copy the `llm_verification` folder that contains this `README.md` file to `CTFd/plugins/`.
 
-![CTFd is a CTF in a can.](https://github.com/CTFd/CTFd/blob/master/CTFd/themes/core/static/img/scoreboard.png?raw=true)
+2. Copy the template config file (`llmv_config.template.json`) from `CTFd/plugins/llm_verification/ and remove `.template` from the filename.
 
-## Features
+   ```console
+   $ cp CTFd/plugins/llm_verification/llmv_config.template.json CTFd/plugins/llm_verification/llmv_config.json
+   ```
 
-- Create your own challenges, categories, hints, and flags from the Admin Interface
-  - Dynamic Scoring Challenges
-  - Unlockable challenge support
-  - Challenge plugin architecture to create your own custom challenges
-  - Static & Regex based flags
-    - Custom flag plugins
-  - Unlockable hints
-  - File uploads to the server or an Amazon S3-compatible backend
-  - Limit challenge attempts & hide challenges
-  - Automatic bruteforce protection
-- Individual and Team based competitions
-  - Have users play on their own or form teams to play together
-- Scoreboard with automatic tie resolution
-  - Hide Scores from the public
-  - Freeze Scores at a specific time
-- Scoregraphs comparing the top 10 teams and team progress graphs
-- Markdown content management system
-- SMTP + Mailgun email support
-  - Email confirmation support
-  - Forgot password support
-- Automatic competition starting and ending
-- Team management, hiding, and banning
-- Customize everything using the [plugin](https://docs.ctfd.io/docs/plugins/overview) and [theme](https://docs.ctfd.io/docs/themes/overview) interfaces
-- Importing and Exporting of CTF data for archival
-- And a lot more...
+3. Replace `"UNSET"` values `llmv_config.json` with the values that you desire.
 
-## Install
+4. Confirm that LLMV installed successfully. Look for this message after running `docker compose up`.
 
-1. Install dependencies: `pip install -r requirements.txt`
-   1. You can also use the `prepare.sh` script to install system dependencies using apt.
-2. Install the GRT dependencies `pip install -r CTFd/plugins/manual_verification/requirements.txt`
-3. Modify [CTFd/config.ini](https://github.com/CTFd/CTFd/blob/master/CTFd/config.ini) to your liking.
-4. Use `python serve.py` or `flask run` in a terminal to drop into debug mode.
+   ```
+   INFO - Initialized LLM Verification Plugin
+   ```
 
-You can use the auto-generated Docker images with the following command:
+## ⛳️ Usage
 
-`docker run -p 8000:8000 -it ctfd/ctfd`
+1. Create a CTFd event.
 
-Or you can use Docker Compose with the following command from the source repository:
+2. Login to CTFd as an administrator.
 
-`docker-compose up`
+3. Click `Admin Panel" on the right side of the top toolbar.
 
-Check out the [CTFd docs](https://docs.ctfd.io/) for [deployment options](https://docs.ctfd.io/docs/deployment/installation) and the [Getting Started](https://docs.ctfd.io/tutorials/getting-started/) guide
+4. Click "Challenges" in middle of the top toolbar.
 
-## Live Demo
+5. Click the `⨁` in the "Challenges" page's title (`Challenges ⨁`).
 
-https://demo.ctfd.io/
+6. Create a challenge with "llm_verification" selected as the "Challenge Type."
 
-## Support
+   a. Name (optional): challenge title.
 
-To get basic support, you can join the [MajorLeagueCyber Community](https://community.majorleaguecyber.org/): [![MajorLeagueCyber Discourse](https://img.shields.io/discourse/status?server=https%3A%2F%2Fcommunity.majorleaguecyber.org%2F)](https://community.majorleaguecyber.org/)
+   b. Category (optional): general "type" of challenge that's used to visually group challenges.
 
-If you prefer commercial support or have a special project, feel free to [contact us](https://ctfd.io/contact/).
+      1. ex. "pre-prompt extraction"
+      2. ex. "insensitive output"
 
-## Managed Hosting
+   c. Message (optional): Describe the goal for your users.
 
-Looking to use CTFd but don't want to deal with managing infrastructure? Check out [the CTFd website](https://ctfd.io/) for managed CTFd deployments.
+   d. Pre-prompt (optional): A string that will be prepended to every prompt that users submit to this challenge. Be sure to leave a space at the end.
 
-## MajorLeagueCyber
+   e. LLM to use (optional, defaults to "VanillaNeox"): The LLM to use for this challenge.
 
-CTFd is heavily integrated with [MajorLeagueCyber](https://majorleaguecyber.org/). MajorLeagueCyber (MLC) is a CTF stats tracker that provides event scheduling, team tracking, and single sign on for events.
+   f. Value (required): This isn't used, but you need to add an integer to proceed.
 
-By registering your CTF event with MajorLeagueCyber users can automatically login, track their individual and team scores, submit writeups, and get notifications of important events.
+   g. Click the "Create" button in the lower right, which will present you with an "Options" popup.
 
-To integrate with MajorLeagueCyber, simply register an account, create an event, and install the client ID and client secret in the relevant portion in `CTFd/config.py` or in the admin panel:
+   h. Flag (optional): This value isn't used and can be ignored.
 
-```python
-OAUTH_CLIENT_ID = None
-OAUTH_CLIENT_SECRET = None
-```
+   i. State (optional): Set to "Visible" so users can see your new challenge.
 
-## Credits
+7. Click "CTFd" on the left of the top toolbar. This exits the "Admin Panel."
 
-- Logo by [Laura Barbera](http://www.laurabb.com/)
-- Theme by [Christopher Thompson](https://github.com/breadchris)
-- Notification Sound by [Terrence Martin](https://soundcloud.com/tj-martin-composer)
+8. Click "Challenges" in the middle of the top toolbar. This shows challenges as users see them.
+
+9. Select the challenge that you created.
+
+10. Add some text to the "Prompt" text box.
+
+11. Click the "Generate" button. Generated text will appear in the second box. If you'd like to change the text that was generated, then change the prompt and click "Generate" again. Previously generated text in the second box will be replaced.
+
+12. Click the "Submit" button. A red notification will pop up saying "Submission Under Review."
+
+13. Click "Admin Panel" in the right of the top panel.
+
+14. Click the "Plugins" dropdown in the right of the top panel.
+
+15. Click "LLM Submissions" to navigate to the grading page for answer submissions.
+
+16. Click the 💬 ("Grade") button on the far right of an answer submission's row.
+
+17. Click "Mark Incorrect," "Mark Correct," or "Award Points."
+   a. 🟥 "Mark Incorrect:" Delete the user's submission and don't award them points.
+   b. 🟩 "Mark Correct:" Award the amount of points set earlier in "Options" and prevent the user from submitting additional answers. The challenge's card will be turn green and gain a ✅. The user will still be able to generate responses for the challenge, but clicking the "Submit" button will create a blue dialog that says "You already solved this."
+   c. ◻️"Award Points:" Award a custom amount of points and allow the user to submit additional answers.
+   d. Note that points awarded with "Award Points" won't immediately show up in "Admin Panel"'s "Scoreboard", but they will show up immediately in the non-admin panel's "Scoreboard"
+
+## 🛠️ Contributing
+
+### 📖 tl;dr
+
+Use `docker-compose.dev.yml` for making code changes to CTFd or plugins. Add `--build` for non-code changes such as dependency changes in `requirements.txt` or entrypoint changes in `Dockerfile`. CTFd will be available at [https://localhost:8000](https://localhost:8000).
+
+   ```console
+   $ docker compose -f docker-compose.dev.yml up --build
+   ```
+
+### 👩🏼‍💻 Development Mode
+
+To hack on the plugin's code, we want to start [Flask (CTFd's RESTful)](https://flask.palletsprojects.com/en/2.3.x/) in development mode so code changes trigger hot reloads.
+
+Since the repo directory's already mounted as a [volume](https://docs.docker.com/storage/volumes/) in `docker-compose.yml`, container images don't need to be rebuilt for code changes to take effect. However, (the production server) Gunicorn won't recognize these changes, so we need to start it with Flask instead.
+
+The `Dockerfile.dev`, `docker-compose.dev.yml`, and `docker-entrypoint.dev.sh` are near-exact copies of `Dockerfile`, `docker-compose.yml`, and `docker-entrypoint.sh`. `Dockerfile.dev` uses a different entrypoint (`docker-entrypoint.dev.sh`) and `docker-compose.dev.yml` uses a [different Dockerfile for builds](https://docs.docker.com/compose/compose-file/build/#illustrative-example). They work together to start the application with Flask instead of Gunicorn (via `docker-entrypoint.dev.sh`).
+
+To use it, specify it with `-f` when invoking `docker compose up`.
+
+   ```console
+   $ docker compose -f docker-compose.dev.yml up
+   ```
+
+### 🏗️ Rebuilding
+
+For dependency and Dockerfile changes to take effect, add `--build`. This will take longer, though, because some layers will need to be rebuilt.
+
+   ```console
+   $ docker compose -f docker-compose.dev.yml up --build
+   ```
+
+To start over from a clean slate, ensure that no CTFd containers are running with `docker ps` and `docker kill`. Then run `rm -rf ./.data`.
+
+## 🐭 Miscellaneous
+
+### 🔌 Compatibility
+
+(Presumably) **Compatible with CTFd `v3.0.0`**
+
+Built with CTFd `v3.5.1`
+
+### 🛟 Support
+
+If you experience any problems, or if you think you've found a
+bug, or have a feature request - please don't hesitate to reach
+out to support@ctfd.io.
+
+### 🙏🏻 Kudos
+
+Readme format inspired by [makeareadme.com](https://www.makeareadme.com).
+
+## 🪪 License
+
+Must be 16 or older and have an adult in the car during operation.
