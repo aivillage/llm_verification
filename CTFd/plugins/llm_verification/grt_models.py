@@ -105,6 +105,8 @@ class LlmSubmissionChallenge(BaseChallenge):
             Challenge: The newly created challenge.
         """
         data = request.form or request.get_json()
+        # Make LLM challenges visible to users by default.
+        data['state'] = 'visible'
         challenge = cls.challenge_model(**data)
         db.session.add(challenge)
         db.session.commit()
