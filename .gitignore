@@ -3,3 +3,4 @@ __pycache__/
 gpt-neox-20b
 llmv_config.json
 llm_verification.code-workspace
+.vscode/
