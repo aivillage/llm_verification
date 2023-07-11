@@ -52,4 +52,5 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 USER 1001
 EXPOSE 8000
+# LLMV: Modified entrypoint to use development entrypoint.
 ENTRYPOINT ["/opt/CTFd/docker-entrypoint.dev.sh"]
