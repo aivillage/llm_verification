@@ -30,4 +30,5 @@ flask db upgrade
 
 # Start CTFd
 echo "Starting CTFd"
+# LLMV: Activate hot reloading with Flask.
 exec flask run --host 0.0.0.0 --port 8000
