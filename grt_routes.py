@@ -29,8 +29,14 @@ def add_routes() -> Blueprint:
     @llm_verifications.route('/generate', methods=['POST'])
     @bypass_csrf_protection
     @authed_only
-    def generate_for_challenge():
-        """Add a route to CTFd for generating text from a prompt."""
+    def generate_for_challenge(remove_preprompt=True):
+        """Add a route to CTFd for generating text from a prompt.
+
+        Arguments:
+            remove_preprompt(bool, optional): Whether to remove the preprompt
+                from the generated text.
+                Defaults to `False`.
+        """
         log.info(f'Received text generation request from user "{get_current_user().name}" '
                  f'for challenge ID "{request.json["challenge_id"]}"')
         challenge = LlmChallenge.query.filter_by(id=request.json['challenge_id']).first_or_404()
@@ -50,6 +56,11 @@ def add_routes() -> Blueprint:
             # Send the error message from the HTTPError as the response to the user.
             generated_text = str(error)
             generation_succeeded = False
+        # If the pre-prompt needs to be removed from the generated text...
+        if remove_preprompt:
+            # ... then remove the pre-prompt from the generated text.
+            generated_text = generated_text.replace(preprompt, '')
+            log.info(f'Removed pre-prompt "{preprompt}" from generated text')
         response = {'success': generation_succeeded, 'data': {'text': generated_text}}
         log.info(f'Generated text for user "{get_current_user().name}" '
                  f'for challenge "{challenge.name}"')
