@@ -56,8 +56,9 @@ def add_routes() -> Blueprint:
             # Send the error message from the HTTPError as the response to the user.
             generated_text = str(error)
             generation_succeeded = False
+        log.error(f'Preprompt setting: {challenge.remove_preprompt}')
         # If the pre-prompt needs to be removed from the generated text...
-        if remove_preprompt and preprompt in generated_text:
+        if challenge.remove_preprompt and preprompt in generated_text:
             # ... then remove the pre-prompt from the generated text.
             generated_text = generated_text.replace(preprompt, '')
             log.info(f'Removed pre-prompt "{preprompt}" from generated text')
