@@ -59,6 +59,8 @@ class LlmChallenge(Challenges):
                    primary_key=True)
     preprompt = db.Column(db.Text)
     llm = db.Column(db.Text)
+    # Whether the preprompt should be removed from text generations that are shown to users.
+    remove_preprompt = db.Column(db.Boolean, default=True)
 
     def __init__(self, *args, **kwargs):
         super(LlmChallenge, self).__init__(**kwargs)
