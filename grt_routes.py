@@ -57,7 +57,7 @@ def add_routes() -> Blueprint:
             generated_text = str(error)
             generation_succeeded = False
         # If the pre-prompt needs to be removed from the generated text...
-        if remove_preprompt:
+        if remove_preprompt and preprompt in generated_text:
             # ... then remove the pre-prompt from the generated text.
             generated_text = generated_text.replace(preprompt, '')
             log.info(f'Removed pre-prompt "{preprompt}" from generated text')
