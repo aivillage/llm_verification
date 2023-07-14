@@ -28,11 +28,12 @@ def generate_text(prompt):
     log.info(f'Received text generation request for prompt "{prompt}"')
     # Load the Vanilla Neox API key from the config file.
     llmv_config = load_llmv_config()
-    neox_token = llmv_config['vanilla_neox_api_key']
-    if neox_token == 'UNSET':
+    hf_key = llmv_config['huggingface_key']
+    url = llmv_config['url']
+    if hf_key == 'UNSET':
         raise ValueError('Vanilla Neox API key is not set')
-    raw_response = post(url='https://api-inference.huggingface.co/models/EleutherAI/gpt-neox-20b',
-                        headers={'Authorization': f'Bearer {neox_token}'},
+    raw_response = post(url=url,
+                        headers={'Authorization': f'Bearer {hf_key}'},
                         json={'inputs': prompt})
     log.debug(f'Received {raw_response.status_code} response from EleutherAI API')
     # If it's a successful HTTP status code, then...
