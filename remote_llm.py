@@ -12,7 +12,7 @@ from .config_manager import load_llmv_config
 
 log = getLogger(__name__)
 
-def generate_text(prompt):
+def generate_text(preprompt, prompt):
     """Generate text from a prompt using the EleutherAI GPT-NeoX-20B model.
 
     Arguments:
@@ -31,6 +31,10 @@ def generate_text(prompt):
     hf_key = llmv_config['huggingface_key']
     url = llmv_config['url']
     parameters = llmv_config['parameters']
+    prompt_format = llmv_config['prompt_format']
+
+    prompt = prompt_format.replace('PROMPT', prompt)
+
     if hf_key == 'UNSET':
         raise ValueError('Vanilla Neox API key is not set')
     raw_response = post(url=url,
