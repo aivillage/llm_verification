@@ -1,9 +1,3 @@
-if (CTFd._internal.challenge) {
-  var challenge = CTFd._internal.challenge;
-} else {
-  var challenge = window.challenge;
-}
-
 if (CTFd.lib.$) {
   $ = CTFd.lib.$;
 }
@@ -76,17 +70,15 @@ function htmlEntities(string) {
     .html();
 }
 
-challenge.data = undefined;
+CTFd._internal.challenge.data = undefined;
 
-challenge.renderer = CTFd.lib.markdown();
+CTFd._internal.challenge.renderer = null;
 
-challenge.preRender = function() {};
+CTFd._internal.challenge.preRender = function() {};
 
-challenge.render = function(markdown) {
-  return challenge.renderer.render(markdown);
-};
+CTFd._internal.challenge.render = null;
 
-challenge.postRender = function() {
+CTFd._internal.challenge.postRender = function() {
   // Don't hijack the enter button
   // Clone element to remove keyup event handler. Not sure why .off wont work
   $("#challenge-input").replaceWith($("#challenge-input").clone());
@@ -215,7 +207,7 @@ challenge.postRender = function() {
       );
       $("#challenge-window #challenge-prompt").addClass("form-control");
 
-      $("#challenge-generate").click(function(event) {
+      $("#challenge-generate").on( "click", function(event) {
         event.preventDefault();
   
         $("#challenge-input").val();
@@ -231,7 +223,7 @@ challenge.postRender = function() {
     });
 };
 
-challenge.submit = function(preview) {
+CTFd._internal.challenge.submit = function(preview) {
   var challenge_id = parseInt($("#challenge-id").val());
   var submission_prompt = $("#challenge-prompt").val();
   var submission_text = $("#challenge-input").val();
