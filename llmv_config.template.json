@@ -9,5 +9,5 @@
         "temperature": 0.9,
         "stop": ["<|endoftext|>"]
     },
-    "prompt_format": "<|prompter|>PROMPT<|endoftext|><|assistant|>"
+    "prompt_format": "PREPROMPT\n<|prompter|>PROMPT<|endoftext|><|assistant|>"
 }
