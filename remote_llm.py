@@ -33,6 +33,7 @@ def generate_text(preprompt, prompt):
     parameters = llmv_config['parameters']
     prompt_format = llmv_config['prompt_format']
 
+    prompt = prompt_format.replace('PREPROMPT', preprompt)
     prompt = prompt_format.replace('PROMPT', prompt)
 
     if hf_key == 'UNSET':
