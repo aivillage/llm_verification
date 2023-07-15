@@ -40,10 +40,10 @@ def add_routes() -> Blueprint:
         log.debug(f'User "{get_current_user().name}" '
                   f'submitted prompt: "{request.json["prompt"]}"')
         # Combine the pre-prompt and user-provided prompt with a space between them.
-        complete_prompt = f'{preprompt} {request.json["prompt"]}'
-        log.debug(f'Combined pre-prompt and user-provided-prompt: "{complete_prompt}"')
+        prompt = request.json["prompt"]
+        log.debug(f'pre-prompt {preprompt} and user-provided-prompt: "{prompt}"')
         try:
-            generated_text = generate_text(complete_prompt)
+            generated_text = generate_text(preprompt, prompt)
             generation_succeeded = True
         except HTTPError as error:
             log.error(f'Remote LLM experienced an error when generating text: {error}')

@@ -1,5 +1,6 @@
 """RESTful API calls to remote LLMs."""
 # Standard library imports.
+from ast import List
 from logging import getLogger
 
 # Third-party imports.
@@ -9,10 +10,9 @@ from requests.exceptions import HTTPError
 # LLM Verification Plugin module imports.
 from .config_manager import load_llmv_config
 
-
 log = getLogger(__name__)
 
-def generate_text(prompt):
+def generate_text(preprompt, prompt):
     """Generate text from a prompt using the EleutherAI GPT-NeoX-20B model.
 
     Arguments:
@@ -28,12 +28,20 @@ def generate_text(prompt):
     log.info(f'Received text generation request for prompt "{prompt}"')
     # Load the Vanilla Neox API key from the config file.
     llmv_config = load_llmv_config()
-    neox_token = llmv_config['vanilla_neox_api_key']
-    if neox_token == 'UNSET':
+    hf_key = llmv_config['huggingface_key']
+    url = llmv_config['url']
+    parameters = llmv_config['parameters']
+    prompt_format = llmv_config['prompt_format']
+
+    prompt = prompt_format.replace('PREPROMPT', preprompt)
+    prompt = prompt_format.replace('PROMPT', prompt)
+
+    if hf_key == 'UNSET':
         raise ValueError('Vanilla Neox API key is not set')
-    raw_response = post(url='https://api-inference.huggingface.co/models/EleutherAI/gpt-neox-20b',
-                        headers={'Authorization': f'Bearer {neox_token}'},
-                        json={'inputs': prompt})
+    raw_response = post(url=url,
+                        headers={'Authorization': f'Bearer {hf_key}'},
+                        json={'inputs': prompt, "parameters" : parameters, "stream:": False})
+    
     log.debug(f'Received {raw_response.status_code} response from EleutherAI API')
     # If it's a successful HTTP status code, then...
     if raw_response.status_code == 200:

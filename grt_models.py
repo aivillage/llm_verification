@@ -58,7 +58,6 @@ class LlmChallenge(Challenges):
                    db.ForeignKey('challenges.id', ondelete='CASCADE'),
                    primary_key=True)
     preprompt = db.Column(db.Text)
-    llm = db.Column(db.Text)
     # Whether the preprompt should be removed from text generations that are shown to users.
     remove_preprompt = db.Column(db.Boolean, default=True)
 

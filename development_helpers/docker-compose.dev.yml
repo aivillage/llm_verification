@@ -4,8 +4,8 @@ services:
   ctfd:
     # LLMV: Change Dockerfile to development version.
     build:
-      context: .
-      dockerfile: Dockerfile.dev
+      context: ../../../../
+      dockerfile: CTFd/plugins/llm_verification/development_helpers/Dockerfile.dev
     user: root
     restart: always
     ports:
@@ -20,9 +20,9 @@ services:
       - ERROR_LOG=-
       - REVERSE_PROXY=true
     volumes:
-      - .data/CTFd/logs:/var/log/CTFd
-      - .data/CTFd/uploads:/var/uploads
-      - .:/opt/CTFd:ro
+      - ../../../../.data/CTFd/logs:/var/log/CTFd
+      - ../../../../.data/CTFd/uploads:/var/uploads
+      - ../../../../:/opt/CTFd:ro
     depends_on:
       - db
     networks:
@@ -33,7 +33,7 @@ services:
     image: nginx:stable
     restart: always
     volumes:
-      - ./conf/nginx/http.conf:/etc/nginx/nginx.conf
+      - ../../../../conf/nginx/http.conf:/etc/nginx/nginx.conf
     ports:
       - 80:80
     depends_on:
@@ -48,7 +48,7 @@ services:
       - MYSQL_PASSWORD=ctfd
       - MYSQL_DATABASE=ctfd
     volumes:
-      - .data/mysql:/var/lib/mysql
+      - ../../../../.data/mysql:/var/lib/mysql
     networks:
         internal:
     # This command is required to set important mariadb defaults
@@ -58,7 +58,7 @@ services:
     image: redis:4
     restart: always
     volumes:
-    - .data/redis:/data
+    - ../../../../.data/redis:/data
     networks:
         internal:
 

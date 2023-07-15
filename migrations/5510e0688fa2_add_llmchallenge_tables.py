@@ -20,7 +20,6 @@ def upgrade(op=None):
             "llm_challenge",
             sa.Column("id", sa.Integer(), nullable=False),
             sa.Column("preprompt", sa.Text(), nullable=True),
-            sa.Column("llm", sa.String(length=255), nullable=False),
             sa.Column("remove_preprompt", sa.Boolean(), nullable=False),
             sa.ForeignKeyConstraint(["id"], ["challenges.id"]),
             sa.PrimaryKeyConstraint("id"),
