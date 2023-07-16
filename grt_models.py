@@ -15,6 +15,30 @@ from CTFd.utils.user import get_ip
 
 log = getLogger(__name__)
 
+class GRTGeneration(db.Model):
+    """GRT CTFd SQLAlchemy table for answer generation."""
+    __tablename__ = 'grt_generation'
+    __table_args__ = {'extend_existing': True}
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'))
+    team_id = db.Column(db.Integer, db.ForeignKey('teams.id', ondelete='CASCADE'))
+    challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id', ondelete='CASCADE'))
+    text = db.Column(db.Text)
+    prompt = db.Column(db.Text)
+    submitted = db.Column(db.Boolean, default=False)
+    points = db.Column(db.Integer, default=0)
+    report = db.Column(db.Text)
+
+    @hybrid_property
+    def account_id(self):
+        from CTFd.utils import get_config
+        user_mode = get_config('user_mode')
+        if user_mode == 'teams':
+            return self.team_id
+        elif user_mode == 'users':
+            return self.user_id
+
 class GRTSubmission(db.Model):
     """GRT CTFd SQLAlchemy table for answer submissions."""
     __tablename__ = 'grt_submissions'
@@ -164,6 +188,9 @@ class LlmSubmissionChallenge(BaseChallenge):
         """
         data = request.form or request.get_json()
         submission = data['submission']
+        log.info(data)
+        return None
+
         pending = Pending(user_id=user.id,
                           team_id=team.id if team else None,
                           challenge_id=challenge.id,
@@ -178,4 +205,3 @@ class LlmSubmissionChallenge(BaseChallenge):
         db.session.add(grt)
         db.session.commit()
         log.info(f'Fail: marked attempt as pending: {submission}')
-        return None

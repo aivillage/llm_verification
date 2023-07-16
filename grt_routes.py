@@ -14,7 +14,7 @@ from CTFd.utils.modes import get_model
 from CTFd.utils.user import get_current_user
 
 # LLM Verification Plugin module imports.
-from .grt_models import GRTSubmission, GRTSolves, LlmChallenge, Pending, Awarded
+from .grt_models import GRTSubmission, GRTSolves, LlmChallenge, Pending, Awarded, GRTGeneration
 from .remote_llm import generate_text
 from .utils import create_grt_solve_entry, retrieve_submissions
 
@@ -43,7 +43,7 @@ def add_routes() -> Blueprint:
         prompt = request.json["prompt"]
         log.debug(f'pre-prompt {preprompt} and user-provided-prompt: "{prompt}"')
         try:
-            generated_text = generate_text(preprompt, prompt)
+            full_prompt, generated_text = generate_text(preprompt, prompt)
             generation_succeeded = True
         except HTTPError as error:
             log.error(f'Remote LLM experienced an error when generating text: {error}')
@@ -56,9 +56,26 @@ def add_routes() -> Blueprint:
             # ... then remove the pre-prompt from the generated text.
             generated_text = generated_text.replace(preprompt, '')
             log.info(f'Removed pre-prompt "{preprompt}" from generated text')
-        response = {'success': generation_succeeded, 'data': {'text': generated_text}}
+
+        user_id = get_current_user().id
+        team_id = get_current_user().team_id
+        challenge_id = request.json['challenge_id']
+        text = generated_text
+        grt_generation = GRTGeneration(user_id=user_id,
+                                       team_id=team_id,
+                                       challenge_id=challenge_id,
+                                       text=text,
+                                       prompt=full_prompt)
+        db.session.add(grt_generation)
+        db.session.commit()
+        grt_generation_id = grt_generation.id
+
+        response = {'success': generation_succeeded, 'data': {'text': generated_text, 'gen_id': grt_generation_id}}
         log.info(f'Generated text for user "{get_current_user().name}" '
-                 f'for challenge "{challenge.name}"')
+                 f'for challenge "{challenge.name}" with id {grt_generation_id}')
+        
+        log.debug(f"Total number of generated texts: {GRTGeneration.query.count()}")
+
         return jsonify(response)
 
     @llm_verifications.route('/submissions/<challenge_id>', methods=['GET'])

@@ -25,6 +25,22 @@ def upgrade(op=None):
             sa.PrimaryKeyConstraint("id"),
         )
         op.create_table(
+            "grt_generation",
+            sa.Column("id", sa.Integer(), nullable=False),
+            sa.Column("challenge_id", sa.Integer(), nullable=False),
+            sa.Column("user_id", sa.Integer(), nullable=True),
+            sa.Column("team_id", sa.Integer(), nullable=True),
+            sa.Column("text", sa.Text(), nullable=False),
+            sa.Column("prompt", sa.Text(), nullable=False),
+            sa.Column("submitted", sa.Boolean(), nullable=False),
+            sa.Column("points", sa.Integer(), nullable=False),
+            sa.Column("report", sa.Text(), nullable=True),
+            sa.ForeignKeyConstraint(["challenge_id"], ["challenges.id"]),
+            sa.ForeignKeyConstraint(["team_id"], ["teams.id"]),
+            sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
+            sa.PrimaryKeyConstraint("id"),
+        )
+        op.create_table(
             "grt_submissions",
             sa.Column("id", sa.Integer(), nullable=False),
             sa.Column("challenge_id", sa.Integer(), nullable=False),

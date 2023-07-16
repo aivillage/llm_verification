@@ -81,7 +81,7 @@ CTFd._internal.challenge.render = null;
 CTFd._internal.challenge.postRender = function() {
   // Don't hijack the enter button
   // Clone element to remove keyup event handler. Not sure why .off wont work
-  $("#challenge-input").replaceWith($("#challenge-input").clone());
+  //$("#challenge-input").replaceWith($("#challenge-input").clone());
 
   var submission_template =
     '<div class="card bg-light mb-4">\
@@ -209,45 +209,34 @@ CTFd._internal.challenge.postRender = function() {
 
       $("#challenge-generate").on( "click", function(event) {
         event.preventDefault();
-  
-        $("#challenge-input").val();
+        console.log(CTFd._internal.challenge.data);
+        $("#challenge-generated").val();
         
         var challenge_id = $("#challenge-id").val();
         var prompt = $("#challenge-prompt").val();
         generate_text(challenge_id, prompt).then(function(response) {
-          console.log(response);
-          console.log(response.data.text);
-          $("#challenge-input").val(response.data.text);
+          $("#challenge-generated").val(response.data.text);
+          $("#challenge-input").val(response.data.gen_id);
+          CTFd._internal.challenge.gen_id = response.data.gen_id;
+          Alpine.data("submission") = response.data.gen_id;
         });
       });
     });
 };
+/*
+CTFd._functions.challenge.submitChallenge = async function(challenge_id, submission) {
+  console.log("submitting");
+  url = CTFd.config.urlRoot + `/api/v1/challenges/attempt`;
 
-CTFd._internal.challenge.submit = function(preview) {
-  var challenge_id = parseInt($("#challenge-id").val());
-  var submission_prompt = $("#challenge-prompt").val();
-  var submission_text = $("#challenge-input").val();
-  
-  var body = {
-    challenge_id: challenge_id,
-    submission: "Generative Text",
-    prompt: submission_prompt,
-    text: submission_text
-  };
-  var params = {};
-  if (preview) {
-    params["preview"] = true;
-  }
-
-  return CTFd.api.post_challenge_attempt(params, body).then(function(response) {
-    if (response.status === 429) {
-      // User was ratelimited but process response
-      return response;
-    }
-    if (response.status === 403) {
-      // User is not logged in or CTF is paused.
-      return response;
-    }
-    return response;
+  const response = await CTFd.fetch(url, {
+    method: "POST",
+    body: JSON.stringify({
+      challenge_id: challenge_id,
+      submission: CTFd._internal.challenge.gen_id.toString(),
+    }),
   });
+  const result = await response.json();
+  console.log("finished submitting, result:", result);
+  return result;
 };
+*/
