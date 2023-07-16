@@ -1,3 +1,41 @@
+CTFd._internal.challenge.data = undefined;
+
+CTFd._internal.challenge.renderer = null;
+
+CTFd._internal.challenge.preRender = function() {};
+
+CTFd._internal.challenge.render = null;
+
+CTFd._internal.challenge.postRender = function() {};
+
+window.Alpine = Alpine;
+
+Alpine.data("llm_verification", () => ({
+  prompt: "",
+  generated_text: "",
+  gen_id: "",
+
+  async init() {
+  },
+
+  async generateText() {
+    this.generated_text = "Generating...";
+    url = CTFd.config.urlRoot + `/generate`;
+
+    const response = await CTFd.fetch(url, {
+      method: "POST",
+      body: JSON.stringify({
+        challenge_id: this.id,
+        prompt: this.prompt
+      }),
+    });
+    const result = await response.json();
+    this.generated_text = result.data.text;
+    this.submission = result.data.gen_id.toString();
+  },
+}));
+
+/*
 if (CTFd.lib.$) {
   $ = CTFd.lib.$;
 }
@@ -39,7 +77,6 @@ function Moment(d) {
   };
   return date;
 }
-
 
 async function generate_text(challenge_id, prompt) {
   var domain = CTFd.config.urlRoot;
@@ -218,12 +255,12 @@ CTFd._internal.challenge.postRender = function() {
           $("#challenge-generated").val(response.data.text);
           $("#challenge-input").val(response.data.gen_id);
           CTFd._internal.challenge.gen_id = response.data.gen_id;
-          Alpine.data("submission") = response.data.gen_id;
+          document.getElementById("challenge-input").dispatchEvent("input");
         });
       });
     });
 };
-/*
+
 CTFd._functions.challenge.submitChallenge = async function(challenge_id, submission) {
   console.log("submitting");
   url = CTFd.config.urlRoot + `/api/v1/challenges/attempt`;

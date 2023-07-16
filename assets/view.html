@@ -13,16 +13,16 @@
             <a class="nav-link" id="pills-prev-submissions-tab" data-toggle="pill" href="#pills-prev-submissions" role="tab">Previous Submissions</a>
         </li>
     </ul>
-    <div class="tab-content">
+    <div class="tab-content" x-data="llm_verification">
         <div class="tab-pane fade show active" id="pills-new-submission" role="tabpanel">
             <div class="tab-content">
-                <textarea id="challenge-prompt" class="challenge-input mb-3" type="text" name="answer" placeholder="Prompt" rows="5"></textarea>
-                <button id="challenge-generate" class="challenge-submit" type="submit">Generate</button>
+                <textarea id="challenge-prompt" class="challenge-input mb-3" type="text" name="answer" placeholder="Prompt" rows="5" x-model="prompt"></textarea>
+                <button id="challenge-generate" class="challenge-submit" type="submit" @click.debounce.500ms="generateText()">Generate</button>
             </div>
             <br>
             <br>
             <div class="tab-content">
-                <textarea id="challenge-generated" class="challenge-input mb-3" type="text" name="answer" placeholder="Generated Text" rows="10" readonly></textarea>
+                <textarea id="challenge-generated" class="challenge-input mb-3" type="text" name="answer" placeholder="Generated Text" x-model="generated_text" readonly></textarea>
             </div>
 
             <button id="challenge-submit" class="challenge-submit" type="submit">
@@ -45,6 +45,6 @@
     <input
         id="challenge-input" class="challenge-input form-control"
         type="text" name="submission"
-        placeholder="{% trans %}Flag{% endtrans %}" x-model="submission" x-bind="gen_id"
+        placeholder="{% trans %}Flag{% endtrans %}" x-model="submission"
     >
 {% endblock %}

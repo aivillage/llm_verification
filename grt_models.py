@@ -27,6 +27,7 @@ class GRTGeneration(db.Model):
     text = db.Column(db.Text)
     prompt = db.Column(db.Text)
     submitted = db.Column(db.Boolean, default=False)
+    graded = db.Column(db.Boolean, default=False)
     points = db.Column(db.Integer, default=0)
     report = db.Column(db.Text)
 
@@ -189,7 +190,17 @@ class LlmSubmissionChallenge(BaseChallenge):
         data = request.form or request.get_json()
         submission = data['submission']
         log.info(data)
-        return None
+
+        generation = GRTGeneration.query.add_columns(
+            GRTGeneration.text,
+            GRTGeneration.prompt,
+            GRTGeneration.challenge_id,
+            ).filter_by(id=int(submission)).update({'submitted': True})
+        db.session.commit()
+        assert generation.challenge_id == challenge.id
+
+        text = generation.text
+        prompt = generation.prompt
 
         pending = Pending(user_id=user.id,
                           team_id=team.id if team else None,
@@ -199,8 +210,8 @@ class LlmSubmissionChallenge(BaseChallenge):
         db.session.add(pending)
         db.session.commit()
         grt = GRTSubmission(submission_id=pending.id,
-                            text=data['text'],
-                            prompt=data['prompt'],
+                            text=text,
+                            prompt=prompt,
                             challenge_id=challenge.id,)
         db.session.add(grt)
         db.session.commit()

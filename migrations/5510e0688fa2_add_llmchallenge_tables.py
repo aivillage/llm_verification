@@ -33,6 +33,7 @@ def upgrade(op=None):
             sa.Column("text", sa.Text(), nullable=False),
             sa.Column("prompt", sa.Text(), nullable=False),
             sa.Column("submitted", sa.Boolean(), nullable=False),
+            sa.Column("graded", sa.Boolean(), nullable=False),
             sa.Column("points", sa.Integer(), nullable=False),
             sa.Column("report", sa.Text(), nullable=True),
             sa.ForeignKeyConstraint(["challenge_id"], ["challenges.id"]),
