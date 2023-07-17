@@ -44,10 +44,12 @@ def upgrade(op=None):
         op.create_table(
             "grt_submissions",
             sa.Column("id", sa.Integer(), nullable=False),
+            sa.Column("generation_id", sa.Integer(), nullable=False),
             sa.Column("challenge_id", sa.Integer(), nullable=False),
             sa.Column("submission_id", sa.Integer(), nullable=False),
             sa.Column("text", sa.Text(), nullable=False),
             sa.Column("prompt", sa.Text(), nullable=False),
+            sa.ForeignKeyConstraint(["generation_id"], ["grt_generation.id"]),
             sa.ForeignKeyConstraint(["challenge_id"], ["challenges.id"]),
             sa.ForeignKeyConstraint(["submission_id"], ["submissions.id"]),
             sa.PrimaryKeyConstraint("id"),

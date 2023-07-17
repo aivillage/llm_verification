@@ -46,6 +46,7 @@ class GRTSubmission(db.Model):
     __table_args__ = {'extend_existing': True}
 
     id = db.Column(db.Integer, primary_key=True)
+    generation_id = db.Column(db.Integer, db.ForeignKey('grt_generation.id', ondelete='CASCADE'))
     submission_id = db.Column(db.Integer, db.ForeignKey('submissions.id', ondelete='CASCADE'))
     challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id', ondelete='CASCADE'))
     text = db.Column(db.Text)
@@ -97,6 +98,9 @@ class LlmChallenge(Challenges):
 
 class Pending(Submissions):
     __mapper_args__ = {'polymorphic_identity': 'pending'}
+
+class Triaged(Submissions):
+    __mapper_args__ = {'polymorphic_identity': 'triaged'}
 
 class Awarded(Submissions):
     __mapper_args__ = {'polymorphic_identity': 'awarded'}
@@ -193,6 +197,7 @@ class LlmSubmissionChallenge(BaseChallenge):
         generation = GRTGeneration.query.filter_by(id=int(submission)).update({'submitted': True})
 
         generation = GRTGeneration.query.add_columns(
+            GRTGeneration.id,
             GRTGeneration.text,
             GRTGeneration.prompt,
             GRTGeneration.challenge_id,
@@ -214,7 +219,8 @@ class LlmSubmissionChallenge(BaseChallenge):
         grt = GRTSubmission(submission_id=pending.id,
                             text=text,
                             prompt=prompt,
-                            challenge_id=challenge.id,)
+                            challenge_id=challenge.id,
+                            generation_id=generation.id,)
         db.session.add(grt)
         db.session.commit()
         log.info(f'Fail: marked attempt as pending: {submission}')
