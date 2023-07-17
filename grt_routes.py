@@ -26,6 +26,12 @@ def add_routes() -> Blueprint:
     # Define HTML blueprints for the LLMV plugin.
     llm_verifications = Blueprint('llm_verifications', __name__, template_folder='templates')
 
+    @llm_verifications.route('/admin/llm_verification', methods=['GET'])
+    @admins_only
+    def llm_verification_index():
+        """Define a route for the LLMV plugin's index page."""
+        return render_template('index.html')
+
     @llm_verifications.route('/generate', methods=['POST'])
     @bypass_csrf_protection
     @authed_only
@@ -96,20 +102,28 @@ def add_routes() -> Blueprint:
         log.info(f'Showed user "{get_current_user().name}" '
                  f'their answer submissions for challenge "{challenge_id}"')
         return jsonify(response)
-
-    @llm_verifications.route('/admin/submissions/pending', methods=['GET'])
+    
+    @llm_verifications.route('/admin/llm_submissions/pending', methods=['GET'])
     @admins_only
-    def view_pending_submissions():
+    def render_pending_submissions(challenge_id=None):
         """Add an admin route for viewing answer submissions that haven't been reviewed."""
         generations = GRTGeneration.query.add_columns(
             GRTGeneration.text,
             GRTGeneration.prompt,
             GRTGeneration.challenge_id,
             ).filter_by(submitted=True, graded=False).all()
+        challenge_id = request.args.get('challenge_id', None, type=int)
+        if challenge_id is None:
+            filters = {'type': 'pending'}
+        else:
+            filters = {'type': 'pending', 'challenge_id': challenge_id}
         
-        log.debug(f"Total number of generated texts, submitted but not graded: {GRTGeneration.query.count()}")
+        log.debug(f"Total number of generated texts, submitted but not graded: {GRTGeneration.query.filter_by(submitted=True, graded=False).count()}")
+        log.debug(f"Total number of submissions, submitted but not graded: {GRTSubmission.query.count()}")
+        log.debug(f"Total number of submissions: {Submissions.query.count()}")
+        log.debug(f"Total number of submissions that are pending: {Submissions.query.filter_by(**filters).count()}")
 
-        filters = {'type': 'pending'}
+
         curr_page = abs(int(request.args.get('page', 1, type=int)))
         results_per_page = 50
         page_start = results_per_page * (curr_page - 1)
@@ -123,14 +137,14 @@ def add_routes() -> Blueprint:
                                                      Submissions.provided,
                                                      Submissions.account_id,
                                                      Submissions.date,
-                                                     Challenges.name.label('challenge_name'),
+                                                     LlmChallenge.name.label('challenge_name'),
                                                      Model.name.label('team_name'),
                                                      GRTSubmission.prompt,
                                                      GRTSubmission.text).select_from(Submissions)
                                                                         .filter_by(**filters)
-                                                                        .join(Challenges)
+                                                                        .join(LlmChallenge, LlmChallenge.id == Submissions.challenge_id)
                                                                         .join(Model)
-                                                                        .join(GRTSubmission, GRTSubmission.id == Submissions.id)
+                                                                        .join(GRTSubmission, GRTSubmission.submission_id == Submissions.id)
                                                                         .order_by(Submissions.date.desc())
                                                                         .slice(page_start, page_end)
                                                                         .all())
@@ -140,11 +154,16 @@ def add_routes() -> Blueprint:
                                 page_count=page_count,
                                 curr_page=curr_page)
 
-    @llm_verifications.route('/admin/submissions/solved', methods=['GET'])
+    
+    @llm_verifications.route('/admin/llm_submissions/solved', methods=['GET'])
     @admins_only
-    def view_solved_submissions():
+    def render_solved_submissions(challenge_id=None):
         """Add an admin route for viewing answer submissions that have been marked as correct."""
-        filters = {'success': True}
+        challenge_id = request.args.get('challenge_id', None, type=int)
+        if challenge_id is None:
+            filters = {'success': True}
+        else:
+            filters = {'success': True, 'challenge_id': challenge_id}
         curr_page = abs(int(request.args.get('page', 1, type=int)))
         results_per_page = 50
         page_start = results_per_page * (curr_page - 1)
@@ -158,11 +177,11 @@ def add_routes() -> Blueprint:
                                                    GRTSolves.account_id,
                                                    GRTSolves.text,
                                                    GRTSolves.date,
-                                                   Challenges.name.label('challenge_name'),
-                                                   Challenges.description.label('challenge_description'),
+                                                   LlmChallenge.name.label('challenge_name'),
+                                                   LlmChallenge.description.label('challenge_description'),
                                                    Model.name.label('team_name')).select_from(GRTSolves)
                                                                                  .filter_by(**filters)
-                                                                                 .join(Challenges)
+                                                                                 .join(LlmChallenge)
                                                                                  .join(Model)
                                                                                  .order_by(GRTSolves.date.desc())
                                                                                  .slice(page_start, page_end)
@@ -173,6 +192,71 @@ def add_routes() -> Blueprint:
                                page_count=page_count,
                                curr_page=curr_page)
 
+    @llm_verifications.route('/admin/llm_submissions/all_generations', methods=['GET'])
+    @admins_only
+    def view_generations():
+        curr_page = abs(int(request.args.get('page', 1, type=int)))
+        results_per_page = 50
+        page_start = results_per_page * (curr_page - 1)
+        page_end = results_per_page * (curr_page - 1) + results_per_page
+        sub_count = GRTGeneration.query.count()
+        page_count = int(sub_count / results_per_page) + (sub_count % results_per_page > 0)
+        Model = get_model()
+        challenge_id = request.args.get('challenge_id', None, type=int)
+        if challenge_id is None:
+            filters = {}
+        else:
+            filters = {'challenge_id': challenge_id}
+        generations = (GRTGeneration.query.add_columns(GRTGeneration.id,
+                                                   GRTGeneration.challenge_id,
+                                                   GRTGeneration.prompt,
+                                                   GRTGeneration.account_id,
+                                                   GRTGeneration.text,
+                                                   GRTGeneration.status,
+                                                   GRTGeneration.points,
+                                                   GRTGeneration.date,
+                                                   LlmChallenge.name.label('challenge_name'),
+                                                   LlmChallenge.description.label('challenge_description'),
+                                                   Model.name.label('team_name')).select_from(GRTGeneration)
+                                                                                 .filter_by(**filters)
+                                                                                 .join(LlmChallenge)
+                                                                                 .join(Model)
+                                                                                 .order_by(GRTGeneration.date.desc())
+                                                                                 .slice(page_start, page_end)
+                                                                                 .all())
+        
+        log.info(f'Showed (admin) all generations, {len(generations)} generations')
+        return render_template('all_generations.html',
+                               generations=generations,
+                               page_count=page_count,
+                               curr_page=curr_page)
+
+    
+    @llm_verifications.route('/admin/llm_submissions/challenges', methods=['GET'])
+    @admins_only
+    def view_challenges():
+        """Add an admin route for viewing answer submissions that have been marked as correct."""
+        curr_page = abs(int(request.args.get('page', 1, type=int)))
+        results_per_page = 50
+        page_start = results_per_page * (curr_page - 1)
+        page_end = results_per_page * (curr_page - 1) + results_per_page
+        sub_count = LlmChallenge.query.count()
+        page_count = int(sub_count / results_per_page) + (sub_count % results_per_page > 0)
+        challenges = (LlmChallenge.query.add_columns(LlmChallenge.id,
+                                                   LlmChallenge.name,
+                                                   LlmChallenge.description,
+                                                   LlmChallenge.value,
+                                                   LlmChallenge.preprompt,
+                                                   LlmChallenge.category).select_from(LlmChallenge)
+                                                                                 .order_by(LlmChallenge.id.desc())
+                                                                                 .slice(page_start, page_end)
+                                                                                 .all())
+        log.info(f'Showed (admin) all challenges, {len(challenges)} challenges')
+        return render_template('all_challenges.html',
+                               challenges=challenges,
+                               page_count=page_count,
+                               curr_page=curr_page)
+    
     @llm_verifications.route('/admin/verify_submissions/<submission_id>/<status>', methods=['POST'])
     @admins_only
     def verify_submissions(submission_id, status):
@@ -196,7 +280,11 @@ def add_routes() -> Blueprint:
         # Retrieve the answer submission from the (CTFd) "Submissions" table.
         ctfd_submission = Submissions.query.filter_by(id=submission_id).first_or_404()
         # Retrieve the answer submission from the "GRTSubmissions" table.
-        grt_submission = GRTSubmission.query.filter_by(id=submission_id).first_or_404()
+        log.debug(f'ctfd_submission: {ctfd_submission}')
+        grt_submission = GRTSubmission.query.filter_by(submission_id=submission_id).first_or_404()
+        log.debug(f'grt_submission: {grt_submission}')
+        challenge = LlmChallenge.query.filter_by(id=grt_submission.challenge_id).first_or_404()
+        log.debug(f'challenge: {challenge}')
         if status == 'solve':
             # Note that the answer submission solved its challenge in the Solves table.
             solve = Solves(user_id=ctfd_submission.user_id,
@@ -221,6 +309,8 @@ def add_routes() -> Blueprint:
                                                ctfd_submission=ctfd_submission,
                                                grt_submission=grt_submission)
             db.session.add(grt_solve)
+            GRTGeneration.query.filter_by(id=grt_submission.generation_id).update({'graded': True, "points": challenge.value, "status": "success"})
+        
         elif status == 'award':
             # Note that the submission solved its challenge in the (GRT) Awarded table.
             awarded = Awarded(user_id=ctfd_submission.user_id,
@@ -248,6 +338,9 @@ def add_routes() -> Blueprint:
                                                ctfd_submission=ctfd_submission,
                                                grt_submission=grt_submission)
             db.session.add(grt_solve)
+
+            GRTGeneration.query.filter_by(id=grt_submission.generation_id).update({'graded': True, "points": request.args.get('value', 0), "status": "success"})
+
         # Otherwise, if the answer submission was marked "incorrect"...
         elif status == 'fail':
             # Note that the answer submission failed its challenge in the (CTFd) Fails table.
@@ -266,6 +359,8 @@ def add_routes() -> Blueprint:
                                                ctfd_submission=ctfd_submission,
                                                grt_submission=grt_submission)
             db.session.add(grt_solve)
+            GRTGeneration.query.filter_by(id=grt_submission.generation_id).update({'graded': True, "points": 0, "status": "fail"})
+
         # Otherwise, if the admin doesn't want to "solve," "award," or "fail" the answer submission...
         else:
             # ... then return a 400 status code and don't clear the answer submission from the CTFd "Submissions" table.
@@ -281,3 +376,5 @@ def add_routes() -> Blueprint:
         return jsonify({'success': True})
 
     return llm_verifications
+
+    

@@ -1,4 +1,4 @@
 {
     "name": "LLM Submissions",
-    "route": "/admin/submissions/pending"
+    "route": "/admin/llm_verification"
 }

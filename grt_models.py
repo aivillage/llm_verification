@@ -29,7 +29,9 @@ class GRTGeneration(db.Model):
     submitted = db.Column(db.Boolean, default=False)
     graded = db.Column(db.Boolean, default=False)
     points = db.Column(db.Integer, default=0)
+    status = db.Column(db.String(80), default="unsubmitted")
     report = db.Column(db.Text)
+    date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
 
     @hybrid_property
     def account_id(self):
@@ -194,7 +196,7 @@ class LlmSubmissionChallenge(BaseChallenge):
         data = request.form or request.get_json()
         submission = data['submission'].strip()
         log.info(data)
-        generation = GRTGeneration.query.filter_by(id=int(submission)).update({'submitted': True})
+        generation = GRTGeneration.query.filter_by(id=int(submission)).update({'submitted': True, "status": "submitted"})
 
         generation = GRTGeneration.query.add_columns(
             GRTGeneration.id,
