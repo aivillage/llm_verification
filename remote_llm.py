@@ -16,6 +16,7 @@ def generate_text(preprompt, prompt):
     """Generate text from a prompt using the EleutherAI GPT-NeoX-20B model.
 
     Arguments:
+        preprompt: The preprompt to generate text from.
         prompt: The prompt to generate text from.
 
     Raises:
@@ -33,14 +34,14 @@ def generate_text(preprompt, prompt):
     parameters = llmv_config['parameters']
     prompt_format = llmv_config['prompt_format']
 
-    prompt = prompt_format.replace('PREPROMPT', preprompt)
-    prompt = prompt_format.replace('PROMPT', prompt)
+    prompt_with_pre = prompt_format.replace('PREPROMPT', preprompt)
+    full_prompt = prompt_with_pre.replace('PROMPT', prompt)
 
     if hf_key == 'UNSET':
         raise ValueError('Vanilla Neox API key is not set')
     raw_response = post(url=url,
                         headers={'Authorization': f'Bearer {hf_key}'},
-                        json={'inputs': prompt, "parameters" : parameters, "stream:": False})
+                        json={'inputs': full_prompt, "parameters" : parameters, "stream:": False})
     
     log.debug(f'Received {raw_response.status_code} response from EleutherAI API')
     # If it's a successful HTTP status code, then...
@@ -68,5 +69,5 @@ def generate_text(preprompt, prompt):
         raise HTTPError(f'EleutherAI API returned unrecognized status code {raw_response.status_code}: '
                         f'Response: {raw_response.json()}')
         raw_response = 'Error generating text.'
-    log.info(f'Completed text generation for prompt "{prompt}"')
-    return raw_response
+    log.info(f'Completed text generation "{full_prompt}{raw_response}"')
+    return full_prompt, raw_response

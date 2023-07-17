@@ -15,12 +15,38 @@ from CTFd.utils.user import get_ip
 
 log = getLogger(__name__)
 
+class GRTGeneration(db.Model):
+    """GRT CTFd SQLAlchemy table for answer generation."""
+    __tablename__ = 'grt_generation'
+    __table_args__ = {'extend_existing': True}
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'))
+    team_id = db.Column(db.Integer, db.ForeignKey('teams.id', ondelete='CASCADE'))
+    challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id', ondelete='CASCADE'))
+    text = db.Column(db.Text)
+    prompt = db.Column(db.Text)
+    submitted = db.Column(db.Boolean, default=False)
+    graded = db.Column(db.Boolean, default=False)
+    points = db.Column(db.Integer, default=0)
+    report = db.Column(db.Text)
+
+    @hybrid_property
+    def account_id(self):
+        from CTFd.utils import get_config
+        user_mode = get_config('user_mode')
+        if user_mode == 'teams':
+            return self.team_id
+        elif user_mode == 'users':
+            return self.user_id
+
 class GRTSubmission(db.Model):
     """GRT CTFd SQLAlchemy table for answer submissions."""
     __tablename__ = 'grt_submissions'
     __table_args__ = {'extend_existing': True}
 
     id = db.Column(db.Integer, primary_key=True)
+    generation_id = db.Column(db.Integer, db.ForeignKey('grt_generation.id', ondelete='CASCADE'))
     submission_id = db.Column(db.Integer, db.ForeignKey('submissions.id', ondelete='CASCADE'))
     challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id', ondelete='CASCADE'))
     text = db.Column(db.Text)
@@ -72,6 +98,9 @@ class LlmChallenge(Challenges):
 
 class Pending(Submissions):
     __mapper_args__ = {'polymorphic_identity': 'pending'}
+
+class Triaged(Submissions):
+    __mapper_args__ = {'polymorphic_identity': 'triaged'}
 
 class Awarded(Submissions):
     __mapper_args__ = {'polymorphic_identity': 'awarded'}
@@ -163,7 +192,23 @@ class LlmSubmissionChallenge(BaseChallenge):
             `None`
         """
         data = request.form or request.get_json()
-        submission = data['submission']
+        submission = data['submission'].strip()
+        log.info(data)
+        generation = GRTGeneration.query.filter_by(id=int(submission)).update({'submitted': True})
+
+        generation = GRTGeneration.query.add_columns(
+            GRTGeneration.id,
+            GRTGeneration.text,
+            GRTGeneration.prompt,
+            GRTGeneration.challenge_id,
+            ).filter_by(id=int(submission)).first_or_404()
+        db.session.commit()
+        assert generation.challenge_id == challenge.id
+
+        text = generation.text
+        prompt = generation.prompt
+        log.info(f'Have generation with prompt and text: {prompt} {text}')
+
         pending = Pending(user_id=user.id,
                           team_id=team.id if team else None,
                           challenge_id=challenge.id,
@@ -172,10 +217,10 @@ class LlmSubmissionChallenge(BaseChallenge):
         db.session.add(pending)
         db.session.commit()
         grt = GRTSubmission(submission_id=pending.id,
-                            text=data['text'],
-                            prompt=data['prompt'],
-                            challenge_id=challenge.id,)
+                            text=text,
+                            prompt=prompt,
+                            challenge_id=challenge.id,
+                            generation_id=generation.id,)
         db.session.add(grt)
         db.session.commit()
         log.info(f'Fail: marked attempt as pending: {submission}')
-        return None
