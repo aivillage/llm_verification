@@ -36,6 +36,8 @@ def upgrade(op=None):
             sa.Column("graded", sa.Boolean(), nullable=False),
             sa.Column("points", sa.Integer(), nullable=False),
             sa.Column("report", sa.Text(), nullable=True),
+            sa.Column("status", sa.Text(), nullable=True),
+            sa.Column("date", sa.DateTime(), nullable=False),
             sa.ForeignKeyConstraint(["challenge_id"], ["challenges.id"]),
             sa.ForeignKeyConstraint(["team_id"], ["teams.id"]),
             sa.ForeignKeyConstraint(["user_id"], ["users.id"]),

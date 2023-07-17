@@ -42,7 +42,6 @@ def get_filter_by_mode(ctfd_model):
                          f'or "{TEAMS_MODE}"')
     return mode_uid, current_uid
 
-
 def retrieve_submissions(submission_type, challenge_id) -> list[dict[str, str]]:
     """Query the database for a user's answer submissions to a challenge.
 
