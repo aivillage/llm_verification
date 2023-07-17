@@ -30,13 +30,13 @@ function ezgrade(args) {
   var res = modal.format(args.title, args.body);
   var obj = $(res);
   var deny = $(
-    '<a href="/admin/llm_submissions/solved?challenge_id={{ chal.id }}">Solutions</a>'
+    '<a href="/admin/llm_submissions/solved?challenge_id={0}">Solutions</a>'.format(args.id)
   );
   var confirm = $(
-    '<a href="/admin/llm_submissions/all_generations?challenge_id={{ chal.id }}">Generations</a>'
+    '<a href="/admin/llm_submissions/all_generations?challenge_id={0}">Generations</a>'.format(args.id)
   );
   var award = $(
-    '<a href="/admin/llm_submissions/pending?challenge_id={{ chal.id }}">Grade</a>'
+    '<a href="/admin/llm_submissions/pending?challenge_id={0}">Grade</a>'.format(args.id)
   );
 
   obj.find(".modal-footer").append(deny);
