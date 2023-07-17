@@ -188,19 +188,21 @@ class LlmSubmissionChallenge(BaseChallenge):
             `None`
         """
         data = request.form or request.get_json()
-        submission = data['submission']
+        submission = data['submission'].strip()
         log.info(data)
+        generation = GRTGeneration.query.filter_by(id=int(submission)).update({'submitted': True})
 
         generation = GRTGeneration.query.add_columns(
             GRTGeneration.text,
             GRTGeneration.prompt,
             GRTGeneration.challenge_id,
-            ).filter_by(id=int(submission)).update({'submitted': True})
+            ).filter_by(id=int(submission)).first_or_404()
         db.session.commit()
         assert generation.challenge_id == challenge.id
 
         text = generation.text
         prompt = generation.prompt
+        log.info(f'Have generation with prompt and text: {prompt} {text}')
 
         pending = Pending(user_id=user.id,
                           team_id=team.id if team else None,

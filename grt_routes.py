@@ -70,7 +70,7 @@ def add_routes() -> Blueprint:
         db.session.commit()
         grt_generation_id = grt_generation.id
 
-        response = {'success': generation_succeeded, 'data': {'text': generated_text, 'gen_id': grt_generation_id}}
+        response = {'success': generation_succeeded, 'data': {'text': generated_text, 'id': grt_generation_id}}
         log.info(f'Generated text for user "{get_current_user().name}" '
                  f'for challenge "{challenge.name}" with id {grt_generation_id}')
         
@@ -101,6 +101,14 @@ def add_routes() -> Blueprint:
     @admins_only
     def view_pending_submissions():
         """Add an admin route for viewing answer submissions that haven't been reviewed."""
+        generations = GRTGeneration.query.add_columns(
+            GRTGeneration.text,
+            GRTGeneration.prompt,
+            GRTGeneration.challenge_id,
+            ).filter_by(submitted=True, graded=False).all()
+        
+        log.debug(f"Total number of generated texts, submitted but not graded: {GRTGeneration.query.count()}")
+
         filters = {'type': 'pending'}
         curr_page = abs(int(request.args.get('page', 1, type=int)))
         results_per_page = 50

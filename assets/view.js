@@ -31,7 +31,7 @@ Alpine.data("llm_verification", () => ({
     });
     const result = await response.json();
     this.generated_text = result.data.text;
-    this.submission = result.data.gen_id.toString();
+    this.submission = result.data.id.toString();
   },
 }));
 
