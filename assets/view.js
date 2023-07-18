@@ -223,8 +223,6 @@ challenge.postRender = function() {
         var challenge_id = $("#challenge-id").val();
         var prompt = $("#challenge-prompt").val();
         generate_text(challenge_id, prompt).then(function(response) {
-          console.log(response);
-          console.log(response.data.text);
           challenge.gen_id = response.data.id;
           $("#challenge-input").val(response.data.text);
         });
