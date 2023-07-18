@@ -85,8 +85,6 @@ class LlmChallenge(Challenges):
                    db.ForeignKey('challenges.id', ondelete='CASCADE'),
                    primary_key=True)
     preprompt = db.Column(db.Text)
-    # Whether the preprompt should be removed from text generations that are shown to users.
-    remove_preprompt = db.Column(db.Boolean, default=True)
 
     def __init__(self, *args, **kwargs):
         super(LlmChallenge, self).__init__(**kwargs)
@@ -192,8 +190,13 @@ class LlmSubmissionChallenge(BaseChallenge):
         Returns:
             `None`
         """
+        
         data = request.form or request.get_json()
         submission = data['submission'].strip()
+        log.info(f'Old submissions: {LLMVSubmission.query.filter_by(generation_id=int(submission)).count()}')
+        if 0 < LLMVSubmission.query.filter_by(generation_id=int(submission)).count():
+            log.info('Submission already exists')
+            return None
         log.info(data)
         generation = LLMVGeneration.query.filter_by(id=int(submission)).update({"status": "submitted"})
 

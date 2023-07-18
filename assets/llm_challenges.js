@@ -70,7 +70,7 @@ $(document).ready(function() {
       .text()
       .trim();
     var preprompt = elem
-      .find(".desc")
+      .find(".preprompt")
       .text()
       .trim();
 
