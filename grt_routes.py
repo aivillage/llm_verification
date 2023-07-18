@@ -71,7 +71,8 @@ def add_routes() -> Blueprint:
                                        team_id=team_id,
                                        challenge_id=challenge_id,
                                        text=text,
-                                       prompt=full_prompt)
+                                       prompt=prompt,
+                                       full_prompt=full_prompt,)
         db.session.add(grt_generation)
         db.session.commit()
         grt_generation_id = grt_generation.id
@@ -139,12 +140,13 @@ def add_routes() -> Blueprint:
                                                      Submissions.date,
                                                      LlmChallenge.name.label('challenge_name'),
                                                      Model.name.label('team_name'),
-                                                     GRTSubmission.prompt,
-                                                     GRTSubmission.text).select_from(Submissions)
+                                                     GRTGeneration.prompt,
+                                                     GRTGeneration.text).select_from(Submissions)
                                                                         .filter_by(**filters)
                                                                         .join(LlmChallenge, LlmChallenge.id == Submissions.challenge_id)
                                                                         .join(Model)
                                                                         .join(GRTSubmission, GRTSubmission.submission_id == Submissions.id)
+                                                                        .join(GRTGeneration, GRTSubmission.generation_id == GRTGeneration.id)
                                                                         .order_by(Submissions.date.desc())
                                                                         .slice(page_start, page_end)
                                                                         .all())
@@ -309,7 +311,7 @@ def add_routes() -> Blueprint:
                                                ctfd_submission=ctfd_submission,
                                                grt_submission=grt_submission)
             db.session.add(grt_solve)
-            GRTGeneration.query.filter_by(id=grt_submission.generation_id).update({'graded': True, "points": challenge.value, "status": "success"})
+            GRTGeneration.query.filter_by(id=grt_submission.generation_id).update({"points": challenge.value, "status": "success"})
         
         elif status == 'award':
             # Note that the submission solved its challenge in the (GRT) Awarded table.
@@ -339,7 +341,9 @@ def add_routes() -> Blueprint:
                                                grt_submission=grt_submission)
             db.session.add(grt_solve)
 
-            GRTGeneration.query.filter_by(id=grt_submission.generation_id).update({'graded': True, "points": request.args.get('value', 0), "status": "success"})
+            GRTGeneration.query.filter_by(id=grt_submission.generation_id).update(
+                {"points": request.args.get('value', 0), "status": "success"},
+            )
 
         # Otherwise, if the answer submission was marked "incorrect"...
         elif status == 'fail':
@@ -359,7 +363,7 @@ def add_routes() -> Blueprint:
                                                ctfd_submission=ctfd_submission,
                                                grt_submission=grt_submission)
             db.session.add(grt_solve)
-            GRTGeneration.query.filter_by(id=grt_submission.generation_id).update({'graded': True, "points": 0, "status": "fail"})
+            GRTGeneration.query.filter_by(id=grt_submission.generation_id).update({"points": 0, "status": "fail"})
 
         # Otherwise, if the admin doesn't want to "solve," "award," or "fail" the answer submission...
         else:

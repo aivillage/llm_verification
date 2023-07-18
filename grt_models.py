@@ -26,8 +26,7 @@ class GRTGeneration(db.Model):
     challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id', ondelete='CASCADE'))
     text = db.Column(db.Text)
     prompt = db.Column(db.Text)
-    submitted = db.Column(db.Boolean, default=False)
-    graded = db.Column(db.Boolean, default=False)
+    full_prompt = db.Column(db.Text)
     points = db.Column(db.Integer, default=0)
     status = db.Column(db.String(80), default="unsubmitted")
     report = db.Column(db.Text)
@@ -196,7 +195,7 @@ class LlmSubmissionChallenge(BaseChallenge):
         data = request.form or request.get_json()
         submission = data['submission'].strip()
         log.info(data)
-        generation = GRTGeneration.query.filter_by(id=int(submission)).update({'submitted': True, "status": "submitted"})
+        generation = GRTGeneration.query.filter_by(id=int(submission)).update({"status": "submitted"})
 
         generation = GRTGeneration.query.add_columns(
             GRTGeneration.id,
