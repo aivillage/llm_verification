@@ -223,8 +223,7 @@ challenge.postRender = function() {
         var challenge_id = $("#challenge-id").val();
         var prompt = $("#challenge-prompt").val();
         generate_text(challenge_id, prompt).then(function(response) {
-          console.log(response);
-          console.log(response.data.text);
+          challenge.gen_id = response.data.id;
           $("#challenge-input").val(response.data.text);
         });
       });
@@ -233,14 +232,10 @@ challenge.postRender = function() {
 
 challenge.submit = function(preview) {
   var challenge_id = parseInt($("#challenge-id").val());
-  var submission_prompt = $("#challenge-prompt").val();
-  var submission_text = $("#challenge-input").val();
   
   var body = {
     challenge_id: challenge_id,
-    submission: "Generative Text",
-    prompt: submission_prompt,
-    text: submission_text
+    submission: challenge.gen_id.toString(),
   };
   var params = {};
   if (preview) {

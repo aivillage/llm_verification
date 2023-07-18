@@ -5,14 +5,14 @@ from pathlib import Path
 import sys
 
 
-def initialize_grtctfd_loggers(module_name):
-    """Create and initialize the loggers for the grtctfd LLM Verification plugin.
+def initialize_llmvctfd_loggers(module_name):
+    """Create and initialize the loggers for the llmvctfd LLM Verification plugin.
 
     Arguments:
         module_name (str, required): Name of the LLMV module.
 
     Returns:
-        logger: The logger for the grtctfd LLM Verification plugin.
+        logger: The logger for the llmvctfd LLM Verification plugin.
             This is here for posterity because `logging.get_logger(__name__)` is a cleaner way to
             get the logger.
     """
