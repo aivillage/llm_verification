@@ -16,7 +16,7 @@ from CTFd.utils.user import get_current_user
 # LLM Verification Plugin module imports.
 from .llmv_models import LLMVSubmission, LLMVSolves, LlmChallenge, Pending, Awarded, LLMVGeneration
 from .remote_llm import generate_text
-from .utils import create_grt_solve_entry, retrieve_submissions
+from .utils import create_llmv_solve_entry, retrieve_submissions
 
 
 log = getLogger(__name__)
@@ -108,18 +108,13 @@ def add_routes() -> Blueprint:
     @admins_only
     def render_pending_submissions(challenge_id=None):
         """Add an admin route for viewing answer submissions that haven't been reviewed."""
-        generations = LLMVGeneration.query.add_columns(
-            LLMVGeneration.text,
-            LLMVGeneration.prompt,
-            LLMVGeneration.challenge_id,
-            ).filter_by(submitted=True, graded=False).all()
         challenge_id = request.args.get('challenge_id', None, type=int)
         if challenge_id is None:
             filters = {'type': 'pending'}
         else:
             filters = {'type': 'pending', 'challenge_id': challenge_id}
         
-        log.debug(f"Total number of generated texts, submitted but not graded: {LLMVGeneration.query.filter_by(submitted=True, graded=False).count()}")
+        log.debug(f"Total number of generated texts, submitted but not graded: {LLMVGeneration.query.filter_by(status='pending').count()}")
         log.debug(f"Total number of submissions, submitted but not graded: {LLMVSubmission.query.count()}")
         log.debug(f"Total number of submissions: {Submissions.query.count()}")
         log.debug(f"Total number of submissions that are pending: {Submissions.query.filter_by(**filters).count()}")
@@ -307,7 +302,7 @@ def add_routes() -> Blueprint:
             log.debug(f'Removed user "{ctfd_submission.user_id}"\'s '
                       f'remaining pending answer submissions for challenge "{ctfd_submission.challenge_id}"')
             # Add the user's (correct) answer submission solution to the LLMVSolves table.
-            grt_solve = create_grt_solve_entry(solve_status=True,
+            grt_solve = create_llmv_solve_entry(solve_status=True,
                                                ctfd_submission=ctfd_submission,
                                                grt_submission=grt_submission)
             db.session.add(grt_solve)
@@ -336,7 +331,7 @@ def add_routes() -> Blueprint:
                       f'answer submission "{submission_id}" '
                       f'to CTFd\'s Awards table')
             # Add the user's (correct) answer submission solution to the LLMVSolves table.
-            grt_solve = create_grt_solve_entry(solve_status=True,
+            grt_solve = create_llmv_solve_entry(solve_status=True,
                                                ctfd_submission=ctfd_submission,
                                                grt_submission=grt_submission)
             db.session.add(grt_solve)
@@ -359,7 +354,7 @@ def add_routes() -> Blueprint:
                       f'answer submission "{submission_id}" '
                       f'to CTFd\'s Fails table')
             # Add the user's (incorrect) answer submission solution to the LLMVSolves table.
-            grt_solve = create_grt_solve_entry(solve_status=False,
+            grt_solve = create_llmv_solve_entry(solve_status=False,
                                                ctfd_submission=ctfd_submission,
                                                grt_submission=grt_submission)
             db.session.add(grt_solve)

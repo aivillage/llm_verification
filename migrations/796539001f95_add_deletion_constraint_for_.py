@@ -20,45 +20,45 @@ def upgrade(op=None):
             "llm_challenge_ibfk_1", "llm_challenge", type_="foreignkey"
         )
         op.drop_constraint(
-            "grt_submissions_ibfk_1", "grt_submissions", type_="foreignkey"
+            "llmv_submissions_ibfk_1", "llmv_submissions", type_="foreignkey"
         )
         op.drop_constraint(
-            "grt_submissions_ibfk_2", "grt_submissions", type_="foreignkey"
+            "llmv_submissions_ibfk_2", "llmv_submissions", type_="foreignkey"
         )
         op.drop_constraint(
-            "grt_submissions_ibfk_3", "grt_submissions", type_="foreignkey"
+            "llmv_submissions_ibfk_3", "llmv_submissions", type_="foreignkey"
         )
         op.drop_constraint(
-            "grt_generation_ibfk_1", "grt_generation", type_="foreignkey"
+            "llmv_generation_ibfk_1", "llmv_generation", type_="foreignkey"
         )
     elif url.startswith("postgres"):
         op.drop_constraint(
             "llm_challenge_id_fkey", "llm_challenge", type_="foreignkey"
         )
         op.drop_constraint(
-            "grt_submissions_challenge_id_fkey", "grt_submissions", type_="foreignkey"
+            "llmv_submissions_challenge_id_fkey", "llmv_submissions", type_="foreignkey"
         )
         op.drop_constraint(
-            "grt_submissions_submission_id_fkey", "grt_submissions", type_="foreignkey"
+            "llmv_submissions_submission_id_fkey", "llmv_submissions", type_="foreignkey"
         )
         op.drop_constraint(
-            "grt_submissions_grt_generation_fkey", "grt_submissions", type_="foreignkey"
+            "llmv_submissions_llmv_generation_fkey", "llmv_submissions", type_="foreignkey"
         )
         op.drop_constraint(
-            "grt_generation_grt_generation_fkey", "grt_generation", type_="foreignkey"
+            "llmv_generation_llmv_generation_fkey", "llmv_generation", type_="foreignkey"
         )
 
     op.create_foreign_key(
         None, "llm_challenge", "challenges", ["id"], ["id"], ondelete="CASCADE"
     )
     op.create_foreign_key(
-        None, "grt_submissions", "challenges", ["challenge_id"], ["id"], ondelete="CASCADE"
+        None, "llmv_submissions", "challenges", ["challenge_id"], ["id"], ondelete="CASCADE"
     )
     op.create_foreign_key(
-        None, "grt_submissions", "submissions", ["submission_id"], ["id"], ondelete="CASCADE"
+        None, "llmv_submissions", "submissions", ["submission_id"], ["id"], ondelete="CASCADE"
     )
     op.create_foreign_key(
-        None, "grt_submissions", "grt_generation", ["generation_id"], ["id"], ondelete="CASCADE"
+        None, "llmv_submissions", "llmv_generation", ["generation_id"], ["id"], ondelete="CASCADE"
     )
 
 
