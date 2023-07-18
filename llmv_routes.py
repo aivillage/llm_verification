@@ -14,9 +14,9 @@ from CTFd.utils.modes import get_model
 from CTFd.utils.user import get_current_user
 
 # LLM Verification Plugin module imports.
-from .grt_models import GRTSubmission, GRTSolves, LlmChallenge, Pending, Awarded, GRTGeneration
+from .llmv_models import LLMVSubmission, LLMVSolves, LlmChallenge, Pending, Awarded, LLMVGeneration
 from .remote_llm import generate_text
-from .utils import create_grt_solve_entry, retrieve_submissions
+from .utils import create_llmv_solve_entry, retrieve_submissions
 
 
 log = getLogger(__name__)
@@ -67,11 +67,12 @@ def add_routes() -> Blueprint:
         team_id = get_current_user().team_id
         challenge_id = request.json['challenge_id']
         text = generated_text
-        grt_generation = GRTGeneration(user_id=user_id,
+        grt_generation = LLMVGeneration(user_id=user_id,
                                        team_id=team_id,
                                        challenge_id=challenge_id,
                                        text=text,
-                                       prompt=full_prompt)
+                                       prompt=prompt,
+                                       full_prompt=full_prompt,)
         db.session.add(grt_generation)
         db.session.commit()
         grt_generation_id = grt_generation.id
@@ -80,7 +81,7 @@ def add_routes() -> Blueprint:
         log.info(f'Generated text for user "{get_current_user().name}" '
                  f'for challenge "{challenge.name}" with id {grt_generation_id}')
         
-        log.debug(f"Total number of generated texts: {GRTGeneration.query.count()}")
+        log.debug(f"Total number of generated texts: {LLMVGeneration.query.count()}")
 
         return jsonify(response)
 
@@ -107,19 +108,14 @@ def add_routes() -> Blueprint:
     @admins_only
     def render_pending_submissions(challenge_id=None):
         """Add an admin route for viewing answer submissions that haven't been reviewed."""
-        generations = GRTGeneration.query.add_columns(
-            GRTGeneration.text,
-            GRTGeneration.prompt,
-            GRTGeneration.challenge_id,
-            ).filter_by(submitted=True, graded=False).all()
         challenge_id = request.args.get('challenge_id', None, type=int)
         if challenge_id is None:
             filters = {'type': 'pending'}
         else:
             filters = {'type': 'pending', 'challenge_id': challenge_id}
         
-        log.debug(f"Total number of generated texts, submitted but not graded: {GRTGeneration.query.filter_by(submitted=True, graded=False).count()}")
-        log.debug(f"Total number of submissions, submitted but not graded: {GRTSubmission.query.count()}")
+        log.debug(f"Total number of generated texts, submitted but not graded: {LLMVGeneration.query.filter_by(status='pending').count()}")
+        log.debug(f"Total number of submissions, submitted but not graded: {LLMVSubmission.query.count()}")
         log.debug(f"Total number of submissions: {Submissions.query.count()}")
         log.debug(f"Total number of submissions that are pending: {Submissions.query.filter_by(**filters).count()}")
 
@@ -139,12 +135,13 @@ def add_routes() -> Blueprint:
                                                      Submissions.date,
                                                      LlmChallenge.name.label('challenge_name'),
                                                      Model.name.label('team_name'),
-                                                     GRTSubmission.prompt,
-                                                     GRTSubmission.text).select_from(Submissions)
+                                                     LLMVGeneration.prompt,
+                                                     LLMVGeneration.text).select_from(Submissions)
                                                                         .filter_by(**filters)
                                                                         .join(LlmChallenge, LlmChallenge.id == Submissions.challenge_id)
                                                                         .join(Model)
-                                                                        .join(GRTSubmission, GRTSubmission.submission_id == Submissions.id)
+                                                                        .join(LLMVSubmission, LLMVSubmission.submission_id == Submissions.id)
+                                                                        .join(LLMVGeneration, LLMVSubmission.generation_id == LLMVGeneration.id)
                                                                         .order_by(Submissions.date.desc())
                                                                         .slice(page_start, page_end)
                                                                         .all())
@@ -168,22 +165,22 @@ def add_routes() -> Blueprint:
         results_per_page = 50
         page_start = results_per_page * (curr_page - 1)
         page_end = results_per_page * (curr_page - 1) + results_per_page
-        sub_count = GRTSolves.query.filter_by(**filters).count()
+        sub_count = LLMVSolves.query.filter_by(**filters).count()
         page_count = int(sub_count / results_per_page) + (sub_count % results_per_page > 0)
         Model = get_model()
-        submissions = (GRTSolves.query.add_columns(GRTSolves.id,
-                                                   GRTSolves.challenge_id,
-                                                   GRTSolves.prompt,
-                                                   GRTSolves.account_id,
-                                                   GRTSolves.text,
-                                                   GRTSolves.date,
+        submissions = (LLMVSolves.query.add_columns(LLMVSolves.id,
+                                                   LLMVSolves.challenge_id,
+                                                   LLMVSolves.prompt,
+                                                   LLMVSolves.account_id,
+                                                   LLMVSolves.text,
+                                                   LLMVSolves.date,
                                                    LlmChallenge.name.label('challenge_name'),
                                                    LlmChallenge.description.label('challenge_description'),
-                                                   Model.name.label('team_name')).select_from(GRTSolves)
+                                                   Model.name.label('team_name')).select_from(LLMVSolves)
                                                                                  .filter_by(**filters)
                                                                                  .join(LlmChallenge)
                                                                                  .join(Model)
-                                                                                 .order_by(GRTSolves.date.desc())
+                                                                                 .order_by(LLMVSolves.date.desc())
                                                                                  .slice(page_start, page_end)
                                                                                  .all())
         log.info(f'Showed (admin) solved answer submissions')
@@ -199,7 +196,7 @@ def add_routes() -> Blueprint:
         results_per_page = 50
         page_start = results_per_page * (curr_page - 1)
         page_end = results_per_page * (curr_page - 1) + results_per_page
-        sub_count = GRTGeneration.query.count()
+        sub_count = LLMVGeneration.query.count()
         page_count = int(sub_count / results_per_page) + (sub_count % results_per_page > 0)
         Model = get_model()
         challenge_id = request.args.get('challenge_id', None, type=int)
@@ -207,21 +204,21 @@ def add_routes() -> Blueprint:
             filters = {}
         else:
             filters = {'challenge_id': challenge_id}
-        generations = (GRTGeneration.query.add_columns(GRTGeneration.id,
-                                                   GRTGeneration.challenge_id,
-                                                   GRTGeneration.prompt,
-                                                   GRTGeneration.account_id,
-                                                   GRTGeneration.text,
-                                                   GRTGeneration.status,
-                                                   GRTGeneration.points,
-                                                   GRTGeneration.date,
+        generations = (LLMVGeneration.query.add_columns(LLMVGeneration.id,
+                                                   LLMVGeneration.challenge_id,
+                                                   LLMVGeneration.prompt,
+                                                   LLMVGeneration.account_id,
+                                                   LLMVGeneration.text,
+                                                   LLMVGeneration.status,
+                                                   LLMVGeneration.points,
+                                                   LLMVGeneration.date,
                                                    LlmChallenge.name.label('challenge_name'),
                                                    LlmChallenge.description.label('challenge_description'),
-                                                   Model.name.label('team_name')).select_from(GRTGeneration)
+                                                   Model.name.label('team_name')).select_from(LLMVGeneration)
                                                                                  .filter_by(**filters)
                                                                                  .join(LlmChallenge)
                                                                                  .join(Model)
-                                                                                 .order_by(GRTGeneration.date.desc())
+                                                                                 .order_by(LLMVGeneration.date.desc())
                                                                                  .slice(page_start, page_end)
                                                                                  .all())
         
@@ -279,9 +276,9 @@ def add_routes() -> Blueprint:
                  f'as "{status}"')
         # Retrieve the answer submission from the (CTFd) "Submissions" table.
         ctfd_submission = Submissions.query.filter_by(id=submission_id).first_or_404()
-        # Retrieve the answer submission from the "GRTSubmissions" table.
+        # Retrieve the answer submission from the "LLMVSubmissions" table.
         log.debug(f'ctfd_submission: {ctfd_submission}')
-        grt_submission = GRTSubmission.query.filter_by(submission_id=submission_id).first_or_404()
+        grt_submission = LLMVSubmission.query.filter_by(submission_id=submission_id).first_or_404()
         log.debug(f'grt_submission: {grt_submission}')
         challenge = LlmChallenge.query.filter_by(id=grt_submission.challenge_id).first_or_404()
         log.debug(f'challenge: {challenge}')
@@ -304,12 +301,12 @@ def add_routes() -> Blueprint:
                                      Submissions.type == 'pending').delete()
             log.debug(f'Removed user "{ctfd_submission.user_id}"\'s '
                       f'remaining pending answer submissions for challenge "{ctfd_submission.challenge_id}"')
-            # Add the user's (correct) answer submission solution to the GRTSolves table.
-            grt_solve = create_grt_solve_entry(solve_status=True,
+            # Add the user's (correct) answer submission solution to the LLMVSolves table.
+            grt_solve = create_llmv_solve_entry(solve_status=True,
                                                ctfd_submission=ctfd_submission,
                                                grt_submission=grt_submission)
             db.session.add(grt_solve)
-            GRTGeneration.query.filter_by(id=grt_submission.generation_id).update({'graded': True, "points": challenge.value, "status": "success"})
+            LLMVGeneration.query.filter_by(id=grt_submission.generation_id).update({"points": challenge.value, "status": "success"})
         
         elif status == 'award':
             # Note that the submission solved its challenge in the (GRT) Awarded table.
@@ -333,13 +330,15 @@ def add_routes() -> Blueprint:
             log.debug(f'Added user "{ctfd_submission.user_id}"\'s '
                       f'answer submission "{submission_id}" '
                       f'to CTFd\'s Awards table')
-            # Add the user's (correct) answer submission solution to the GRTSolves table.
-            grt_solve = create_grt_solve_entry(solve_status=True,
+            # Add the user's (correct) answer submission solution to the LLMVSolves table.
+            grt_solve = create_llmv_solve_entry(solve_status=True,
                                                ctfd_submission=ctfd_submission,
                                                grt_submission=grt_submission)
             db.session.add(grt_solve)
 
-            GRTGeneration.query.filter_by(id=grt_submission.generation_id).update({'graded': True, "points": request.args.get('value', 0), "status": "success"})
+            LLMVGeneration.query.filter_by(id=grt_submission.generation_id).update(
+                {"points": request.args.get('value', 0), "status": "success"},
+            )
 
         # Otherwise, if the answer submission was marked "incorrect"...
         elif status == 'fail':
@@ -354,19 +353,19 @@ def add_routes() -> Blueprint:
             log.debug(f'Added user "{ctfd_submission.user_id}"\'s '
                       f'answer submission "{submission_id}" '
                       f'to CTFd\'s Fails table')
-            # Add the user's (incorrect) answer submission solution to the GRTSolves table.
-            grt_solve = create_grt_solve_entry(solve_status=False,
+            # Add the user's (incorrect) answer submission solution to the LLMVSolves table.
+            grt_solve = create_llmv_solve_entry(solve_status=False,
                                                ctfd_submission=ctfd_submission,
                                                grt_submission=grt_submission)
             db.session.add(grt_solve)
-            GRTGeneration.query.filter_by(id=grt_submission.generation_id).update({'graded': True, "points": 0, "status": "fail"})
+            LLMVGeneration.query.filter_by(id=grt_submission.generation_id).update({"points": 0, "status": "fail"})
 
         # Otherwise, if the admin doesn't want to "solve," "award," or "fail" the answer submission...
         else:
             # ... then return a 400 status code and don't clear the answer submission from the CTFd "Submissions" table.
             raise BadRequest(f'Invalid argument "{status}" '
                              f'passed to parameter "status" for marking answer submission "{submission_id}"')
-        # Delete the answer submission from CTFd's "Submissions" table, which also cascade-deletes the answer submission from the GRTSubmissions table.
+        # Delete the answer submission from CTFd's "Submissions" table, which also cascade-deletes the answer submission from the LLMVSubmissions table.
         db.session.delete(ctfd_submission)
         log.debug(f'Deleted user "{ctfd_submission.user_id}"\'s '
                   f'answer submission "{submission_id}" '

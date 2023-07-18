@@ -15,9 +15,9 @@ from CTFd.utils.user import get_ip
 
 log = getLogger(__name__)
 
-class GRTGeneration(db.Model):
-    """GRT CTFd SQLAlchemy table for answer generation."""
-    __tablename__ = 'grt_generation'
+class LLMVGeneration(db.Model):
+    """LLMV CTFd SQLAlchemy table for answer generation."""
+    __tablename__ = 'llmv_generation'
     __table_args__ = {'extend_existing': True}
 
     id = db.Column(db.Integer, primary_key=True)
@@ -26,8 +26,7 @@ class GRTGeneration(db.Model):
     challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id', ondelete='CASCADE'))
     text = db.Column(db.Text)
     prompt = db.Column(db.Text)
-    submitted = db.Column(db.Boolean, default=False)
-    graded = db.Column(db.Boolean, default=False)
+    full_prompt = db.Column(db.Text)
     points = db.Column(db.Integer, default=0)
     status = db.Column(db.String(80), default="unsubmitted")
     report = db.Column(db.Text)
@@ -42,21 +41,21 @@ class GRTGeneration(db.Model):
         elif user_mode == 'users':
             return self.user_id
 
-class GRTSubmission(db.Model):
-    """GRT CTFd SQLAlchemy table for answer submissions."""
-    __tablename__ = 'grt_submissions'
+class LLMVSubmission(db.Model):
+    """LLMV CTFd SQLAlchemy table for answer submissions."""
+    __tablename__ = 'llmv_submissions'
     __table_args__ = {'extend_existing': True}
 
     id = db.Column(db.Integer, primary_key=True)
-    generation_id = db.Column(db.Integer, db.ForeignKey('grt_generation.id', ondelete='CASCADE'))
+    generation_id = db.Column(db.Integer, db.ForeignKey('llmv_generation.id', ondelete='CASCADE'))
     submission_id = db.Column(db.Integer, db.ForeignKey('submissions.id', ondelete='CASCADE'))
     challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id', ondelete='CASCADE'))
     text = db.Column(db.Text)
     prompt = db.Column(db.Text)
 
-class GRTSolves(db.Model):
-    """GRT CTFd SQLAlchemy table for solve attempts."""
-    __tablename__ = 'grt_solves'
+class LLMVSolves(db.Model):
+    """LLMV CTFd SQLAlchemy table for solve attempts."""
+    __tablename__ = 'llmv_solves'
     __table_args__ = {'extend_existing': True}
 
     id = db.Column(db.Integer, primary_key=True)
@@ -196,13 +195,13 @@ class LlmSubmissionChallenge(BaseChallenge):
         data = request.form or request.get_json()
         submission = data['submission'].strip()
         log.info(data)
-        generation = GRTGeneration.query.filter_by(id=int(submission)).update({'submitted': True, "status": "submitted"})
+        generation = LLMVGeneration.query.filter_by(id=int(submission)).update({"status": "submitted"})
 
-        generation = GRTGeneration.query.add_columns(
-            GRTGeneration.id,
-            GRTGeneration.text,
-            GRTGeneration.prompt,
-            GRTGeneration.challenge_id,
+        generation = LLMVGeneration.query.add_columns(
+            LLMVGeneration.id,
+            LLMVGeneration.text,
+            LLMVGeneration.prompt,
+            LLMVGeneration.challenge_id,
             ).filter_by(id=int(submission)).first_or_404()
         db.session.commit()
         assert generation.challenge_id == challenge.id
@@ -218,11 +217,11 @@ class LlmSubmissionChallenge(BaseChallenge):
                           provided=submission,)
         db.session.add(pending)
         db.session.commit()
-        grt = GRTSubmission(submission_id=pending.id,
+        LLMV = LLMVSubmission(submission_id=pending.id,
                             text=text,
                             prompt=prompt,
                             challenge_id=challenge.id,
                             generation_id=generation.id,)
-        db.session.add(grt)
+        db.session.add(LLMV)
         db.session.commit()
         log.info(f'Fail: marked attempt as pending: {submission}')

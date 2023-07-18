@@ -9,7 +9,7 @@ from CTFd.utils.modes import USERS_MODE, TEAMS_MODE
 from CTFd.utils.user import get_current_user
 
 # LLM Verification Plugin module imports.
-from .grt_models import Awarded, GRTSolves, GRTSubmission, Pending
+from .llmv_models import Awarded, LLMVSolves, LLMVSubmission, Pending
 
 
 log = getLogger(__name__)
@@ -46,17 +46,17 @@ def retrieve_submissions(submission_type, challenge_id) -> list[dict[str, str]]:
     """Query the database for a user's answer submissions to a challenge.
 
     When a user submits an answer for a challenge, it's added to the 
-    `GRTSubmissions` table. When an administrator marks a "pending" challenge as
+    `LLMVSubmissions` table. When an administrator marks a "pending" challenge as
     `Correct` (`submission_type` `"solve"`), `Award` (`submission_type`
-    `"award"`), or `Fail` (`submission_type` `"fail"`), the `GRTSubmissions`
+    `"award"`), or `Fail` (`submission_type` `"fail"`), the `LLMVSubmissions`
     table entry is deleted and a new  entry is made in the
-    `GRTSolves` table.
+    `LLMVSolves` table.
 
     With this in mind, when we retrieve an answer submissions's prompt and
     generated text, we need to query different tables for the same information.
-    If the answer submission is "pending," we need to query the `GRTSubmissions`
+    If the answer submission is "pending," we need to query the `LLMVSubmissions`
     table. If the answer submission is "solved," "awarded," or "failed," then we
-    need to query the `GRTSolves` table.
+    need to query the `LLMVSolves` table.
 
     Arguments:
         submission_type(CTFd model, required): Type of answer submission.
@@ -80,21 +80,21 @@ def retrieve_submissions(submission_type, challenge_id) -> list[dict[str, str]]:
     for answer_submission in query_results_for_sub_type:
         # If the submission type is "pending"...
         if issubclass(submission_type, Pending):
-            # ... retrieve the answer submissions's corresponding GRTSubmission entry.
-            answer_query = GRTSubmission.query.filter_by(submission_id=answer_submission.id).first()
+            # ... retrieve the answer submissions's corresponding LLMVSubmission entry.
+            answer_query = LLMVSubmission.query.filter_by(submission_id=answer_submission.id).first()
             # Pending answer submissions haven't been graded yet.
             date_graded = None
         # Otherwise, if the submission type is "awarded," "fails," or "solves"...
         elif issubclass(submission_type, (Awarded, Fails, Solves)):
-            # ... retrieve the answer submissions's corresponding GRTSolves entry.
-            answer_query = GRTSolves.query.filter_by(challenge_id=challenge_id).first()
+            # ... retrieve the answer submissions's corresponding LLMVSolves entry.
+            answer_query = LLMVSolves.query.filter_by(challenge_id=challenge_id).first()
             # Retrieve the date that the answer submission was graded.
             date_graded = isoformat(answer_query.date)
         else:
             raise TypeError(f'Submission type: "{submission_type}" '
                             f'is not an instance of "{Pending}," "{Solves}," "{Awarded}," or "{Fails}"')
         if answer_query == None:
-            log.warn(f'Found no GRTSubmission/GRTSolves entry for answer submission "{answer_submission.id}" '
+            log.warn(f'Found no LLMVSubmission/LLMVSolves entry for answer submission "{answer_submission.id}" '
                      f'on challenge "{challenge_id}" '
                      f'for user "{get_current_user().name}"')
         # Extract the answer submission's prompt and the text that it generated.
@@ -106,23 +106,23 @@ def retrieve_submissions(submission_type, challenge_id) -> list[dict[str, str]]:
     return answer_submissions
 
 
-def create_grt_solve_entry(solve_status, ctfd_submission, grt_submission):
+def create_llmv_solve_entry(solve_status, ctfd_submission, grt_submission):
     """Create a database entry for a challenge solve.
     
     Arguments:
         solve_status(bool, required): Whether the challenge was solved.
         ctfd_submission(CTFd model, required): CTFd database entry for the challenge submission.
-        grt_submission(GRTSubmission, required): GRT database entry for the challenge submission.
+        grt_submission(LLMVSubmission, required): GRT database entry for the challenge submission.
 
     Returns:
-        solve_entry(GRTSolves): Database entry for the challenge solve.
+        solve_entry(LLMVSolves): Database entry for the challenge solve.
     """
-    solve_entry= GRTSolves(success=solve_status,
+    solve_entry= LLMVSolves(success=solve_status,
                            challenge_id=ctfd_submission.challenge_id,
                            text=grt_submission.text,
                            prompt=grt_submission.prompt,
                            date=ctfd_submission.date,
                            user_id=ctfd_submission.user_id,
                            team_id=ctfd_submission.team_id)
-    log.debug(f'Created GRTSolves entry: {solve_entry}')
+    log.debug(f'Created LLMVSolves entry: {solve_entry}')
     return solve_entry

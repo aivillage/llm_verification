@@ -7,9 +7,9 @@ from CTFd.plugins.challenges import CHALLENGE_CLASSES
 from CTFd.plugins.migrations import upgrade as ctfd_migrations
 
 # LLM Verification Plugin module imports.
-from .llmv_logger import initialize_grtctfd_loggers
-from .grt_models import LlmSubmissionChallenge
-from .grt_routes import add_routes
+from .llmv_logger import initialize_llmvctfd_loggers
+from .llmv_models import LlmSubmissionChallenge
+from .llmv_routes import add_routes
 
 
 log = getLogger(__name__)
@@ -18,7 +18,7 @@ def load(app):
     """Load plugin config from TOML file and register plugin assets."""
     print('Loading LLM Verification Plugin')
     # Get the logger for the LLM Verification plugin.
-    log = initialize_grtctfd_loggers(module_name=__name__)
+    log = initialize_llmvctfd_loggers(module_name=__name__)
     # Perform database migrations (if necessary).
     ctfd_migrations()
     log.debug('Performed CTFd database migrations')

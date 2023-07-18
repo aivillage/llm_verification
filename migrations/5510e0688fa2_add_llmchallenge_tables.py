@@ -25,15 +25,14 @@ def upgrade(op=None):
             sa.PrimaryKeyConstraint("id"),
         )
         op.create_table(
-            "grt_generation",
+            "llmv_generation",
             sa.Column("id", sa.Integer(), nullable=False),
             sa.Column("challenge_id", sa.Integer(), nullable=False),
             sa.Column("user_id", sa.Integer(), nullable=True),
             sa.Column("team_id", sa.Integer(), nullable=True),
             sa.Column("text", sa.Text(), nullable=False),
             sa.Column("prompt", sa.Text(), nullable=False),
-            sa.Column("submitted", sa.Boolean(), nullable=False),
-            sa.Column("graded", sa.Boolean(), nullable=False),
+            sa.Column("full_prompt", sa.Text(), nullable=False),
             sa.Column("points", sa.Integer(), nullable=False),
             sa.Column("report", sa.Text(), nullable=True),
             sa.Column("status", sa.Text(), nullable=True),
@@ -44,20 +43,20 @@ def upgrade(op=None):
             sa.PrimaryKeyConstraint("id"),
         )
         op.create_table(
-            "grt_submissions",
+            "llmv_submissions",
             sa.Column("id", sa.Integer(), nullable=False),
             sa.Column("generation_id", sa.Integer(), nullable=False),
             sa.Column("challenge_id", sa.Integer(), nullable=False),
             sa.Column("submission_id", sa.Integer(), nullable=False),
             sa.Column("text", sa.Text(), nullable=False),
             sa.Column("prompt", sa.Text(), nullable=False),
-            sa.ForeignKeyConstraint(["generation_id"], ["grt_generation.id"]),
+            sa.ForeignKeyConstraint(["generation_id"], ["llmv_generation.id"]),
             sa.ForeignKeyConstraint(["challenge_id"], ["challenges.id"]),
             sa.ForeignKeyConstraint(["submission_id"], ["submissions.id"]),
             sa.PrimaryKeyConstraint("id"),
         )
         op.create_table(
-            "grt_solves",
+            "llmv_solves",
             sa.Column("id", sa.Integer(), nullable=False),
             sa.Column("success", sa.Boolean(), nullable=False),
             sa.Column("challenge_id", sa.Integer(), nullable=False),
