@@ -2,14 +2,16 @@
 from logging import getLogger
 
 # CTFd imports.
-from CTFd.models import Fails, Solves
+from CTFd.models import Fails, Solves, db
 from CTFd.utils import get_config
 from CTFd.utils.dates import isoformat
 from CTFd.utils.modes import USERS_MODE, TEAMS_MODE
 from CTFd.utils.user import get_current_user
 
+
 # LLM Verification Plugin module imports.
-from .llmv_models import Awarded, LLMVSolves, LLMVSubmission, Pending
+from .llmv_models import Awarded, LLMVSolves, LLMVSubmission, Pending, LlmModels
+from .remote_llm import get_models
 
 
 log = getLogger(__name__)
@@ -126,3 +128,33 @@ def create_llmv_solve_entry(solve_status, ctfd_submission, grt_submission):
                            team_id=ctfd_submission.team_id)
     log.debug(f'Created LLMVSolves entry: {solve_entry}')
     return solve_entry
+
+def fill_models_table():
+    """Fill the `LlmModels` table with the models from the `models` directory.
+
+    Arguments:
+        session(Session, required): SQLAlchemy session object.
+    """
+    # For each model in the `models` directory...
+    anon_names = [
+        'Anu',
+        'Ellil',
+        'Enki',
+        'Marduk',
+        'Ashur',
+        'Nabu',
+        'Nanna',
+        'Utu',
+        'Inanna',
+        'Ninhursag',
+        'Ninurta',
+        'Nergal',
+        'Dumuzid',
+        'Ereshkigal'
+    ]
+    for model, anon_name in zip(get_models(), anon_names):
+        # ... create a database entry for the model.
+        db.session.add(LlmModels(model=model,
+                             anon_name=anon_name))
+    # Commit the changes to the database.
+    db.session.commit()

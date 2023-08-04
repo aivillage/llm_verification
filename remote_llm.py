@@ -5,7 +5,7 @@ from ast import List
 from logging import getLogger
 
 # Third-party imports.
-from requests import post
+from requests import post, get
 from requests.exceptions import HTTPError
 
 # LLM Verification Plugin module imports.
@@ -13,7 +13,7 @@ from .config_manager import load_llmv_config
 
 log = getLogger(__name__)
 
-async def generate_text(preprompt, prompt, model):
+def generate_text(preprompt, prompt, model):
     """Generate text from a prompt using the EleutherAI GPT-NeoX-20B model.
 
     Arguments:
@@ -38,12 +38,12 @@ async def generate_text(preprompt, prompt, model):
     log.info(f'Received text generation request for prompt "{prompt}" for model {model}')
     # Load the Vanilla Neox API key from the config file.
 
-    raw_response = post(url=url,
+    raw_response = get(url=route,
                         headers={'Authorization': f'Bearer {token}'},
                         json={'prompt': prompt, "preprompt" : preprompt, "model:": model})
     
     if raw_response.status_code == 200:
-        json_response = await raw_response.json()
+        json_response = raw_response.json()
         if 'error' in json_response:
             log.error(f"Error generating: {json_response['error']}")
             raise HTTPError(
@@ -59,3 +59,37 @@ async def generate_text(preprompt, prompt, model):
     else:
         raise HTTPError(f'LLM Router API returned unrecognized status code {raw_response.status}: '
                         f'Response: {raw_response.json()}')
+
+
+def get_models():
+    url = os.environ.get('LLMV_ROUTER_URL')
+    if url is None:
+        raise ValueError('LLM Verification Router URL is not set')
+    route = url + '/models'
+    token = os.environ.get('LLMV_ROUTER_TOKEN')
+    if token is None:
+        raise ValueError('LLM Verification Router token is not set')
+    
+    raw_response = get(url=route,
+                        headers={'Authorization': f'Bearer {token}'})
+    
+    if raw_response.status_code == 200:
+        json_response = raw_response.json()
+        if 'error' in json_response:
+            log.error(f"Error generating: {json_response['error']}")
+            raise HTTPError(
+                "Model Error", headers={"Retry-After": str(60000)}
+            )
+        
+        return json_response['models']
+    
+    elif 400 <= raw_response.status_code <= 599:
+        # ... raise an error.
+        raise HTTPError(f'LLM Router API returned error status code {raw_response.status}: '
+                        f'Response: {raw_response.json()}')
+    # ... Otherwise, if it's an unrecognized HTTP status code, then...
+    else:
+        raise HTTPError(f'LLM Router API returned unrecognized status code {raw_response.status}: '
+                        f'Response: {raw_response.json()}')
+    
+    

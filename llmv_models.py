@@ -24,9 +24,10 @@ class LLMVGeneration(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'))
     team_id = db.Column(db.Integer, db.ForeignKey('teams.id', ondelete='CASCADE'))
     challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id', ondelete='CASCADE'))
+    model_id = db.Column(db.Integer, db.ForeignKey('llmv_models.id', ondelete='CASCADE'))
+
     text = db.Column(db.Text)
     prompt = db.Column(db.Text)
-    full_prompt = db.Column(db.Text)
     points = db.Column(db.Integer, default=0)
     status = db.Column(db.String(80), default="unsubmitted")
     report = db.Column(db.Text)
@@ -49,7 +50,6 @@ class LLMVSubmission(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     generation_id = db.Column(db.Integer, db.ForeignKey('llmv_generation.id', ondelete='CASCADE'))
     submission_id = db.Column(db.Integer, db.ForeignKey('submissions.id', ondelete='CASCADE'))
-    challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id', ondelete='CASCADE'))
     text = db.Column(db.Text)
     prompt = db.Column(db.Text)
 
@@ -60,7 +60,8 @@ class LLMVSolves(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     success = db.Column(db.Boolean)
-    challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id', ondelete='CASCADE'))
+    generation_id = db.Column(db.Integer, db.ForeignKey('llmv_generation.id', ondelete='CASCADE'))
+
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'))
     team_id = db.Column(db.Integer, db.ForeignKey('teams.id', ondelete='CASCADE'))
     text = db.Column(db.Text)
@@ -94,6 +95,15 @@ class LlmChallenge(Challenges):
         from CTFd.utils.config.pages import build_markdown
         from CTFd.utils.helpers import markup
         return markup(build_markdown(self.description))
+    
+class LlmModels(db.Model):
+    """SQLAlchemy Table model for LLM Models."""
+    __tablename__ = 'llm_models'
+    __table_args__ = {'extend_existing': True}
+
+    id = db.Column(db.Integer, primary_key=True)
+    anon_name = db.Column(db.String(80))
+    model = db.Column(db.String(80))
 
 class Pending(Submissions):
     __mapper_args__ = {'polymorphic_identity': 'pending'}
