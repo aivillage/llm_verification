@@ -42,7 +42,7 @@ def get_filter_by_mode(ctfd_model):
                          f'or "{TEAMS_MODE}"')
     return mode_uid, current_uid
 
-def retrieve_submissions(submission_type, challenge_id) -> list[dict[str, str]]:
+def retrieve_submissions(submission_type, challenge_id, user_id) -> list[dict[str, str]]:
     """Query the database for a user's answer submissions to a challenge.
 
     When a user submits an answer for a challenge, it's added to the 
@@ -70,7 +70,7 @@ def retrieve_submissions(submission_type, challenge_id) -> list[dict[str, str]]:
     mode_uid, current_uid = get_filter_by_mode(ctfd_model=submission_type)
     # Query the database for the user's answer submissions for this challenge.
     query_results_for_sub_type = submission_type.query.filter(mode_uid == current_uid,
-                                                              submission_type.challenge_id == challenge_id).all()
+                                                              submission_type.challenge_id == challenge_id, user_id==user_id).all()
     log.debug(f'User "{get_current_user().name}" '
               f'has {len(query_results_for_sub_type)} "{submission_type}" '
               f'answer submissions for challenge "{challenge_id}"')

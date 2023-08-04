@@ -55,6 +55,7 @@ def add_routes() -> Blueprint:
             log.error(f'Remote LLM experienced an error when generating text: {error}')
             # Send the error message from the HTTPError as the response to the user.
             generated_text = str(error)
+            full_prompt = ""
             generation_succeeded = False
 
         user_id = get_current_user().id
@@ -87,8 +88,10 @@ def add_routes() -> Blueprint:
         log.debug(f'User "{get_current_user().name}" '
                   f'requested their answer submissions for challenge "{challenge_id}"')
         # Query the database for the user's answer submissions for this challenge.
+        user_id = get_current_user().id
         collected_submissions = {type_label: retrieve_submissions(submission_type=submission_type,
-                                                                  challenge_id=challenge_id)
+                                                                  challenge_id=challenge_id,
+                                                                  user_id=user_id)
                                  for type_label, submission_type in (('pending', Pending),
                                                                      ('correct', Solves),
                                                                      ('awarded', Awarded),
