@@ -49,25 +49,22 @@ def add_routes() -> Blueprint:
         prompt = request.json["prompt"]
         log.debug(f'pre-prompt {preprompt} and user-provided-prompt: "{prompt}"')
         try:
-            full_prompt, generated_text = generate_text(preprompt, prompt)
+            generated_text = generate_text(preprompt, prompt)
             generation_succeeded = True
         except HTTPError as error:
             log.error(f'Remote LLM experienced an error when generating text: {error}')
             # Send the error message from the HTTPError as the response to the user.
             generated_text = str(error)
-            full_prompt = ""
             generation_succeeded = False
 
         user_id = get_current_user().id
         team_id = get_current_user().team_id
         challenge_id = request.json['challenge_id']
-        text = generated_text
         grt_generation = LLMVGeneration(user_id=user_id,
                                        team_id=team_id,
                                        challenge_id=challenge_id,
-                                       text=text,
-                                       prompt=prompt,
-                                       full_prompt=full_prompt,)
+                                       text=generated_text,
+                                       prompt=prompt,)
         db.session.add(grt_generation)
         db.session.commit()
         grt_generation_id = grt_generation.id
