@@ -69,7 +69,7 @@ def get_models():
     token = os.environ.get('LLMV_ROUTER_TOKEN')
     if token is None:
         raise ValueError('LLM Verification Router token is not set')
-    
+    log.info(f"Getting models from {route}")
     raw_response = get(url=route,
                         headers={'Authorization': f'Bearer {token}'})
     

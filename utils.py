@@ -10,7 +10,7 @@ from CTFd.utils.user import get_current_user
 
 
 # LLM Verification Plugin module imports.
-from .llmv_models import Awarded, LLMVSolves, LLMVSubmission, Pending, LlmModels
+from .llmv_models import Awarded, LLMVSubmission, Pending, LlmModels
 from .remote_llm import get_models
 
 

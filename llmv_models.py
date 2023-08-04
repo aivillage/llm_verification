@@ -24,7 +24,7 @@ class LLMVGeneration(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'))
     team_id = db.Column(db.Integer, db.ForeignKey('teams.id', ondelete='CASCADE'))
     challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id', ondelete='CASCADE'))
-    model_id = db.Column(db.Integer, db.ForeignKey('llmv_models.id', ondelete='CASCADE'))
+    model_id = db.Column(db.Integer, db.ForeignKey('llm_models.id', ondelete='CASCADE'))
 
     text = db.Column(db.Text)
     prompt = db.Column(db.Text)
@@ -50,32 +50,6 @@ class LLMVSubmission(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     generation_id = db.Column(db.Integer, db.ForeignKey('llmv_generation.id', ondelete='CASCADE'))
     submission_id = db.Column(db.Integer, db.ForeignKey('submissions.id', ondelete='CASCADE'))
-    text = db.Column(db.Text)
-    prompt = db.Column(db.Text)
-
-class LLMVSolves(db.Model):
-    """LLMV CTFd SQLAlchemy table for solve attempts."""
-    __tablename__ = 'llmv_solves'
-    __table_args__ = {'extend_existing': True}
-
-    id = db.Column(db.Integer, primary_key=True)
-    success = db.Column(db.Boolean)
-    generation_id = db.Column(db.Integer, db.ForeignKey('llmv_generation.id', ondelete='CASCADE'))
-
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'))
-    team_id = db.Column(db.Integer, db.ForeignKey('teams.id', ondelete='CASCADE'))
-    text = db.Column(db.Text)
-    prompt = db.Column(db.Text)
-    date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-
-    @hybrid_property
-    def account_id(self):
-        from CTFd.utils import get_config
-        user_mode = get_config('user_mode')
-        if user_mode == 'teams':
-            return self.team_id
-        elif user_mode == 'users':
-            return self.user_id
 
 class LlmChallenge(Challenges):
     """SQLAlchemy Table model for LLM Challenges."""
@@ -208,7 +182,7 @@ class LlmSubmissionChallenge(BaseChallenge):
             log.info('Submission already exists')
             return None
         log.info(data)
-        generation = LLMVGeneration.query.filter_by(id=int(submission)).update({"status": "submitted"})
+        generation = LLMVGeneration.query.filter_by(id=int(submission)).update({"status": "pending"})
 
         generation = LLMVGeneration.query.add_columns(
             LLMVGeneration.id,

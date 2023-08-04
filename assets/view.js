@@ -146,8 +146,7 @@ challenge.postRender = function() {
           submission_template.format(
             htmlEntities(submission.prompt),
             htmlEntities(submission.generated_text),
-            Moment(submission.date_submitted).fromNow(),
-            Moment(submission.date_graded).fromNow()
+            Moment(submission.date).fromNow()
           )
         );
         $("#challenge-submissions").append(entry);
@@ -164,8 +163,7 @@ challenge.postRender = function() {
           submission_template.format(
             htmlEntities(submission.prompt),
             htmlEntities(submission.generated_text),
-            Moment(submission.date_submitted).fromNow(),
-            Moment(submission.date_graded).fromNow()
+            Moment(submission.date).fromNow()
           )
         );
         $("#challenge-submissions").append(entry);
@@ -182,7 +180,7 @@ challenge.postRender = function() {
           pending_submission_template.format(
             htmlEntities(submission.prompt),
             htmlEntities(submission.generated_text),
-            Moment(submission.date_submitted).fromNow(),
+            Moment(submission.date).fromNow(),
           )
         );
         $("#challenge-submissions").append(entry);
@@ -199,8 +197,7 @@ challenge.postRender = function() {
           submission_template.format(
             htmlEntities(submission.prompt),
             htmlEntities(submission.generated_text),
-            Moment(submission.date_submitted).fromNow(),
-            Moment(submission.date_graded).fromNow()
+            Moment(submission.date).fromNow()
           )
         );
         $("#challenge-submissions").append(entry);

@@ -31,6 +31,15 @@ def upgrade(op=None):
         op.drop_constraint(
             "llmv_generation_ibfk_1", "llmv_generation", type_="foreignkey"
         )
+        op.drop_constraint(
+            "llmv_generation_ibfk_2", "llmv_generation", type_="foreignkey"
+        )
+        op.drop_constraint(
+            "llmv_generation_ibfk_3", "llmv_generation", type_="foreignkey"
+        )
+        op.drop_constraint(
+            "llmv_generation_ibfk_4", "llmv_generation", type_="foreignkey"
+        )
     elif url.startswith("postgres"):
         op.drop_constraint(
             "llm_challenge_id_fkey", "llm_challenge", type_="foreignkey"
@@ -45,7 +54,16 @@ def upgrade(op=None):
             "llmv_submissions_llmv_generation_fkey", "llmv_submissions", type_="foreignkey"
         )
         op.drop_constraint(
-            "llmv_generation_llmv_generation_fkey", "llmv_generation", type_="foreignkey"
+            "llmv_generation_llm_challenge_fkey", "llmv_generation", type_="foreignkey"
+        )
+        op.drop_constraint(
+            "llmv_generation_users_fkey", "llmv_generation", type_="foreignkey"
+        )
+        op.drop_constraint(
+            "llmv_generation_teams_fkey", "llmv_generation", type_="foreignkey"
+        )
+        op.drop_constraint(
+            "llmv_generation_teams_fkey", "llmv_generation", type_="foreignkey"
         )
 
     op.create_foreign_key(
@@ -60,7 +78,18 @@ def upgrade(op=None):
     op.create_foreign_key(
         None, "llmv_submissions", "llmv_generation", ["generation_id"], ["id"], ondelete="CASCADE"
     )
-
+    op.create_foreign_key(
+        None, "llmv_generation", "llm_models", ["model_id"], ["id"], ondelete="CASCADE"
+    )
+    op.create_foreign_key(
+        None, "llmv_generation", "challenges", ["challenge_id"], ["id"], ondelete="CASCADE"
+    )
+    op.create_foreign_key(
+        None, "llmv_generation", "users", ["user_id"], ["id"], ondelete="CASCADE"
+    )
+    op.create_foreign_key(
+        None, "llmv_generation", "teams", ["team_id"], ["id"], ondelete="CASCADE"
+    )
 
 def downgrade(op=None):
     bind = op.get_bind()

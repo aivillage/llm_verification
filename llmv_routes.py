@@ -14,7 +14,7 @@ from CTFd.utils.modes import get_model
 from CTFd.utils.user import get_current_user
 
 # LLM Verification Plugin module imports.
-from .llmv_models import LLMVSubmission, LLMVSolves, LlmChallenge, Pending, Awarded, LLMVGeneration
+from .llmv_models import LLMVSubmission, LlmChallenge, Pending, Awarded, LLMVGeneration
 from .remote_llm import generate_text
 from .utils import create_llmv_solve_entry, retrieve_submissions
 
@@ -86,13 +86,12 @@ def add_routes() -> Blueprint:
                   f'requested their answer submissions for challenge "{challenge_id}"')
         # Query the database for the user's answer submissions for this challenge.
         user_id = get_current_user().id
-        collected_submissions = {type_label: retrieve_submissions(submission_type=submission_type,
-                                                                  challenge_id=challenge_id,
-                                                                  user_id=user_id)
-                                 for type_label, submission_type in (('pending', Pending),
-                                                                     ('correct', Solves),
-                                                                     ('awarded', Awarded),
-                                                                     ('incorrect', Fails))}
+        collected_submissions = {}
+        for status in ['pending', 'correct', 'awarded', 'incorrect']:
+            generations = LLMVGeneration.query.add_columns(LLMVGeneration.prompt,
+                                            LLMVGeneration.text, LLMVGeneration.date).filter_by(user_id=user_id, challenge_id=challenge_id, status=status).all()
+            collected_submissions[status] = generations
+
         response = {'success': True, 'data': collected_submissions}
         log.info(f'Showed user "{get_current_user().name}" '
                  f'their answer submissions for challenge "{challenge_id}"')
@@ -145,45 +144,8 @@ def add_routes() -> Blueprint:
                                 page_count=page_count,
                                 curr_page=curr_page)
 
-    
-    @llm_verifications.route('/admin/llm_submissions/solved', methods=['GET'])
-    @admins_only
-    def render_solved_submissions(challenge_id=None):
-        """Add an admin route for viewing answer submissions that have been marked as correct."""
-        challenge_id = request.args.get('challenge_id', None, type=int)
-        if challenge_id is None:
-            filters = {'success': True}
-        else:
-            filters = {'success': True, 'challenge_id': challenge_id}
-        curr_page = abs(int(request.args.get('page', 1, type=int)))
-        results_per_page = 50
-        page_start = results_per_page * (curr_page - 1)
-        page_end = results_per_page * (curr_page - 1) + results_per_page
-        sub_count = LLMVSolves.query.filter_by(**filters).count()
-        page_count = int(sub_count / results_per_page) + (sub_count % results_per_page > 0)
-        Model = get_model()
-        submissions = (LLMVSolves.query.add_columns(LLMVSolves.id,
-                                                   LLMVSolves.challenge_id,
-                                                   LLMVSolves.prompt,
-                                                   LLMVSolves.account_id,
-                                                   LLMVSolves.text,
-                                                   LLMVSolves.date,
-                                                   LlmChallenge.name.label('challenge_name'),
-                                                   LlmChallenge.description.label('challenge_description'),
-                                                   Model.name.label('team_name')).select_from(LLMVSolves)
-                                                                                 .filter_by(**filters)
-                                                                                 .join(LlmChallenge)
-                                                                                 .join(Model)
-                                                                                 .order_by(LLMVSolves.date.desc())
-                                                                                 .slice(page_start, page_end)
-                                                                                 .all())
-        log.info(f'Showed (admin) solved answer submissions')
-        return render_template('solved_submissions.html',
-                               submissions=submissions,
-                               page_count=page_count,
-                               curr_page=curr_page)
 
-    @llm_verifications.route('/admin/llm_submissions/all_generations', methods=['GET'])
+    @llm_verifications.route('/admin/llm_submissions/generations', methods=['GET'])
     @admins_only
     def view_generations():
         curr_page = abs(int(request.args.get('page', 1, type=int)))
@@ -198,6 +160,13 @@ def add_routes() -> Blueprint:
             filters = {}
         else:
             filters = {'challenge_id': challenge_id}
+
+        status = request.args.get('status', None, type=int)
+        if status is None:
+            filters = {}
+        else:
+            filters = {'status': status}
+        
         generations = (LLMVGeneration.query.add_columns(LLMVGeneration.id,
                                                    LLMVGeneration.challenge_id,
                                                    LLMVGeneration.prompt,
@@ -295,12 +264,8 @@ def add_routes() -> Blueprint:
                                      Submissions.type == 'pending').delete()
             log.debug(f'Removed user "{ctfd_submission.user_id}"\'s '
                       f'remaining pending answer submissions for challenge "{ctfd_submission.challenge_id}"')
-            # Add the user's (correct) answer submission solution to the LLMVSolves table.
-            grt_solve = create_llmv_solve_entry(solve_status=True,
-                                               ctfd_submission=ctfd_submission,
-                                               grt_submission=grt_submission)
-            db.session.add(grt_solve)
-            LLMVGeneration.query.filter_by(id=grt_submission.generation_id).update({"points": challenge.value, "status": "success"})
+
+            LLMVGeneration.query.filter_by(id=grt_submission.generation_id).update({"points": challenge.value, "status": "correct"})
         
         elif status == 'award':
             # Note that the submission solved its challenge in the (GRT) Awarded table.
@@ -324,14 +289,9 @@ def add_routes() -> Blueprint:
             log.debug(f'Added user "{ctfd_submission.user_id}"\'s '
                       f'answer submission "{submission_id}" '
                       f'to CTFd\'s Awards table')
-            # Add the user's (correct) answer submission solution to the LLMVSolves table.
-            grt_solve = create_llmv_solve_entry(solve_status=True,
-                                               ctfd_submission=ctfd_submission,
-                                               grt_submission=grt_submission)
-            db.session.add(grt_solve)
 
             LLMVGeneration.query.filter_by(id=grt_submission.generation_id).update(
-                {"points": request.args.get('value', 0), "status": "success"},
+                {"points": request.args.get('value', 0), "status": "award"},
             )
 
         # Otherwise, if the answer submission was marked "incorrect"...
@@ -347,12 +307,8 @@ def add_routes() -> Blueprint:
             log.debug(f'Added user "{ctfd_submission.user_id}"\'s '
                       f'answer submission "{submission_id}" '
                       f'to CTFd\'s Fails table')
-            # Add the user's (incorrect) answer submission solution to the LLMVSolves table.
-            grt_solve = create_llmv_solve_entry(solve_status=False,
-                                               ctfd_submission=ctfd_submission,
-                                               grt_submission=grt_submission)
-            db.session.add(grt_solve)
-            LLMVGeneration.query.filter_by(id=grt_submission.generation_id).update({"points": 0, "status": "fail"})
+
+            LLMVGeneration.query.filter_by(id=grt_submission.generation_id).update({"points": 0, "status": "incorrect"})
 
         # Otherwise, if the admin doesn't want to "solve," "award," or "fail" the answer submission...
         else:
