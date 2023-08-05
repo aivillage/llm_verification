@@ -24,4 +24,46 @@
     </div>
 </div>  
 
+<div class="jumbotron">
+    <div class="container">
+        <h1>Standings</h1>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <table id="teamsboard" class=" table table-striped">
+                <thead>
+                  <tr>
+                    <td class="text-center"><b>ID</b></td>
+                    <td class="text-center"><b>Team</b></td>
+                    <td class="text-center"><b>Score</b></td>
+                    <td class="text-right"><b>Grade</b></td>
+                  </tr>
+                </thead>
+                <tbody>
+                    {% for user in standings %}
+                    <tr>
+                        <td class="text-center" id="{{ user.account_id }}">
+                        {{ user.account_id }}
+                        </td>
+                        <td class="text-center" id="{{ user.name }}">
+                        {{ user.name }}
+                        </td>
+                        <td class="text-center" id="{{ user.score }}">
+                        {{ user.score }}
+                        </td>
+                        <td class="text-right" id="{{ user.score }}">
+                            <a href="/admin/llm_submissions/pending?account_id={{ user.account_id }}">Grade</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+</div> 
+
 {% endblock %}
