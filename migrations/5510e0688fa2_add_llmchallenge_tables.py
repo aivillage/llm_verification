@@ -15,6 +15,7 @@ depends_on = None
 
 
 def upgrade(op=None):
+   
     op.create_table(
         "llm_challenge",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -55,6 +56,24 @@ def upgrade(op=None):
         sa.Column("submission_id", sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(["generation_id"], ["llmv_generation.id"]),
         sa.ForeignKeyConstraint(["submission_id"], ["submissions.id"]),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_table(
+        "llm_awards",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("generation_id", sa.Integer(), nullable=False),
+        sa.Column("challenge_id", sa.Integer(), nullable=False),
+        sa.ForeignKeyConstraint(["id"], ["awards.id"]),
+        sa.ForeignKeyConstraint(["generation_id"], ["llmv_generation.id"]),
+        sa.ForeignKeyConstraint(["challenge_id"], ["challenges.id"]),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_table(
+        "llm_solves",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("generation_id", sa.Integer(), nullable=False),
+        sa.ForeignKeyConstraint(["id"], ["awards.id"]),
+        sa.ForeignKeyConstraint(["generation_id"], ["llmv_generation.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
     

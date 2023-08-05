@@ -20,7 +20,6 @@
             <td class="text-center"><b>ID</b></td>
             <td><b>Team</b></td>
             <td><b>Challenge</b></td>
-            <td><b>Type</b></td>
             <td><b>Prompt</b></td>
             <td><b>Text</b></td>
             <td class="text-center"><b>Date</b></td>
@@ -28,32 +27,29 @@
           </tr>
         </thead>
         <tbody>
-          {% for sub in submissions %}
+          {% for gen in generations %}
           <tr>
-            <td class="text-center" id="{{ sub.id }}">
-              {{ sub.id }}
+            <td class="text-center" id="{{ gen.id }}">
+              {{ gen.id }}
             </td>
-            <td class="team" id="{{ sub.team_id }}">
-              <a href="{{ generate_account_url(sub.account_id, admin=True) }}">{{ sub.team_name }}</a>
+            <td class="team" id="{{ gen.team_id }}">
+              <a href="{{ generate_account_url(gen.account_id, admin=True) }}">{{ gen.team_name }}</a>
             </td>
-            <td class="chal" id="{{ sub.challenge_id }}">
-              {{ sub.challenge_name }}
+            <td class="chal" id="{{ gen.challenge_id }}">
+              {{ gen.challenge_name }} <div class="desc" id="{{ gen.challenge_id }}" hidden>{{ gen.challenge_description }}</div>
             </td>
-            <td>
-              {{ sub.type }}
+            <td class="prompt" id="{{ gen.id }}">
+              <pre class="mb-0">{{ gen.prompt }}</pre>
             </td>
-            <td class="prompt" id="{{ sub.id }}">
-              <pre class="mb-0">{{ sub.prompt }}</pre>
-            </td>
-            <td class="flag" id="{{ sub.id }}">
-              <pre class="mb-0">{{ sub.text }}</pre>
+            <td class="flag" id="{{ gen.id }}">
+              <pre class="mb-0">{{ gen.text }}</pre>
             </td>
             <td class="text-center solve-time">
-              <span data-time="{{ sub.date | isoformat }}"></span>
+              <span data-time="{{ gen.date | isoformat }}"></span>
             </td>
             <td class="text-center">
               <span class="grade-submission" data-toggle="tooltip" data-placement="top"
-                title="Grade submission #{{ sub.id }}">
+                title="Grade submission #{{ gen.id }}">
                 <i class="far fa-comment"></i>
               </span>
             </td>

@@ -46,7 +46,6 @@ class LLMVGeneration(db.Model):
 class LLMVSubmission(db.Model):
     """LLMV CTFd SQLAlchemy table for answer submissions."""
     __tablename__ = 'llmv_submissions'
-    __table_args__ = {'extend_existing': True}
 
     id = db.Column(db.Integer, primary_key=True)
     generation_id = db.Column(db.Integer, db.ForeignKey('llmv_generation.id', ondelete='CASCADE'))
@@ -71,6 +70,35 @@ class LlmChallenge(Challenges):
         from CTFd.utils.helpers import markup
         return markup(build_markdown(self.description))
     
+class LlmAwards(Awards):
+    """SQLAlchemy Table model for LLM Awards."""
+    __tablename__ = "llm_awards"
+    __mapper_args__ = {'polymorphic_identity': 'llm_awards'}
+    __table_args__ = {'extend_existing': True}
+
+    id = db.Column(db.Integer,
+                   db.ForeignKey('awards.id', ondelete='CASCADE'),
+                   primary_key=True)
+    generation_id = db.Column(db.Integer, db.ForeignKey('llmv_generation.id', ondelete='CASCADE'))
+    challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id', ondelete='CASCADE'))
+
+    def __init__(self, *args, **kwargs):
+        super(LlmAwards, self).__init__(**kwargs)
+
+class LlmSolves(Solves):
+    """SQLAlchemy Table model for LLM Awards."""
+    __tablename__ = "llm_solves"
+    __mapper_args__ = {'polymorphic_identity': 'llm_solves'}
+    __table_args__ = {'extend_existing': True}
+
+    id = db.Column(db.Integer,
+                   db.ForeignKey('solves.id', ondelete='CASCADE'),
+                   primary_key=True)
+    generation_id = db.Column(db.Integer, db.ForeignKey('llmv_generation.id', ondelete='CASCADE'))
+
+    def __init__(self, *args, **kwargs):
+        super(LlmSolves, self).__init__(**kwargs)
+    
 class LlmModels(db.Model):
     """SQLAlchemy Table model for LLM Models."""
     __tablename__ = 'llm_models'
@@ -82,12 +110,6 @@ class LlmModels(db.Model):
 
 class Pending(Submissions):
     __mapper_args__ = {'polymorphic_identity': 'pending'}
-
-class Triaged(Submissions):
-    __mapper_args__ = {'polymorphic_identity': 'triaged'}
-
-class Awarded(Submissions):
-    __mapper_args__ = {'polymorphic_identity': 'awarded'}
 
 class LlmSubmissionChallenge(BaseChallenge):
     """Customized CTFd challenge type for LLM submissions."""
@@ -196,23 +218,28 @@ class LlmSubmissionChallenge(BaseChallenge):
 
 
         if len(models_not_submitted(user_id=user.id, challenge_id=challenge.id)) > 0:
-            awards = Awards(user_id=user.id,
-                            name='Submission',
-                            description='Submission for {name}'.format(name=challenge.name),
+            awards = LlmAwards(user_id=user.id,
+                            name=f'Challenge {challenge.name}',
+                            description=f"{generation.text}",
                             value=challenge.value,
-                            category=challenge.category)
+                            category=challenge.category,
+                            generation_id=generation.id,
+                            challenge_id=challenge.id,
+                            )
             db.session.add(awards)
         else:
-            solve = Solves(user_id=user.id,
+            solve = LlmSolves(user_id=user.id,
                            challenge_id=challenge.id,
                            ip=request.remote_addr,
                            provided="",
-                           date=datetime.datetime.utcnow())
+                           date=datetime.datetime.utcnow(),
+                           generation_id=generation.id,
+                           )
             db.session.add(solve)
         db.session.commit()
 
-        log.info(f"Number of awards: {len(Awards.query.filter_by(user_id=user.id, description='Submission for {name}'.format(name=challenge.name)).all())}")
-        log.info(f"Number of solves: {len(Solves.query.filter_by(user_id=user.id, challenge_id=challenge.id).all())}")
+        log.info(f"Number of awards: {len(LlmAwards.query.filter_by(user_id=user.id, challenge_id=challenge.id).all())}")
+        log.info(f"Number of solves: {len(LlmSolves.query.filter_by(user_id=user.id, challenge_id=challenge.id).all())}")
         log.info(f'Fail: marked attempt as pending: {submission}')
 
 
@@ -254,7 +281,7 @@ def models_not_submitted(user_id, challenge_id):
     Gets a random model that isn't submitted by the user for the challenge.
     '''
     models = []
-    for status in ['pending', 'correct', 'awarded']:
+    for status in ['pending', 'correct', 'awarded', 'incorrect']:
         # Get the user's submissions for the challenge.
         statused_models = LLMVGeneration.query.add_columns(
             LLMVGeneration.user_id,

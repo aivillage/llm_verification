@@ -8,14 +8,14 @@ from requests.exceptions import HTTPError
 from werkzeug.exceptions import BadRequest
 
 # CTFd imports.
-from CTFd.models import Awards, Challenges, Fails, Solves, Submissions, db
+from CTFd.models import Submissions, db
 from CTFd.plugins import bypass_csrf_protection
 from CTFd.utils.decorators import admins_only, authed_only
 from CTFd.utils.modes import get_model
 from CTFd.utils.user import get_current_user
 
 # LLM Verification Plugin module imports.
-from .llmv_models import LLMVSubmission, LlmChallenge, Pending, Awarded, LLMVGeneration, LlmModels, models_not_submitted
+from .llmv_models import LLMVSubmission, LlmAwards, LlmChallenge, LlmSolves, LLMVGeneration, LlmModels, models_not_submitted
 from .remote_llm import generate_text
 
 
@@ -132,15 +132,18 @@ def add_routes() -> Blueprint:
         return jsonify(response)
 
     
-    @llm_verifications.route('/admin/llm_submissions/pending', methods=['GET'])
-    @admins_only
-    def render_pending_submissions(challenge_id=None):
+    #@llm_verifications.route('/admin/llm_submissions/pending', methods=['GET'])
+    #@admins_only
+    def render_pending_submissions():
         """Add an admin route for viewing answer submissions that haven't been reviewed."""
+        filters = {'type': 'pending'}
         challenge_id = request.args.get('challenge_id', None, type=int)
-        if challenge_id is None:
-            filters = {'type': 'pending'}
-        else:
-            filters = {'type': 'pending', 'challenge_id': challenge_id}
+        if challenge_id is not None:
+            filters['challenge_id'] = challenge_id
+
+        user_id = request.args.get('user_id', None, type=int)
+        if user_id is not None:
+            filters['user_id'] = user_id
         
         log.debug(f"Total number of generated texts, submitted but not graded: {LLMVGeneration.query.filter_by(status='pending').count()}")
         log.debug(f"Total number of submissions, submitted but not graded: {LLMVSubmission.query.count()}")
@@ -180,9 +183,24 @@ def add_routes() -> Blueprint:
                                 curr_page=curr_page)
 
 
-    @llm_verifications.route('/admin/llm_submissions/generations', methods=['GET'])
-    @admins_only
-    def view_generations():
+    def get_generations(request, pending_overide=False):
+        """Add an admin route for viewing answer submissions that haven't been reviewed."""
+        filters = {}
+        status = request.args.get('status', None, type=str)
+        if status is not None:
+            filters['status'] = status
+
+        if pending_overide:
+            filters['status'] = 'pending'
+
+        challenge_id = request.args.get('challenge_id', None, type=int)
+        if challenge_id is not None:
+            filters['challenge_id'] = challenge_id
+
+        account_id = request.args.get('account_id', None, type=int)
+        if account_id is not None:
+            filters['account_id'] = account_id
+
         curr_page = abs(int(request.args.get('page', 1, type=int)))
         results_per_page = 50
         page_start = results_per_page * (curr_page - 1)
@@ -190,17 +208,6 @@ def add_routes() -> Blueprint:
         sub_count = LLMVGeneration.query.count()
         page_count = int(sub_count / results_per_page) + (sub_count % results_per_page > 0)
         Model = get_model()
-        challenge_id = request.args.get('challenge_id', None, type=int)
-        if challenge_id is None:
-            filters = {}
-        else:
-            filters = {'challenge_id': challenge_id}
-
-        status = request.args.get('status', None, type=int)
-        if status is None:
-            filters = {}
-        else:
-            filters = {'status': status}
         
         generations = (LLMVGeneration.query.add_columns(LLMVGeneration.id,
                                                    LLMVGeneration.challenge_id,
@@ -219,13 +226,28 @@ def add_routes() -> Blueprint:
                                                                                  .order_by(LLMVGeneration.date.desc())
                                                                                  .slice(page_start, page_end)
                                                                                  .all())
-        
+        return generations, page_count, curr_page
+
+    @llm_verifications.route('/admin/llm_submissions/generations', methods=['GET'])
+    @admins_only
+    def view_generations():
+        generations, page_count, curr_page = get_generations(request)
         log.info(f'Showed (admin) all generations, {len(generations)} generations')
         return render_template('all_generations.html',
                                generations=generations,
                                page_count=page_count,
                                curr_page=curr_page)
 
+    @llm_verifications.route('/admin/llm_submissions/pending', methods=['GET'])
+    @admins_only
+    def render_pending_submissions():
+        """Add an admin route for viewing answer submissions that haven't been reviewed."""
+        generations, page_count, curr_page = get_generations(request, pending_overide=True)
+        log.info(f'Showed (admin) {len(generations)} pending answer generations')
+        return render_template('verify_submissions.html',
+                                generations=generations,
+                                page_count=page_count,
+                                curr_page=curr_page)
     
     @llm_verifications.route('/admin/llm_submissions/challenges', methods=['GET'])
     @admins_only
@@ -252,9 +274,9 @@ def add_routes() -> Blueprint:
                                page_count=page_count,
                                curr_page=curr_page)
     
-    @llm_verifications.route('/admin/verify_submissions/<submission_id>/<status>', methods=['POST'])
+    @llm_verifications.route('/admin/verify_submissions/<generation_id>/<status>', methods=['POST'])
     @admins_only
-    def verify_submissions(submission_id, status):
+    def verify_submissions(generation_id, status):
         """Add a route for admins to mark answer attempts as correct or incorrect.
 
         Arguments:
@@ -270,91 +292,34 @@ def add_routes() -> Blueprint:
             JSON(dict): {'success': True}
         """
         log.info(f'Admin "{get_current_user().name}" '
-                 f'marked answer submission "{submission_id}" '
+                 f'marked answer submission "{generation_id}" '
                  f'as "{status}"')
-        # Retrieve the answer submission from the (CTFd) "Submissions" table.
-        ctfd_submission = Submissions.query.filter_by(id=submission_id).first_or_404()
-        # Retrieve the answer submission from the "LLMVSubmissions" table.
-        log.debug(f'ctfd_submission: {ctfd_submission}')
-        grt_submission = LLMVSubmission.query.filter_by(submission_id=submission_id).first_or_404()
+        grt_submission = LLMVGeneration.query.filter_by(id=generation_id).first_or_404()
         log.debug(f'grt_submission: {grt_submission}')
         challenge = LlmChallenge.query.filter_by(id=grt_submission.challenge_id).first_or_404()
         log.debug(f'challenge: {challenge}')
         if status == 'solve':
-            # Note that the answer submission solved its challenge in the Solves table.
-            solve = Solves(user_id=ctfd_submission.user_id,
-                           team_id=ctfd_submission.team_id,
-                           challenge_id=ctfd_submission.challenge_id,
-                           ip=ctfd_submission.ip,
-                           provided=ctfd_submission.provided,
-                           date=ctfd_submission.date)
-            db.session.add(solve)
-            log.debug(f'Added user "{ctfd_submission.user_id}"\'s '
-                      f'answer submission "{submission_id}" '
-                      f'to the Solves table')
-            # Remove the user's other "pending" answer submissions for this challenge from the (CTfd) "Submissions" table.
-            Submissions.query.filter(Submissions.challenge_id == ctfd_submission.challenge_id,
-                                     Submissions.team_id == ctfd_submission.team_id,
-                                     Submissions.user_id == ctfd_submission.user_id,
-                                     Submissions.type == 'pending').delete()
-            log.debug(f'Removed user "{ctfd_submission.user_id}"\'s '
-                      f'remaining pending answer submissions for challenge "{ctfd_submission.challenge_id}"')
-
-            LLMVGeneration.query.filter_by(id=grt_submission.generation_id).update({"points": challenge.value, "status": "correct"})
-        
-        elif status == 'award':
-            # Note that the submission solved its challenge in the (GRT) Awarded table.
-            awarded = Awarded(user_id=ctfd_submission.user_id,
-                              team_id=ctfd_submission.team_id,
-                              challenge_id=ctfd_submission.challenge_id,
-                              ip=ctfd_submission.ip,
-                              provided=ctfd_submission.provided)
-            db.session.add(awarded)
-            log.debug(f'Added user "{ctfd_submission.user_id}"\'s '
-                      f'answer submission "{submission_id}" '
-                      f'to GRT\'s Awarded table')
-            # Note that the submission solved its challenge in the (CTFd) Awards table and assign the grader's points to the user.
-            award = Awards(user_id=ctfd_submission.user_id,
-                           team_id=ctfd_submission.team_id,
-                           name='Submission',
-                           description='Correct Submission for {name}'.format(name=ctfd_submission.challenge.name),
-                           value=request.args.get('value', 0),
-                           category=ctfd_submission.challenge.category)
-            db.session.add(award)
-            log.debug(f'Added user "{ctfd_submission.user_id}"\'s '
-                      f'answer submission "{submission_id}" '
-                      f'to CTFd\'s Awards table')
-
-            LLMVGeneration.query.filter_by(id=grt_submission.generation_id).update(
-                {"points": request.args.get('value', 0), "status": "award"},
-            )
-
+            LLMVGeneration.query.filter_by(id=grt_submission.id).update({"points": challenge.value, "status": "correct"})
+            db.session.commit()
         # Otherwise, if the answer submission was marked "incorrect"...
         elif status == 'fail':
             # Note that the answer submission failed its challenge in the (CTFd) Fails table.
-            wrong = Fails(user_id=ctfd_submission.user_id,
-                          team_id=ctfd_submission.team_id,
-                          challenge_id=ctfd_submission.challenge_id,
-                          ip=ctfd_submission.ip,
-                          provided=ctfd_submission.provided,
-                          date=ctfd_submission.date)
-            db.session.add(wrong)
-            log.debug(f'Added user "{ctfd_submission.user_id}"\'s '
-                      f'answer submission "{submission_id}" '
-                      f'to CTFd\'s Fails table')
+            # Delete the award or solve from the LlmAwards or LlmSolves table.
 
-            LLMVGeneration.query.filter_by(id=grt_submission.generation_id).update({"points": 0, "status": "incorrect"})
+            LLMVGeneration.query.filter_by(id=grt_submission.id).update({"points": 0, "status": "incorrect"})
+            solve = LlmSolves.query.filter_by(generation_id=grt_submission.id).first()
+            award = LlmAwards.query.filter_by(generation_id=grt_submission.id).first()
+            if award:
+                db.session.delete(award)
+            if solve:
+                db.session.delete(solve)
 
         # Otherwise, if the admin doesn't want to "solve," "award," or "fail" the answer submission...
         else:
             # ... then return a 400 status code and don't clear the answer submission from the CTFd "Submissions" table.
             raise BadRequest(f'Invalid argument "{status}" '
-                             f'passed to parameter "status" for marking answer submission "{submission_id}"')
+                             f'passed to parameter "status" for marking answer submission "{generation_id}"')
         # Delete the answer submission from CTFd's "Submissions" table, which also cascade-deletes the answer submission from the LLMVSubmissions table.
-        db.session.delete(ctfd_submission)
-        log.debug(f'Deleted user "{ctfd_submission.user_id}"\'s '
-                  f'answer submission "{submission_id}" '
-                  f'to CTFd\'s Submissions table')
         db.session.commit()
         db.session.close()
         return jsonify({'success': True})
