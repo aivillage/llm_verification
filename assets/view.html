@@ -5,6 +5,13 @@
 
     <hr>
     <div x-data="llm_verification">
+        <div x-show="show_submit">
+            <h2>Models Left: <span x-text="models_left.length"></span></h2>
+        </div>
+        <div x-show="show_done">
+            <h2>All Models Done!</h2>
+        </div>
+        <br>
         <ul class="nav nav-pills mb-3 nav-fill" role="tablist">
             <li class="nav-item">
                 <a class="nav-link active" id="pills-new-submission-tab" data-toggle="pill" @click.debounce.500ms="showGenerate()" role="tab">New Submission</a>
@@ -16,7 +23,7 @@
         <div class="tab-content">
             <div class="tab-pane fade show active" id="pills-new-submission" x-show="show_generate">
                 <div class="tab-content">
-                    <textarea id="challenge-prompt" class="challenge-input mb-3" type="text" name="answer" placeholder="Prompt" rows="5" x-model="prompt"></textarea>
+                    <textarea id="challenge-prompt" class="challenge-input mb-3 form-control" type="text" name="answer" placeholder="Prompt" rows="5" x-model="prompt"></textarea>
                     <div class="row submit-row">
                         <div class="col-12 col-sm-4 mt-3 mt-sm-0 key-submit">
                             <button id="challenge-generate" class="challenge-submit btn btn-outline-secondary w-100 h-100" type="submit" @click.debounce.500ms="generateText()">Generate</button>
@@ -26,7 +33,7 @@
                 <br>
                 <br>
                 <div class="tab-content">
-                    <textarea id="challenge-generated" class="challenge-input mb-3" type="text" name="answer" placeholder="Generated Text" x-model="generated_text" readonly></textarea>
+                    <textarea id="challenge-generated" class="challenge-input mb-3 form-control" type="text" name="answer" placeholder="Generated Text" x-model="generated_text" readonly></textarea>
                 </div>
                 <div class="row submit-row" x-show="show_submit">
                     <div class="col-12 col-sm-4 mt-3 mt-sm-0 key-submit">
@@ -41,6 +48,8 @@
                   </div>
             </div>
             </div>
+
+            <hr>
 
             <div x-show="show_submissions">
                 <div class="row">
@@ -58,15 +67,6 @@
                         </div>
                     </template>
                 </div>
-            </div>
-            <div x-show="show_submit">
-                <h2>Models Left</h2>
-                    <template x-for="model in models_left">
-                        <p x-text="model"></p>
-                    </template>
-            </div>
-            <div x-show="show_done">
-                <h2>All Models Done!</h2>
             </div>
         </div>
     </div>
