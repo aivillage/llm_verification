@@ -8,9 +8,8 @@ from CTFd.plugins.migrations import upgrade as ctfd_migrations
 
 # LLM Verification Plugin module imports.
 from .llmv_logger import initialize_llmvctfd_loggers
-from .llmv_models import LlmSubmissionChallenge
+from .llmv_models import LlmSubmissionChallenge, fill_models_table
 from .llmv_routes import add_routes
-
 
 log = getLogger(__name__)
 
@@ -29,6 +28,7 @@ def load(app):
     register_plugin_assets_directory(app, base_path='/plugins/llm_verification/assets/')
     log.debug('Registered LLMV plugin assets directory with CTFd')
     llmv_verifications = add_routes()
+    fill_models_table()
     # Register LLMV blueprints with CTFd.
     app.register_blueprint(llmv_verifications)
     log.debug('Registered LLMV blueprints with CTFd')

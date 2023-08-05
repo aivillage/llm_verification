@@ -26,17 +26,38 @@ def upgrade(op=None):
             "llmv_submissions_ibfk_2", "llmv_submissions", type_="foreignkey"
         )
         op.drop_constraint(
-            "llmv_submissions_ibfk_3", "llmv_submissions", type_="foreignkey"
-        )
-        op.drop_constraint(
             "llmv_generation_ibfk_1", "llmv_generation", type_="foreignkey"
         )
+        op.drop_constraint(
+            "llmv_generation_ibfk_2", "llmv_generation", type_="foreignkey"
+        )
+        op.drop_constraint(
+            "llmv_generation_ibfk_3", "llmv_generation", type_="foreignkey"
+        )
+        op.drop_constraint(
+            "llmv_generation_ibfk_4", "llmv_generation", type_="foreignkey"
+        )
+
+        op.drop_constraint(
+            "llm_awards_ibfk_1", "llm_awards", type_="foreignkey"
+        )
+        op.drop_constraint(
+            "llm_awards_ibfk_2", "llm_awards", type_="foreignkey"
+        )
+        op.drop_constraint(
+            "llm_awards_ibfk_3", "llm_awards", type_="foreignkey"
+        )
+
+        op.drop_constraint(
+            "llm_solves_ibfk_1", "llm_solves", type_="foreignkey"
+        )
+        op.drop_constraint(
+            "llm_solves_ibfk_2", "llm_solves", type_="foreignkey"
+        )
+
     elif url.startswith("postgres"):
         op.drop_constraint(
             "llm_challenge_id_fkey", "llm_challenge", type_="foreignkey"
-        )
-        op.drop_constraint(
-            "llmv_submissions_challenge_id_fkey", "llmv_submissions", type_="foreignkey"
         )
         op.drop_constraint(
             "llmv_submissions_submission_id_fkey", "llmv_submissions", type_="foreignkey"
@@ -45,15 +66,39 @@ def upgrade(op=None):
             "llmv_submissions_llmv_generation_fkey", "llmv_submissions", type_="foreignkey"
         )
         op.drop_constraint(
-            "llmv_generation_llmv_generation_fkey", "llmv_generation", type_="foreignkey"
+            "llmv_generation_llm_challenge_fkey", "llmv_generation", type_="foreignkey"
         )
+        op.drop_constraint(
+            "llmv_generation_users_fkey", "llmv_generation", type_="foreignkey"
+        )
+        op.drop_constraint(
+            "llmv_generation_teams_fkey", "llmv_generation", type_="foreignkey"
+        )
+        op.drop_constraint(
+            "llmv_generation_teams_fkey", "llmv_generation", type_="foreignkey"
+        )
+
+    op.create_foreign_key(
+        None, "llm_awards", "awards", ["id"], ["id"], ondelete="CASCADE"
+    )
+    op.create_foreign_key(
+        None, "llm_awards", "llmv_generation", ["generation_id"], ["id"], ondelete="CASCADE"
+    )
+    op.create_foreign_key(
+        None, "llm_awards", "challenges", ["challenge_id"], ["id"], ondelete="CASCADE"
+    )
+
+    op.create_foreign_key(
+        None, "llm_solves", "solves", ["id"], ["id"], ondelete="CASCADE"
+    )
+    op.create_foreign_key(
+        None, "llm_solves", "llmv_generation", ["generation_id"], ["id"], ondelete="CASCADE"
+    )
 
     op.create_foreign_key(
         None, "llm_challenge", "challenges", ["id"], ["id"], ondelete="CASCADE"
     )
-    op.create_foreign_key(
-        None, "llmv_submissions", "challenges", ["challenge_id"], ["id"], ondelete="CASCADE"
-    )
+
     op.create_foreign_key(
         None, "llmv_submissions", "submissions", ["submission_id"], ["id"], ondelete="CASCADE"
     )
@@ -61,6 +106,18 @@ def upgrade(op=None):
         None, "llmv_submissions", "llmv_generation", ["generation_id"], ["id"], ondelete="CASCADE"
     )
 
+    op.create_foreign_key(
+        None, "llmv_generation", "llm_models", ["model_id"], ["id"], ondelete="CASCADE"
+    )
+    op.create_foreign_key(
+        None, "llmv_generation", "challenges", ["challenge_id"], ["id"], ondelete="CASCADE"
+    )
+    op.create_foreign_key(
+        None, "llmv_generation", "users", ["user_id"], ["id"], ondelete="CASCADE"
+    )
+    op.create_foreign_key(
+        None, "llmv_generation", "teams", ["team_id"], ["id"], ondelete="CASCADE"
+    )
 
 def downgrade(op=None):
     bind = op.get_bind()

@@ -35,13 +35,8 @@ function ezgrade(args) {
   var confirm = $(
     '<button type="button" class="btn btn-success" data-dismiss="modal">Mark Correct</button>'
   );
-  var award = $(
-    '<button type="button" class="btn btn-secondary" data-dismiss="modal">Award Points</button>'
-  );
-
   obj.find(".modal-footer").append(deny);
   obj.find(".modal-footer").append(confirm);
-  obj.find(".modal-footer").append(award);
 
   $("main").append(obj);
 
@@ -55,10 +50,6 @@ function ezgrade(args) {
 
   $(deny).click(function() {
     args.error();
-  });
-
-  $(award).click(function() {
-    args.award();
   });
 
   obj.modal("show");
@@ -82,6 +73,10 @@ $(document).ready(function() {
       .find(".team")
       .text()
       .trim();
+    var description = elem
+      .find(".desc")
+      .text()
+      .trim();
     var submission = elem.find(".submission").attr("id");
     var prompt_content = elem
       .find(".prompt")
@@ -99,35 +94,15 @@ $(document).ready(function() {
 
     ezgrade({
       title: "Submission",
-      body: " {0}'s submission for {1}: <strong> <br> Prompt: <br> </strong> {2} <strong> <br> Text: </strong> <br> {3}".format(
+      body: " {0}'s submission for {1}:<strong> <br> Challenge Description: <br> </strong> {2} <strong> <br> Prompt: <br> </strong> {2} <strong> <br> Generation: </strong> <br> {3}".format(
         "<strong>" + htmlentities(team_name) + "</strong>",
         "<strong>" + htmlentities(chal_name) + "</strong>",
+        "<pre>" + htmlentities(description) + "</pre>",
         "<pre>" + htmlentities(prompt_content) + "</pre>",
         "<pre>" + htmlentities(text_content) + "</pre>"
       ),
       success: function() {
-        CTFd.ui.ezq.ezQuery({
-          title: "Mark Challenge Correct",
-          body:
-            "<p>Are you sure you want to mark this submission correct?<p><p>This will delete all other pending submissions on this challenge for this user and the user will no longer be able to submit any further submissions for this challenge.</p> <p>If you want to allow further submissions, you should award points instead.</p>",
-          success: function() {
-            CTFd.fetch("/admin/verify_submissions/" + key_id + "/solve", {
-              method: "POST"
-            })
-              .then(function(response) {
-                return response.json();
-              })
-              .then(function(response) {
-                if (response.success) {
-                  td_row.remove();
-                  location.reload();
-                }
-              });
-          }
-        });
-      },
-      error: function() {
-        CTFd.fetch("/admin/verify_submissions/" + key_id + "/fail", {
+        CTFd.fetch("/admin/verify_submissions/" + key_id + "/solve", {
           method: "POST"
         })
           .then(function(response) {
@@ -139,20 +114,8 @@ $(document).ready(function() {
             }
           });
       },
-      award: function() {
-        var resp = prompt("How many points to award?");
-        if (resp === null) {
-          return;
-        }
-        var points = parseInt(resp) || null;
-        if (points === null) {
-          alert("Invalid point amount")
-          return;
-        }
-
-        var url =
-          "/admin/verify_submissions/" + key_id + "/award?value=" + points;
-        CTFd.fetch(url, {
+      error: function() {
+        CTFd.fetch("/admin/verify_submissions/" + key_id + "/fail", {
           method: "POST"
         })
           .then(function(response) {
