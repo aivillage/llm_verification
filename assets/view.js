@@ -1,12 +1,14 @@
-if (CTFd._internal.challenge) {
-  var challenge = CTFd._internal.challenge;
-} else {
-  var challenge = window.challenge;
-}
+CTFd._internal.challenge.data = undefined;
 
-if (CTFd.lib.$) {
-  $ = CTFd.lib.$;
-}
+CTFd._internal.challenge.renderer = null;
+
+CTFd._internal.challenge.preRender = function() {};
+
+CTFd._internal.challenge.render = null;
+
+CTFd._internal.challenge.postRender = function() {};
+
+window.Alpine = Alpine;
 
 function Moment(d) {
   var date = new Date(d);
@@ -46,208 +48,91 @@ function Moment(d) {
   return date;
 }
 
+Alpine.data("llm_verification", () => ({
+  prompt: "",
+  generated_text: "",
+  gen_id: -1,
+  show_generate: true,
+  show_submissions: false,
+  submissions: [],
+  models_left: [],
+  show_submit: true,
+  show_done: false,
 
-async function generate_text(challenge_id, prompt) {
-  var domain = CTFd.config.urlRoot;
-  var path = "generate";
-  var body = {
-    challenge_id: challenge_id,
-    prompt: prompt
-  };
+  async init() {
+    await this.getModelsLeft();
+  },
 
-  var headers = {};
-  headers["Accept"] = ["application/json"];
-  headers["Content-Type"] = ["application/json"];
-  headers["X-CSRFToken"] = [CTFd.config.csrfNonce];
-  var response = fetch(domain + path, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body)
-  })
-    .then((response) => {
-      return response.json();
-    });
-  return response;
-};
-
-function htmlEntities(string) {
-  return $("<div/>")
-    .text(string)
-    .html();
-}
-
-challenge.data = undefined;
-
-challenge.renderer = CTFd.lib.markdown();
-
-challenge.preRender = function() {};
-
-challenge.render = function(markdown) {
-  return challenge.renderer.render(markdown);
-};
-
-challenge.postRender = function() {
-  // Don't hijack the enter button
-  // Clone element to remove keyup event handler. Not sure why .off wont work
-  $("#challenge-input").replaceWith($("#challenge-input").clone());
-
-  var submission_template =
-    '<div class="card bg-light mb-4">\
-    <div class="card-body">\
-        <blockquote class="blockquote mb-0">\
-            <p>{0}</p>\
-            <p>{1}</p>\
-            <small class="text-muted">submitted {2}</small>\
-            <br>\
-            <small class="text-muted">graded {3}</small>\
-        </blockquote>\
-    </div>\
-  </div>';
-
-  // Define a template for pending submissions that doesn't include "graded."
-  var pending_submission_template =
-    '<div class="card bg-light mb-4">\
-    <div class="card-body">\
-        <blockquote class="blockquote mb-0">\
-            <p>{0}</p>\
-            <p>{1}</p>\
-            <small class="text-muted">submitted {2}</small>\
-        </blockquote>\
-    </div>\
-  </div>';
-
-  // Populate Submissions
-  var challenge_id = parseInt($("#challenge-id").val());
-  var url = "/submissions/" + challenge_id;
-
-  CTFd.fetch(url, {
-    method: "GET",
-    credentials: "same-origin",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json"
+  async generateText() {
+    if (this.prompt == "") {
+      alert("Please enter a prompt!");
+      return;
     }
-  })
-    .then(function(response) {
-      return response.json();
-    })
-    .then(function(response) {
-      var correct = response["data"]["correct"];
-      var pending = response["data"]["pending"];
-      var awarded = response["data"]["awarded"];
-      var incorrect = response["data"]["incorrect"];
+    this.generated_text = "Generating...";
+    url = CTFd.config.urlRoot + `/generate`;
 
-      $("#challenge-submissions").empty();
-      $("#challenge-submissions").append($("<br>"));
-      $("#challenge-submissions").append($("<h3>Correct</h3>"));
-      for (var index = 0; index < correct.length; index++) {
-        var submission = correct[index];
-        var entry = $(
-          submission_template.format(
-            htmlEntities(submission.prompt),
-            htmlEntities(submission.generated_text),
-            Moment(submission.date).fromNow()
-          )
-        );
-        $("#challenge-submissions").append(entry);
-      }
-
-      $("#challenge-submissions").append($("<br>"));
-      $("#challenge-submissions").append($("<hr>"));
-      $("#challenge-submissions").append($("<br>"));
-
-      $("#challenge-submissions").append($("<h3>Awarded</h3>"));
-      for (var index = 0; index < awarded.length; index++) {
-        var submission = awarded[index];
-        var entry = $(
-          submission_template.format(
-            htmlEntities(submission.prompt),
-            htmlEntities(submission.generated_text),
-            Moment(submission.date).fromNow()
-          )
-        );
-        $("#challenge-submissions").append(entry);
-      }
-
-      $("#challenge-submissions").append($("<br>"));
-      $("#challenge-submissions").append($("<hr>"));
-      $("#challenge-submissions").append($("<br>"));
-
-      $("#challenge-submissions").append($("<h3>Pending</h3>"));
-      for (var index = 0; index < pending.length; index++) {
-        var submission = pending[index];
-        var entry = $(
-          pending_submission_template.format(
-            htmlEntities(submission.prompt),
-            htmlEntities(submission.generated_text),
-            Moment(submission.date).fromNow(),
-          )
-        );
-        $("#challenge-submissions").append(entry);
-      }
-
-      $("#challenge-submissions").append($("<br>"));
-      $("#challenge-submissions").append($("<hr>"));
-      $("#challenge-submissions").append($("<br>"));
-
-      $("#challenge-submissions").append($("<h3>Incorrect</h3>"));
-      for (var index = 0; index < incorrect.length; index++) {
-        var submission = incorrect[index];
-        var entry = $(
-          submission_template.format(
-            htmlEntities(submission.prompt),
-            htmlEntities(submission.generated_text),
-            Moment(submission.date).fromNow()
-          )
-        );
-        $("#challenge-submissions").append(entry);
-      }
-
-      // Fix prompt text and generate button
-      $("#challenge-window #challenge-generate").addClass(
-        "btn btn-md btn-outline-secondary float-right"
-      );
-      $("#challenge-window #challenge-generate-loading").addClass(
-        "btn btn-md btn-outline-secondary float-right"
-      );
-      $("#challenge-window #challenge-prompt").addClass("form-control");
-
-      $("#challenge-generate").click(function(event) {
-        event.preventDefault();
-  
-        $("#challenge-input").val();
-        
-        var challenge_id = $("#challenge-id").val();
-        var prompt = $("#challenge-prompt").val();
-        generate_text(challenge_id, prompt).then(function(response) {
-          challenge.gen_id = response.data.id;
-          $("#challenge-input").val(response.data.text);
-        });
-      });
+    const response = await CTFd.fetch(url, {
+      method: "POST",
+      body: JSON.stringify({
+        challenge_id: this.id,
+        prompt: this.prompt
+      }),
     });
-};
+    const result = await response.json();
+    this.generated_text = result.data.text;
+    this.gen_id = result.data.gen_id;
+    this.submission = result.data.id.toString();
+  },
 
-challenge.submit = function(preview) {
-  var challenge_id = parseInt($("#challenge-id").val());
-  
-  var body = {
-    challenge_id: challenge_id,
-    submission: challenge.gen_id.toString(),
-  };
-  var params = {};
-  if (preview) {
-    params["preview"] = true;
+  async showGenerate() {
+    this.show_generate = true;
+    this.show_submissions = false;
+  },
+
+  async showSubmissions() {
+    await this.getSubmissions();
+    this.show_generate = false;
+    this.show_submissions = true;
+  },
+
+  async getSubmissions() {
+    url = CTFd.config.urlRoot + `/submissions/` + this.id;
+
+    const response = await CTFd.fetch(url, {
+      method: "get",
+    });
+    const result = await response.json();
+    this.submissions = result.data.submissions;
+    this.models_left = result.data.models_left;
+    for (var i = 0; i < this.submissions.length; i++) {
+      this.submissions[i].date = Moment(this.submissions[i].date).fromNow();
+    }
+    if (this.models_left.length == 0) {
+      this.show_submit = false;
+      this.show_done = true;
+    }
+  },
+
+  async getModelsLeft() {
+    url = CTFd.config.urlRoot + `/models_left/` + this.id;
+
+    const response = await CTFd.fetch(url, {
+      method: "get",
+    });
+    const result = await response.json();
+    this.models_left = result.data.models_left;
+    if (this.models_left.length == 0) {
+      this.show_submit = false;
+      this.show_done = true;
+    }
+  },
+
+  async submitGenerated() {
+    if (this.gen_id == "") {
+      alert("Please generate a text first!");
+      return;
+    }
+    await this.submitChallenge();
+    await this.getModelsLeft();
   }
-
-  return CTFd.api.post_challenge_attempt(params, body).then(function(response) {
-    if (response.status === 429) {
-      // User was ratelimited but process response
-      return response;
-    }
-    if (response.status === 403) {
-      // User is not logged in or CTF is paused.
-      return response;
-    }
-    return response;
-  });
-};
+}));

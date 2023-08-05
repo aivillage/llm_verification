@@ -1,5 +1,6 @@
 """Additional LLMV RESTful API routes that are added to CTFd."""
 from logging import getLogger
+import random
 
 # Third-party imports.
 from flask import Blueprint, jsonify, render_template, request
@@ -14,9 +15,8 @@ from CTFd.utils.modes import get_model
 from CTFd.utils.user import get_current_user
 
 # LLM Verification Plugin module imports.
-from .llmv_models import LLMVSubmission, LlmChallenge, Pending, Awarded, LLMVGeneration
+from .llmv_models import LLMVSubmission, LlmChallenge, Pending, Awarded, LLMVGeneration, LlmModels, models_not_submitted
 from .remote_llm import generate_text
-from .utils import create_llmv_solve_entry, retrieve_submissions
 
 
 log = getLogger(__name__)
@@ -40,6 +40,7 @@ def add_routes() -> Blueprint:
         log.info(f'Received text generation request from user "{get_current_user().name}" '
                  f'for challenge ID "{request.json["challenge_id"]}"')
         challenge = LlmChallenge.query.filter_by(id=request.json['challenge_id']).first_or_404()
+
         preprompt = challenge.preprompt
         log.debug(f'Found pre-prompt "{preprompt}" '
                   f'for challenge {request.json["challenge_id"]} "{challenge.name}"')
@@ -49,33 +50,39 @@ def add_routes() -> Blueprint:
         prompt = request.json["prompt"]
         log.debug(f'pre-prompt {preprompt} and user-provided-prompt: "{prompt}"')
         try:
-            generated_text = generate_text(preprompt, prompt)
+            left_over_model = models_not_submitted(user_id=get_current_user().id, challenge_id=challenge.id)
+            if len(left_over_model) == 0:
+                response = {'success': False, 'data': {'text': "This challenge is complete.", "id": -1}}
+                return jsonify(response)
+
+            anon_name = random.choice(left_over_model)
+            # Return a random model that isn't submitted by the user.
+            model = LlmModels.query.filter_by(anon_name=anon_name).first()
+            generated_text = generate_text(preprompt, prompt, model.model)
             generation_succeeded = True
+
         except HTTPError as error:
             log.error(f'Remote LLM experienced an error when generating text: {error}')
             # Send the error message from the HTTPError as the response to the user.
-            generated_text = str(error)
-            generation_succeeded = False
+            response = {'success': False, 'data': {'text': "There was an error in the backend, try again?", "id": -1}}
+            return jsonify(response)
 
+        # Add the generated text to the database.
         user_id = get_current_user().id
         team_id = get_current_user().team_id
         challenge_id = request.json['challenge_id']
         grt_generation = LLMVGeneration(user_id=user_id,
-                                       team_id=team_id,
-                                       challenge_id=challenge_id,
-                                       text=generated_text,
-                                       prompt=prompt,)
+                                    team_id=team_id,
+                                    challenge_id=challenge_id,
+                                    text=generated_text,
+                                    prompt=prompt,
+                                    model_id=model.id,)
         db.session.add(grt_generation)
         db.session.commit()
         grt_generation_id = grt_generation.id
-
         response = {'success': generation_succeeded, 'data': {'text': generated_text, 'id': grt_generation_id}}
-        log.info(f'Generated text for user "{get_current_user().name}" '
-                 f'for challenge "{challenge.name}" with id {grt_generation_id}')
-        
-        log.debug(f"Total number of generated texts: {LLMVGeneration.query.count()}")
-
         return jsonify(response)
+
 
     @llm_verifications.route('/submissions/<challenge_id>', methods=['GET'])
     @authed_only
@@ -86,16 +93,44 @@ def add_routes() -> Blueprint:
                   f'requested their answer submissions for challenge "{challenge_id}"')
         # Query the database for the user's answer submissions for this challenge.
         user_id = get_current_user().id
-        collected_submissions = {}
+        collected_submissions = []
         for status in ['pending', 'correct', 'awarded', 'incorrect']:
-            generations = LLMVGeneration.query.add_columns(LLMVGeneration.prompt,
-                                            LLMVGeneration.text, LLMVGeneration.date).filter_by(user_id=user_id, challenge_id=challenge_id, status=status).all()
-            collected_submissions[status] = generations
+            generations = LLMVGeneration.query.add_columns(
+                LLMVGeneration.prompt,
+                LLMVGeneration.text,
+                LLMVGeneration.date,
+                LlmModels.anon_name,
+            ).filter_by(user_id=user_id, challenge_id=challenge_id, status=status).join(LlmModels).all()
+            for generation in generations:
+                collected_submissions.append({
+                    'prompt': generation.prompt,
+                    'text': generation.text,
+                    'date': generation.date,
+                    'status': status,
+                    'model': generation.anon_name,
+                })
 
-        response = {'success': True, 'data': collected_submissions}
+        left_over_model = models_not_submitted(user_id=user_id, challenge_id=challenge_id)
+        
+
+        response = {'success': True, 'data': {"submissions": collected_submissions, "models_left": left_over_model}}
         log.info(f'Showed user "{get_current_user().name}" '
                  f'their answer submissions for challenge "{challenge_id}"')
         return jsonify(response)
+    
+    @llm_verifications.route('/models_left/<challenge_id>', methods=['GET'])
+    @authed_only
+    def models_left(challenge_id):
+        """Define a route for for showing users their answer submissions."""
+        # Identify the user who would like to see their answer submissions.
+        log.debug(f'User "{get_current_user().name}" '
+                  f'requested their answer submissions for challenge "{challenge_id}"')
+        # Query the database for the user's answer submissions for this challenge.
+        user_id = get_current_user().id
+        left_over_model = models_not_submitted(user_id=user_id, challenge_id=challenge_id)
+        response = {'success': True, 'data': {"models_left": left_over_model}}
+        return jsonify(response)
+
     
     @llm_verifications.route('/admin/llm_submissions/pending', methods=['GET'])
     @admins_only

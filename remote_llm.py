@@ -8,9 +8,6 @@ from logging import getLogger
 from requests import post, get
 from requests.exceptions import HTTPError
 
-# LLM Verification Plugin module imports.
-from .config_manager import load_llmv_config
-
 log = getLogger(__name__)
 
 def generate_text(preprompt, prompt, model):
@@ -38,26 +35,26 @@ def generate_text(preprompt, prompt, model):
     log.info(f'Received text generation request for prompt "{prompt}" for model {model}')
     # Load the Vanilla Neox API key from the config file.
 
-    raw_response = get(url=route,
+    raw_response = post(url=route,
                         headers={'Authorization': f'Bearer {token}'},
-                        json={'prompt': prompt, "preprompt" : preprompt, "model:": model})
+                        json={'prompt': prompt, "preprompt" : preprompt, "model": model})
     
     if raw_response.status_code == 200:
         json_response = raw_response.json()
-        if 'error' in json_response:
+        if json_response.get('error') is not None:
             log.error(f"Error generating: {json_response['error']}")
             raise HTTPError(
-                "Model Error", headers={"Retry-After": str(60000)}
+                "Model Error"
             )
         
         return json_response['generation']
     elif 400 <= raw_response.status_code <= 599:
         # ... raise an error.
-        raise HTTPError(f'LLM Router API returned error status code {raw_response.status}: '
+        raise HTTPError(f'LLM Router API returned error status code {raw_response.status_code}: '
                         f'Response: {raw_response.json()}')
     # ... Otherwise, if it's an unrecognized HTTP status code, then...
     else:
-        raise HTTPError(f'LLM Router API returned unrecognized status code {raw_response.status}: '
+        raise HTTPError(f'LLM Router API returned unrecognized status code {raw_response.status_code}: '
                         f'Response: {raw_response.json()}')
 
 

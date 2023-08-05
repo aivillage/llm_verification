@@ -8,9 +8,8 @@ from CTFd.plugins.migrations import upgrade as ctfd_migrations
 
 # LLM Verification Plugin module imports.
 from .llmv_logger import initialize_llmvctfd_loggers
-from .llmv_models import LlmSubmissionChallenge
+from .llmv_models import LlmSubmissionChallenge, fill_models_table
 from .llmv_routes import add_routes
-from .utils import fill_models_table
 
 log = getLogger(__name__)
 

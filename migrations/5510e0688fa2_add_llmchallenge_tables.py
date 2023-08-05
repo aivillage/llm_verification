@@ -52,10 +52,8 @@ def upgrade(op=None):
         "llmv_submissions",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("generation_id", sa.Integer(), nullable=False),
-        sa.Column("challenge_id", sa.Integer(), nullable=False),
         sa.Column("submission_id", sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(["generation_id"], ["llmv_generation.id"]),
-        sa.ForeignKeyConstraint(["challenge_id"], ["challenges.id"]),
         sa.ForeignKeyConstraint(["submission_id"], ["submissions.id"]),
         sa.PrimaryKeyConstraint("id"),
     )

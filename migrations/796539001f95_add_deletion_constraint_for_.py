@@ -26,9 +26,6 @@ def upgrade(op=None):
             "llmv_submissions_ibfk_2", "llmv_submissions", type_="foreignkey"
         )
         op.drop_constraint(
-            "llmv_submissions_ibfk_3", "llmv_submissions", type_="foreignkey"
-        )
-        op.drop_constraint(
             "llmv_generation_ibfk_1", "llmv_generation", type_="foreignkey"
         )
         op.drop_constraint(
@@ -43,9 +40,6 @@ def upgrade(op=None):
     elif url.startswith("postgres"):
         op.drop_constraint(
             "llm_challenge_id_fkey", "llm_challenge", type_="foreignkey"
-        )
-        op.drop_constraint(
-            "llmv_submissions_challenge_id_fkey", "llmv_submissions", type_="foreignkey"
         )
         op.drop_constraint(
             "llmv_submissions_submission_id_fkey", "llmv_submissions", type_="foreignkey"
@@ -68,9 +62,6 @@ def upgrade(op=None):
 
     op.create_foreign_key(
         None, "llm_challenge", "challenges", ["id"], ["id"], ondelete="CASCADE"
-    )
-    op.create_foreign_key(
-        None, "llmv_submissions", "challenges", ["challenge_id"], ["id"], ondelete="CASCADE"
     )
     op.create_foreign_key(
         None, "llmv_submissions", "submissions", ["submission_id"], ["id"], ondelete="CASCADE"

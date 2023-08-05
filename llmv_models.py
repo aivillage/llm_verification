@@ -1,6 +1,6 @@
 """Modified versions of CTFd's database models."""
 # Standard library imports.
-import datetime
+import datetime, random
 from logging import getLogger
 
 # Third-party imports.
@@ -8,10 +8,11 @@ from flask import Blueprint
 from sqlalchemy.ext.hybrid import hybrid_property
 
 # CTFd imports.
-from CTFd.models import Challenges, Submissions, db
+from CTFd.models import Challenges, Submissions, db, Awards, Solves
 from CTFd.plugins.challenges import BaseChallenge
 from CTFd.utils.user import get_ip
 
+from .remote_llm import get_models
 
 log = getLogger(__name__)
 
@@ -177,10 +178,6 @@ class LlmSubmissionChallenge(BaseChallenge):
         
         data = request.form or request.get_json()
         submission = data['submission'].strip()
-        log.info(f'Old submissions: {LLMVSubmission.query.filter_by(generation_id=int(submission)).count()}')
-        if 0 < LLMVSubmission.query.filter_by(generation_id=int(submission)).count():
-            log.info('Submission already exists')
-            return None
         log.info(data)
         generation = LLMVGeneration.query.filter_by(id=int(submission)).update({"status": "pending"})
 
@@ -197,18 +194,88 @@ class LlmSubmissionChallenge(BaseChallenge):
         prompt = generation.prompt
         log.info(f'Have generation with prompt and text: {prompt} {text}')
 
-        pending = Pending(user_id=user.id,
-                          team_id=team.id if team else None,
-                          challenge_id=challenge.id,
-                          ip=get_ip(request),
-                          provided=submission,)
-        db.session.add(pending)
+
+        if len(models_not_submitted(user_id=user.id, challenge_id=challenge.id)) > 0:
+            awards = Awards(user_id=user.id,
+                            name='Submission',
+                            description='Submission for {name}'.format(name=challenge.name),
+                            value=challenge.value,
+                            category=challenge.category)
+            db.session.add(awards)
+        else:
+            solve = Solves(user_id=user.id,
+                           challenge_id=challenge.id,
+                           ip=request.remote_addr,
+                           provided="",
+                           date=datetime.datetime.utcnow())
+            db.session.add(solve)
         db.session.commit()
-        LLMV = LLMVSubmission(submission_id=pending.id,
-                            text=text,
-                            prompt=prompt,
-                            challenge_id=challenge.id,
-                            generation_id=generation.id,)
-        db.session.add(LLMV)
-        db.session.commit()
+
+        log.info(f"Number of awards: {len(Awards.query.filter_by(user_id=user.id, description='Submission for {name}'.format(name=challenge.name)).all())}")
+        log.info(f"Number of solves: {len(Solves.query.filter_by(user_id=user.id, challenge_id=challenge.id).all())}")
         log.info(f'Fail: marked attempt as pending: {submission}')
+
+
+def fill_models_table():
+    """Fill the `LlmModels` table with the models from the `models` directory.
+
+    Arguments:
+        session(Session, required): SQLAlchemy session object.
+    """
+    # For each model in the `models` directory...
+    anon_names = [
+        'Anu',
+        'Ellil',
+        'Enki',
+        'Marduk',
+        'Ashur',
+        'Nabu',
+        'Nanna',
+        'Utu',
+        'Inanna',
+        'Ninhursag',
+        'Ninurta',
+        'Nergal',
+        'Dumuzid',
+        'Ereshkigal'
+    ]
+    for model, anon_name in zip(get_models(), anon_names):
+        if LlmModels.query.filter_by(model=model).first():
+            continue
+        # ... create a database entry for the model.
+        db.session.add(LlmModels(model=model,
+                             anon_name=anon_name))
+    # Commit the changes to the database.
+    db.session.commit()
+
+
+def models_not_submitted(user_id, challenge_id):
+    '''
+    Gets a random model that isn't submitted by the user for the challenge.
+    '''
+    models = []
+    for status in ['pending', 'correct', 'awarded']:
+        # Get the user's submissions for the challenge.
+        statused_models = LLMVGeneration.query.add_columns(
+            LLMVGeneration.user_id,
+            LLMVGeneration.challenge_id,
+            LLMVGeneration.status,
+            LLMVGeneration.model_id,
+            LlmModels.anon_name,
+        ).filter_by(
+            user_id=user_id,
+            challenge_id=challenge_id,
+            status=status,
+        ).join(LlmModels).all()
+        # Add the models to the list.
+        for model in statused_models:
+            models.append(model.anon_name)
+
+    # Get all the models.
+    all_models = LlmModels.query.all()
+    all_models = [model.anon_name for model in all_models]
+    log.debug(f"All models: {all_models}")
+
+    log.debug(f"Generated Models: {models}")
+    # Get the models that aren't submitted by the user.
+    return [model for model in all_models if model not in models]
