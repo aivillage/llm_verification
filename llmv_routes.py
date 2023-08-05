@@ -13,6 +13,7 @@ from CTFd.plugins import bypass_csrf_protection
 from CTFd.utils.decorators import admins_only, authed_only
 from CTFd.utils.modes import get_model
 from CTFd.utils.user import get_current_user
+from CTFd.utils.scores import get_standings
 
 # LLM Verification Plugin module imports.
 from .llmv_models import LLMVSubmission, LlmAwards, LlmChallenge, LlmSolves, LLMVGeneration, LlmModels, models_not_submitted
@@ -30,7 +31,8 @@ def add_routes() -> Blueprint:
     @admins_only
     def llm_verification_index():
         """Define a route for the LLMV plugin's index page."""
-        return render_template('index.html')
+        standings = get_standings(admin=True)
+        return render_template('index.html', standings=standings)
 
     @llm_verifications.route('/generate', methods=['POST'])
     @bypass_csrf_protection
