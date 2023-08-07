@@ -107,6 +107,9 @@ class LlmModels(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     anon_name = db.Column(db.String(80))
     model = db.Column(db.String(80))
+    active = db.Column(db.Boolean, default=True)
+    error_count = db.Column(db.Integer, default=0)
+    manual_active = db.Column(db.Boolean, default=True)
 
 class Pending(Submissions):
     __mapper_args__ = {'polymorphic_identity': 'pending'}
@@ -266,12 +269,24 @@ def fill_models_table():
         'Dumuzid',
         'Ereshkigal'
     ]
-    for model, anon_name in zip(get_models(), anon_names):
-        if LlmModels.query.filter_by(model=model).first():
+    current_models = get_models()
+    current_anon_names = [model.anon_name for model in LlmModels.query.all()]
+    unused_anon_names = [name for name in anon_names if name not in current_anon_names]
+    for model in current_models:
+        existing_model = LlmModels.query.filter_by(model=model).first()
+        if existing_model is not None:
+            existing_model.active = True
             continue
+        anon_name = unused_anon_names.pop()
         # ... create a database entry for the model.
         db.session.add(LlmModels(model=model,
                              anon_name=anon_name))
+    
+    # Deactivate models that are not in last return directory.
+    for model in LlmModels.query.all():
+        if model.model not in current_models:
+            model.active = False
+    
     # Commit the changes to the database.
     db.session.commit()
 
@@ -289,10 +304,14 @@ def models_not_submitted(user_id, challenge_id):
             LLMVGeneration.status,
             LLMVGeneration.model_id,
             LlmModels.anon_name,
+            LlmModels.active,
+            LlmModels.manual_active,
         ).filter_by(
             user_id=user_id,
             challenge_id=challenge_id,
             status=status,
+            active=True,
+            manual_active=True,
         ).join(LlmModels).all()
         # Add the models to the list.
         for model in statused_models:

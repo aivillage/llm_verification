@@ -1,0 +1,60 @@
+{% extends "admin/base.html" %}
+
+{% block stylesheets %}
+{% endblock %}
+
+{% block content %}
+
+<div class="jumbotron">
+  <div class="container">
+    <h1>Models</h1>
+  </div>
+</div>
+
+<div class="container">
+    <div class="row">
+      <div class="col-md-12">
+        <table id="teamsboard" class=" table table-striped">
+          <thead>
+            <tr>
+              <td class="text-center"><b>ID</b></td>
+              <td><b>Model</b></td>
+              <td><b>Anon Name</b></td>
+              <td><b>Active</b></td>
+              <td><b>Manual Active</b></td>
+              <td><b>Error Count</b></td>
+              <td><b>Toggle</b></td>
+            </tr>
+          </thead>
+          <tbody>
+            {% for model in models %}
+            <tr>
+              <td class="text-center" id="{{ model.id }}">
+                {{ model.id }}
+              </td>
+              <td class="team">
+                {{ model.model }}
+              </td>
+              <td class="chal">
+                 {{ model.anon_name }}
+              </td>
+              <td class="chal">
+                {{ model.active }}
+             </td>
+             <td class="chal">
+                {{ model.manual_active }}
+             </td>
+             <td class="chal">
+                {{ model.error_count }}
+             </td>
+            <td class="chal">
+                <a href="/admin/models/toggle/{{ model.id }}">Toggle</a>
+            </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endblock %}

@@ -1,9 +1,10 @@
 """Additional LLMV RESTful API routes that are added to CTFd."""
+import datetime
 from logging import getLogger
 import random
 
 # Third-party imports.
-from flask import Blueprint, jsonify, render_template, request
+from flask import Blueprint, jsonify, redirect, render_template, request
 from requests.exceptions import HTTPError
 from werkzeug.exceptions import BadRequest
 
@@ -16,9 +17,8 @@ from CTFd.utils.user import get_current_user
 from CTFd.utils.scores import get_standings
 
 # LLM Verification Plugin module imports.
-from .llmv_models import LLMVSubmission, LlmAwards, LlmChallenge, LlmSolves, LLMVGeneration, LlmModels, models_not_submitted
+from .llmv_models import LLMVSubmission, LlmAwards, LlmChallenge, LlmSolves, LLMVGeneration, LlmModels, models_not_submitted, fill_models_table
 from .remote_llm import generate_text
-
 
 log = getLogger(__name__)
 
@@ -27,11 +27,46 @@ def add_routes() -> Blueprint:
     # Define HTML blueprints for the LLMV plugin.
     llm_verifications = Blueprint('llm_verifications', __name__, template_folder='templates')
 
+    @llm_verifications.route('/api/llm_verification', methods=['GET'])
+    def score_api():
+        """Define a route for the LLMV plugin's index page.
+        
+        Grabs the last totals value from the last 50 minutes of llmv_generations table joined with the challenges (for the values)
+        """
+        Model = get_model()
+        query = db.session.query(
+            LLMVGeneration.account_id.label("account_id"),
+            Model.name.label("model_name"),
+            db.func.max(LLMVGeneration.date).label("date"),
+            db.func.sum(LlmChallenge.value).label("score"),
+        ).join(LlmChallenge).join(Model).filter(LLMVGeneration.date > datetime.datetime.utcnow() - datetime.timedelta(minutes=50)).group_by(LLMVGeneration.account_id).limit(20).all()
+
+        response = []
+        for row in query:
+            response.append({
+                "model_name": row.model_name,
+                "date": row.date,
+                "score": row.score
+            })
+        return jsonify(response)
+    
+    @llm_verifications.route('/admin/update_llm_models', methods=['GET'])
+    @admins_only
+    def update_models():
+        """Define a route for the LLMV plugin's index page.
+        
+        Grabs the last totals value from the last 50 minutes of llmv_generations table joined with the challenges (for the values)
+        """
+        fill_models_table()
+        # Redirect to the index page.
+        return redirect('/admin/llm_verification', 200)
+        
+
     @llm_verifications.route('/admin/llm_verification', methods=['GET'])
     @admins_only
     def llm_verification_index():
         """Define a route for the LLMV plugin's index page."""
-        standings = get_standings(admin=True)
+        standings = get_standings(admin=True)[:30]
         return render_template('index.html', standings=standings)
 
     @llm_verifications.route('/generate', methods=['POST'])
@@ -51,15 +86,17 @@ def add_routes() -> Blueprint:
         # Combine the pre-prompt and user-provided prompt with a space between them.
         prompt = request.json["prompt"]
         log.debug(f'pre-prompt {preprompt} and user-provided-prompt: "{prompt}"')
-        try:
-            left_over_model = models_not_submitted(user_id=get_current_user().id, challenge_id=challenge.id)
-            if len(left_over_model) == 0:
-                response = {'success': False, 'data': {'text': "This challenge is complete.", "id": -1}}
-                return jsonify(response)
 
-            anon_name = random.choice(left_over_model)
-            # Return a random model that isn't submitted by the user.
-            model = LlmModels.query.filter_by(anon_name=anon_name).first()
+        left_over_model = models_not_submitted(user_id=get_current_user().id, challenge_id=challenge.id)
+        if len(left_over_model) == 0:
+            response = {'success': False, 'data': {'text': "This challenge is complete.", "id": -1}}
+            return jsonify(response)
+
+        anon_name = random.choice(left_over_model)
+        # Return a random model that isn't submitted by the user.
+        model = LlmModels.query.filter_by(anon_name=anon_name).first()
+
+        try:
             generated_text = generate_text(preprompt, prompt, model.model)
             generation_succeeded = True
 
@@ -67,6 +104,7 @@ def add_routes() -> Blueprint:
             log.error(f'Remote LLM experienced an error when generating text: {error}')
             # Send the error message from the HTTPError as the response to the user.
             response = {'success': False, 'data': {'text': "There was an error in the backend, try again?", "id": -1}}
+            model.error_count += 1
             return jsonify(response)
 
         # Add the generated text to the database.
@@ -132,57 +170,6 @@ def add_routes() -> Blueprint:
         left_over_model = models_not_submitted(user_id=user_id, challenge_id=challenge_id)
         response = {'success': True, 'data': {"models_left": left_over_model}}
         return jsonify(response)
-
-    
-    #@llm_verifications.route('/admin/llm_submissions/pending', methods=['GET'])
-    #@admins_only
-    def render_pending_submissions():
-        """Add an admin route for viewing answer submissions that haven't been reviewed."""
-        filters = {'type': 'pending'}
-        challenge_id = request.args.get('challenge_id', None, type=int)
-        if challenge_id is not None:
-            filters['challenge_id'] = challenge_id
-
-        user_id = request.args.get('user_id', None, type=int)
-        if user_id is not None:
-            filters['user_id'] = user_id
-        
-        log.debug(f"Total number of generated texts, submitted but not graded: {LLMVGeneration.query.filter_by(status='pending').count()}")
-        log.debug(f"Total number of submissions, submitted but not graded: {LLMVSubmission.query.count()}")
-        log.debug(f"Total number of submissions: {Submissions.query.count()}")
-        log.debug(f"Total number of submissions that are pending: {Submissions.query.filter_by(**filters).count()}")
-
-
-        curr_page = abs(int(request.args.get('page', 1, type=int)))
-        results_per_page = 50
-        page_start = results_per_page * (curr_page - 1)
-        page_end = results_per_page * (curr_page - 1) + results_per_page
-        sub_count = Submissions.query.filter_by(**filters).count()
-        page_count = int(sub_count / results_per_page) + (sub_count % results_per_page > 0)
-        Model = get_model()
-        submissions = (Submissions.query.add_columns(Submissions.id,
-                                                     Submissions.type,
-                                                     Submissions.challenge_id,
-                                                     Submissions.provided,
-                                                     Submissions.account_id,
-                                                     Submissions.date,
-                                                     LlmChallenge.name.label('challenge_name'),
-                                                     Model.name.label('team_name'),
-                                                     LLMVGeneration.prompt,
-                                                     LLMVGeneration.text).select_from(Submissions)
-                                                                        .filter_by(**filters)
-                                                                        .join(LlmChallenge, LlmChallenge.id == Submissions.challenge_id)
-                                                                        .join(Model)
-                                                                        .join(LLMVSubmission, LLMVSubmission.submission_id == Submissions.id)
-                                                                        .join(LLMVGeneration, LLMVSubmission.generation_id == LLMVGeneration.id)
-                                                                        .order_by(Submissions.date.desc())
-                                                                        .slice(page_start, page_end)
-                                                                        .all())
-        log.info(f'Showed (admin) {len(submissions)} pending answer submissions')
-        return render_template('verify_submissions.html',
-                                submissions=submissions,
-                                page_count=page_count,
-                                curr_page=curr_page)
 
 
     def get_generations(request, pending_overide=False):
@@ -250,6 +237,25 @@ def add_routes() -> Blueprint:
                                 generations=generations,
                                 page_count=page_count,
                                 curr_page=curr_page)
+    
+    @llm_verifications.route('/admin/models', methods=['GET'])
+    @admins_only
+    def render_models():
+        """Add an admin route for viewing answer submissions that haven't been reviewed."""
+        models = LlmModels.query.all()
+        log.info(f'Showed (admin) {len(models)} models')
+        return render_template('all_models.html',
+                                models=models)
+    
+    @llm_verifications.route('/admin/models/toggle/<model_id>', methods=['GET'])
+    @admins_only
+    def toggle_model(model_id):
+        """Add an admin route for viewing answer submissions that haven't been reviewed."""
+        model = LlmModels.query.filter_by(id=model_id).first()
+        model.manual_active = not model.manual_active
+        db.session.commit()
+        log.info(f'Deactivated model {model_id}')
+        return redirect("/admin/models")
     
     @llm_verifications.route('/admin/llm_submissions/challenges', methods=['GET'])
     @admins_only

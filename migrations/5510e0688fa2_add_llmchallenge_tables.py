@@ -28,6 +28,9 @@ def upgrade(op=None):
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("model", sa.Text(), nullable=False),
         sa.Column("anon_name", sa.Text(), nullable=False),
+        sa.Column("active", sa.Boolean(), nullable=False),
+        sa.Column("manual_active", sa.Boolean(), nullable=False),
+        sa.Column("error_count", sa.Integer(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
