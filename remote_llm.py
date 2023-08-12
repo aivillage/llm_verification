@@ -27,7 +27,7 @@ def generate_text(preprompt, prompt, model):
     url = os.environ.get('LLMV_ROUTER_URL')
     if url is None:
         raise ValueError('LLM Verification Router URL is not set')
-    route = url + '/generate'
+    route = url
     token = os.environ.get('LLMV_ROUTER_TOKEN')
     if token is None:
         raise ValueError('LLM Verification Router token is not set')
@@ -59,6 +59,8 @@ def generate_text(preprompt, prompt, model):
 
 
 def get_models():
+    return ["huggingface", "cohere", "meta", "google", "stability"]
+
     url = os.environ.get('LLMV_ROUTER_URL')
     if url is None:
         raise ValueError('LLM Verification Router URL is not set')
@@ -82,11 +84,11 @@ def get_models():
     
     elif 400 <= raw_response.status_code <= 599:
         # ... raise an error.
-        raise HTTPError(f'LLM Router API returned error status code {raw_response.status}: '
+        raise HTTPError(f'LLM Router API returned error status code {raw_response.status_code}: '
                         f'Response: {raw_response.json()}')
     # ... Otherwise, if it's an unrecognized HTTP status code, then...
     else:
-        raise HTTPError(f'LLM Router API returned unrecognized status code {raw_response.status}: '
+        raise HTTPError(f'LLM Router API returned unrecognized status code {raw_response.status_code}: '
                         f'Response: {raw_response.json()}')
     
     

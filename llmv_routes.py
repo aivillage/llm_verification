@@ -100,8 +100,8 @@ def add_routes() -> Blueprint:
             generated_text = generate_text(preprompt, prompt, model.model)
             generation_succeeded = True
 
-        except HTTPError as error:
-            log.error(f'Remote LLM experienced an error when generating text: {error}')
+        except Exception as error:
+            log.error(f'Remote LLM model {model.model} experienced an error when generating text: {error}')
             # Send the error message from the HTTPError as the response to the user.
             response = {'success': False, 'data': {'text': "There was an error in the backend, try again?", "id": -1}}
             model.error_count += 1

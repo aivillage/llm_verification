@@ -310,15 +310,13 @@ def models_not_submitted(user_id, challenge_id):
             user_id=user_id,
             challenge_id=challenge_id,
             status=status,
-            active=True,
-            manual_active=True,
         ).join(LlmModels).all()
         # Add the models to the list.
         for model in statused_models:
             models.append(model.anon_name)
 
     # Get all the models.
-    all_models = LlmModels.query.all()
+    all_models = LlmModels.query.filter_by(active=True,manual_active=True).all()
     all_models = [model.anon_name for model in all_models]
     log.debug(f"All models: {all_models}")
 
