@@ -1,6 +1,5 @@
-
+# docker compose -f development_helpers/docker-compose.dev.yml build --progress=plain
 FROM ctfd/ctfd:3.5.3
-# --progress=plain
 
 WORKDIR /opt/CTFd
 COPY --chown=1001:1001 . .
@@ -46,7 +45,6 @@ RUN chown -R 1001:1001 /var/log/CTFd /var/uploads /opt/CTFd
 
 # The directory from which the compose file is called on the host OS matters
 # Currently running docker compose -f development_helpers/docker-compose.dev.yml build 
-RUN ls -la /opt/CTFd/plugins/llm_verification/
 RUN chmod +x /opt/CTFd/plugins/llm_verification/development_helpers/docker-entrypoint.dev.sh
 RUN chown 1001:1001 /opt/CTFd/plugins/llm_verification/development_helpers/docker-entrypoint.dev.sh
 
@@ -54,4 +52,5 @@ USER 1001
 EXPOSE 8000
 
 # LLMV: Modified entrypoint to use development entrypoint.
+RUN ls -la /opt/CTFd/plugins/llm_verification/development_helpers
 ENTRYPOINT ["/opt/CTFd/plugins/llm_verification/development_helpers/docker-entrypoint.dev.sh"]
