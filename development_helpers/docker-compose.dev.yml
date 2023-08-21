@@ -3,12 +3,12 @@ version: '2'
 
 
 services:
-  ctfd:
+  ctfd_llmv:
     # LLMV: Change Dockerfile to development version.
-    container_name: ctfd
+    container_name: ctfd_llmv
     build:
-      context: .
-      dockerfile: Dockerfile.dev
+      context: ../
+      dockerfile: development_helpers/Dockerfile.dev
     user: root
     restart: always
     ports:
