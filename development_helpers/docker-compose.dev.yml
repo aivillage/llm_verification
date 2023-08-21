@@ -5,6 +5,7 @@ version: '2'
 services:
   ctfd:
     # LLMV: Change Dockerfile to development version.
+    container_name: ctfd
     build:
       context: .
       dockerfile: Dockerfile.dev
