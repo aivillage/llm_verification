@@ -21,12 +21,12 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 COPY . /opt/CTFd/plugins/llm_verification
 
-RUN pip install --no-cache-dir -r requirements.txt \
-    && for d in CTFd/plugins/*; do \
-        if [ -f "$d/requirements.txt" ]; then \
-            pip install --no-cache-dir -r "$d/requirements.txt";\
-        fi; \
-    done;
+# RUN pip install --no-cache-dir -r requirements.txt \
+#     && for d in CTFd/plugins/*; do \
+#         if [ -f "$d/requirements.txt" ]; then \
+#             pip install --no-cache-dir -r "$d/requirements.txt";\
+#         fi; \
+#     done;
 
 # User already exists
 # RUN useradd \
@@ -42,12 +42,11 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 USER root
 RUN chown -R 1001:1001 /var/log/CTFd /var/uploads /opt/CTFd 
-RUN chmod +x /opt/CTFd/plugins/llm_verification/docker-entrypoint.dev.sh
+# RUN ls -la /opt/CTFd/plugins/llm_verification/development_helpers
+RUN chmod +x /opt/CTFd/plugins/llm_verification/development_helpers/docker-entrypoint.dev.sh
 
 USER 1001
 EXPOSE 8000
 
 # LLMV: Modified entrypoint to use development entrypoint.
-# ENTRYPOINT ["/opt/CTFd/plugins/llm_verification/development_helpers/docker-entrypoint.dev.sh"]
-# ENTRYPOINT ["/opt/CTFd/plugins/llm_verification/docker-entrypoint.dev.sh"]
-# ENTRYPOINT ["ls", "-la", "/opt/CTFd/plugins/llm_verification", "&&", "/opt/CTFd/plugins/llm_verification/docker-entrypoint.dev.sh"]
+ENTRYPOINT ["/opt/CTFd/plugins/llm_verification/development_helpers/docker-entrypoint.dev.sh"]
