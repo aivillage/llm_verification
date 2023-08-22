@@ -1,7 +1,8 @@
 # docker compose -f development_helpers/docker-compose.dev.yml build --progress=plain
 FROM ctfd/ctfd:3.6.0
 
-# WORKDIR /opt/CTFd
+
+# This causes permissions errors im plugin imprt for some reason
 # COPY --chown=1001:1001 . .
 
 # hadolint ignore=DL3008
@@ -37,14 +38,11 @@ RUN pip install --no-cache-dir -r requirements.txt \
 #     && mkdir -p /var/log/CTFd /var/uploads \
 #     && chown -R 1001:1001 /var/log/CTFd /var/uploads /opt/CTFd \
 #     && chmod +x /opt/CTFd/docker-entrypoint.sh
-
 # ENV PATH="/opt/venv/bin:$PATH"
 
 USER root
 # RUN chown -R 1001:1001 /var/log/CTFd /var/uploads /opt/CTFd 
 
-# The directory from which the compose file is called on the host OS matters
-# Currently running docker compose -f development_helpers/docker-compose.dev.yml build 
 RUN chmod +x /opt/CTFd/CTFd/plugins/llm_verification/development_helpers/docker-entrypoint.dev.sh
 RUN chown 1001:1001 /opt/CTFd/CTFd/plugins/llm_verification/development_helpers/docker-entrypoint.dev.sh
 
