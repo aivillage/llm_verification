@@ -14,6 +14,8 @@ services:
     ports:
       - "8000:8000"
     environment:
+      - LLMV_ROUTER_URL=http://llm_router:8000
+      - LLMV_ROUTER_TOKEN=NotUsedInDev
       - UPLOAD_FOLDER=/var/uploads
       - DATABASE_URL=mysql+pymysql://ctfd:ctfd@db/ctfd
       - REDIS_URL=redis://cache:6379
@@ -31,9 +33,30 @@ services:
       # - ../:/opt/CTFd:ro
     depends_on:
       - db
+      - llm_router
+      - cache
     networks:
         default:
         internal:
+
+  llm_router:
+    image: aivillage/llm_router:dev
+    user: root
+    restart: always
+    volumes:
+      - ../mock.json:/opt/models/mock.json
+    environment:
+      - REDIS_URL=redis://cache:6379
+    depends_on:
+      - cache
+    networks:
+        internal:
+    healthcheck:
+      test: ["CMD", "curl","-f","http://localhost:8000/health"]
+      start_period: 1s
+      interval: 5s
+      timeout: 5s
+      retries: 55
 
   nginx:
     image: nginx:stable
@@ -43,7 +66,7 @@ services:
     ports:
       - 80:80
     depends_on:
-      - ctfd
+      - ctfd_llmv
 
   db:
     image: mariadb:10.4.12
@@ -59,6 +82,12 @@ services:
         internal:
     # This command is required to set important mariadb defaults
     command: [mysqld, --character-set-server=utf8mb4, --collation-server=utf8mb4_unicode_ci, --wait_timeout=28800, --log-warnings=0]
+    healthcheck:
+      test: ["executable", "arg"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
 
   cache:
     image: redis:4
@@ -67,6 +96,12 @@ services:
     - ../.data/redis:/data
     networks:
         internal:
+    healthcheck:
+      test: ["CMD", "redis-cli","ping"]
+      start_period: 1s
+      interval: 5s
+      timeout: 5s
+      retries: 55
 
 networks:
     default:
