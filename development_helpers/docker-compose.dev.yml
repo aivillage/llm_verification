@@ -44,7 +44,7 @@ services:
     user: root
     restart: always
     volumes:
-      - ../mock.json:/opt/models/mock.json
+      - ../mock.json:/opt/models/chat/mock.json
     environment:
       - REDIS_URL=redis://cache:6379
     depends_on:

@@ -27,7 +27,7 @@ def generate_text(preprompt, prompt, model):
     url = os.environ.get('LLMV_ROUTER_URL')
     if url is None:
         raise ValueError('LLM Verification Router URL is not set')
-    route = url + '/generate'
+    route = url + '/chat/generate'
     token = os.environ.get('LLMV_ROUTER_TOKEN')
     if token is None:
         raise ValueError('LLM Verification Router token is not set')
@@ -62,7 +62,7 @@ def get_models():
     url = os.environ.get('LLMV_ROUTER_URL')
     if url is None:
         raise ValueError('LLM Verification Router URL is not set')
-    route = url + '/models'
+    route = url + '/chat/models'
     token = os.environ.get('LLMV_ROUTER_TOKEN')
     if token is None:
         raise ValueError('LLM Verification Router token is not set')
