@@ -51,6 +51,7 @@ function Moment(d) {
 Alpine.data("llm_verification", () => ({
   prompt: "",
   generated_text: "",
+  history: [],
   gen_id: -1,
   show_generate: true,
   show_submissions: false,
@@ -80,6 +81,10 @@ Alpine.data("llm_verification", () => ({
     });
     const result = await response.json();
     this.generated_text = result.data.text;
+    this.history = result.data.history;
+    if (result.data.history != []) {
+      this.prompt = "";
+    }
     this.gen_id = result.data.gen_id;
     this.submission = result.data.id.toString();
   },

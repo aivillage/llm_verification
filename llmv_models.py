@@ -2,6 +2,7 @@
 # Standard library imports.
 import datetime, random
 from logging import getLogger
+from typing import Dict
 
 # Third-party imports.
 from flask import Blueprint
@@ -16,6 +17,22 @@ from .remote_llm import get_models
 
 log = getLogger(__name__)
 
+class LLMVChatPair(db.Model):
+    __tablename__ = 'llmv_chat_pair'
+    __table_args__ = {'extend_existing': True}
+    id = db.Column(db.Integer, primary_key=True)
+    generation_id = db.Column(db.Integer, db.ForeignKey('llmv_generation.id', ondelete='CASCADE'))
+    prompt = db.Column(db.Text)
+    generation = db.Column(db.Text)
+    date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+
+    def json(self) -> Dict[str,str]:
+        return {
+            "prompt": self.prompt,
+            "generation": self.generation,
+        }
+
+
 class LLMVGeneration(db.Model):
     """LLMV CTFd SQLAlchemy table for answer generation."""
     __tablename__ = 'llmv_generation'
@@ -27,12 +44,12 @@ class LLMVGeneration(db.Model):
     challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id', ondelete='CASCADE'))
     model_id = db.Column(db.Integer, db.ForeignKey('llm_models.id', ondelete='CASCADE'))
 
-    text = db.Column(db.Text)
-    prompt = db.Column(db.Text)
     points = db.Column(db.Integer, default=0)
     status = db.Column(db.String(80), default="unsubmitted")
     report = db.Column(db.Text)
     date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+
+    #history = db.relationship('LLMVChatPair')
 
     @hybrid_property
     def account_id(self):

@@ -39,6 +39,10 @@ def upgrade(op=None):
         )
 
         op.drop_constraint(
+            "llmv_chat_pair_ibfk_1", "llmv_chat_pair", type_="foreignkey"
+        )
+
+        op.drop_constraint(
             "llm_awards_ibfk_1", "llm_awards", type_="foreignkey"
         )
         op.drop_constraint(
@@ -117,6 +121,10 @@ def upgrade(op=None):
     )
     op.create_foreign_key(
         None, "llmv_generation", "teams", ["team_id"], ["id"], ondelete="CASCADE"
+    )
+
+    op.create_foreign_key(
+        None, "llmv_chat_pair", "llmv_generation", ["generation_id"], ["id"], ondelete="CASCADE"
     )
 
 def downgrade(op=None):

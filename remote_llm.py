@@ -3,14 +3,16 @@
 import os
 from ast import List
 from logging import getLogger
+from typing import Dict
+
 
 # Third-party imports.
-from requests import post, get
+import requests
 from requests.exceptions import HTTPError
 
 log = getLogger(__name__)
 
-def generate_text(preprompt, prompt, model):
+def generate_text(idempotency_uuid, preprompt, prompt, model, history= []):
     """Generate text from a prompt using the EleutherAI GPT-NeoX-20B model.
 
     Arguments:
@@ -34,10 +36,15 @@ def generate_text(preprompt, prompt, model):
     
     log.info(f'Received text generation request for prompt "{prompt}" for model {model}')
     # Load the Vanilla Neox API key from the config file.
-
-    raw_response = post(url=route,
-                        headers={'Authorization': f'Bearer {token}'},
-                        json={'prompt': prompt, "preprompt" : preprompt, "model": model})
+    try:
+        raw_response = requests.post(url=route,
+                            headers={'Authorization': f'Bearer {token}'},
+                            json={"uuid": idempotency_uuid,'prompt': prompt, "system" : preprompt, "model": model, "history": history})
+    except requests.Timeout:
+        # try again, with idempotency key
+        pass
+    except requests.ConnectionError:
+        pass
     
     if raw_response.status_code == 200:
         json_response = raw_response.json()
@@ -67,7 +74,7 @@ def get_models():
     if token is None:
         raise ValueError('LLM Verification Router token is not set')
     log.info(f"Getting models from {route}")
-    raw_response = get(url=route,
+    raw_response = requests.get(url=route,
                         headers={'Authorization': f'Bearer {token}'})
     
     if raw_response.status_code == 200:

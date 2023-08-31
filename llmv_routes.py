@@ -1,6 +1,7 @@
 """Additional LLMV RESTful API routes that are added to CTFd."""
 from logging import getLogger
 import random
+from uuid import uuid4
 
 # Third-party imports.
 from flask import Blueprint, jsonify, render_template, request
@@ -16,7 +17,7 @@ from CTFd.utils.user import get_current_user
 from CTFd.utils.scores import get_standings
 
 # LLM Verification Plugin module imports.
-from .llmv_models import LLMVSubmission, LlmAwards, LlmChallenge, LlmSolves, LLMVGeneration, LlmModels, models_not_submitted
+from .llmv_models import LLMVSubmission, LlmAwards, LlmChallenge, LlmSolves, LLMVGeneration, LlmModels, models_not_submitted, LLMVChatPair
 from .remote_llm import generate_text
 
 
@@ -41,7 +42,43 @@ def add_routes() -> Blueprint:
         """Add a route to CTFd for generating text from a prompt."""
         log.info(f'Received text generation request from user "{get_current_user().name}" '
                  f'for challenge ID "{request.json["challenge_id"]}"')
+        
         challenge = LlmChallenge.query.filter_by(id=request.json['challenge_id']).first_or_404()
+
+        if 'generation_id' in request.json:
+            log.info("Found old generation id, using that")
+            llmv_generation = LLMVGeneration.query.filter_by(id=request.json['generation_id']).first_or_404()
+            if llmv_generation.status != "pending":
+                response = {'success': False, 'data': {'text': "This challenge is complete.", "id": -1}}
+                return jsonify(response)
+            if llmv_generation.account_id != get_current_user().id:
+                response = {'success': False, 'data': {'text': "This challenge is complete.", "id": -1}}
+                return jsonify(response)
+            if llmv_generation.challenge_id != challenge.id:
+                response = {'success': False, 'data': {'text': "This challenge is complete.", "id": -1}}
+                return jsonify(response)
+            history = LLMVChatPair.query.filter_by(generation_id=llmv_generation.id).all().order_by(LLMVChatPair.date)
+            history = [h.json() for h in llmv_generation.history]
+            log.debug(f'Found history "{history}" ')
+        else:
+            left_over_model = models_not_submitted(user_id=get_current_user().id, challenge_id=challenge.id)
+            if len(left_over_model) == 0:
+                response = {'success': False, 'data': {'text': "This challenge is complete.", "id": -1}}
+                return jsonify(response)
+            # Add the generated text to the database.
+            user_id = get_current_user().id
+            team_id = get_current_user().team_id
+            challenge_id = request.json['challenge_id']
+            anon_name = random.choice(left_over_model)
+            # Return a random model that isn't submitted by the user.
+            model = LlmModels.query.filter_by(anon_name=anon_name).first()
+            llmv_generation = LLMVGeneration(user_id=user_id,
+                                        team_id=team_id,
+                                        challenge_id=challenge_id,
+                                        model_id=model.id,)
+            db.session.add(llmv_generation)
+            history = []
+            log.info("No old generation id, starting new generation")
 
         preprompt = challenge.preprompt
         log.debug(f'Found pre-prompt "{preprompt}" '
@@ -51,16 +88,10 @@ def add_routes() -> Blueprint:
         # Combine the pre-prompt and user-provided prompt with a space between them.
         prompt = request.json["prompt"]
         log.debug(f'pre-prompt {preprompt} and user-provided-prompt: "{prompt}"')
+        idempotency_uuid = str(uuid4())
         try:
-            left_over_model = models_not_submitted(user_id=get_current_user().id, challenge_id=challenge.id)
-            if len(left_over_model) == 0:
-                response = {'success': False, 'data': {'text': "This challenge is complete.", "id": -1}}
-                return jsonify(response)
-
-            anon_name = random.choice(left_over_model)
-            # Return a random model that isn't submitted by the user.
-            model = LlmModels.query.filter_by(anon_name=anon_name).first()
-            generated_text = generate_text(preprompt, prompt, model.model)
+            model = LlmModels.query.filter_by(id=llmv_generation.model_id).first()
+            generated_text = generate_text(idempotency_uuid, preprompt, prompt, model.model, history)
             generation_succeeded = True
 
         except HTTPError as error:
@@ -69,20 +100,11 @@ def add_routes() -> Blueprint:
             response = {'success': False, 'data': {'text': "There was an error in the backend, try again?", "id": -1}}
             return jsonify(response)
 
-        # Add the generated text to the database.
-        user_id = get_current_user().id
-        team_id = get_current_user().team_id
-        challenge_id = request.json['challenge_id']
-        grt_generation = LLMVGeneration(user_id=user_id,
-                                    team_id=team_id,
-                                    challenge_id=challenge_id,
-                                    text=generated_text,
-                                    prompt=prompt,
-                                    model_id=model.id,)
-        db.session.add(grt_generation)
+        chatpair = LLMVChatPair(generation_id=llmv_generation.id, generation=generated_text, prompt=prompt)
+        db.session.add(chatpair)
         db.session.commit()
-        grt_generation_id = grt_generation.id
-        response = {'success': generation_succeeded, 'data': {'text': generated_text, 'id': grt_generation_id}}
+        generation_id = llmv_generation.id
+        response = {'success': generation_succeeded, 'data': {'text': generated_text, 'history': history, 'id': generation_id}}
         return jsonify(response)
 
 

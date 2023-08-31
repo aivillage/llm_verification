@@ -37,8 +37,6 @@ def upgrade(op=None):
         sa.Column("model_id", sa.Integer(), nullable=False),
         sa.Column("user_id", sa.Integer(), nullable=True),
         sa.Column("team_id", sa.Integer(), nullable=True),
-        sa.Column("text", sa.Text(), nullable=False),
-        sa.Column("prompt", sa.Text(), nullable=False),
         sa.Column("points", sa.Integer(), nullable=False),
         sa.Column("report", sa.Text(), nullable=True),
         sa.Column("status", sa.Text(), nullable=True),
@@ -47,6 +45,16 @@ def upgrade(op=None):
         sa.ForeignKeyConstraint(["model_id"], ["llm_models.id"]),
         sa.ForeignKeyConstraint(["team_id"], ["teams.id"]),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_table(
+        "llmv_chat_pair",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("generation_id", sa.Integer(), nullable=False),
+        sa.Column("prompt", sa.Text(), nullable=False),
+        sa.Column("generation", sa.Text(), nullable=False),
+        sa.Column("date", sa.DateTime(), nullable=False),
+        sa.ForeignKeyConstraint(["generation_id"], ["llmv_generation.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
