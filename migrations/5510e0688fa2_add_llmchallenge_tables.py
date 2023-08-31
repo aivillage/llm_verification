@@ -20,6 +20,7 @@ def upgrade(op=None):
         "llm_challenge",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("preprompt", sa.Text(), nullable=True),
+        sa.Column("chat_limit", sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(["id"], ["challenges.id"]),
         sa.PrimaryKeyConstraint("id"),
     )

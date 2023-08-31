@@ -52,6 +52,9 @@ Alpine.data("llm_verification", () => ({
   prompt: "",
   generated_text: "",
   history: [],
+  chat_limit: 0,
+  is_single_turn: true,
+  is_multi_turn: false,
   gen_id: -1,
   show_generate: true,
   show_submissions: false,
@@ -61,6 +64,17 @@ Alpine.data("llm_verification", () => ({
   show_done: false,
 
   async init() {
+    url = CTFd.config.urlRoot + `/chat_limit/` + this.id;
+
+    const response = await CTFd.fetch(url, {
+      method: "get",
+    });
+    const result = await response.json();
+    this.chat_limit = result.data.chat_limit;
+    if (this.chat_limit != 0) {
+      this.is_single_turn = false;
+      this.is_multi_turn = true;
+    }
     await this.getModelsLeft();
   },
 

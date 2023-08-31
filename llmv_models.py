@@ -49,7 +49,7 @@ class LLMVGeneration(db.Model):
     report = db.Column(db.Text)
     date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
 
-    #history = db.relationship('LLMVChatPair')
+    history = db.relationship('LLMVChatPair')
 
     @hybrid_property
     def account_id(self):
@@ -77,6 +77,7 @@ class LlmChallenge(Challenges):
                    db.ForeignKey('challenges.id', ondelete='CASCADE'),
                    primary_key=True)
     preprompt = db.Column(db.Text)
+    chat_limit = db.Column(db.Integer, default=0)
 
     def __init__(self, *args, **kwargs):
         super(LlmChallenge, self).__init__(**kwargs)

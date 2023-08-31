@@ -57,7 +57,7 @@ def add_routes() -> Blueprint:
             if llmv_generation.challenge_id != challenge.id:
                 response = {'success': False, 'data': {'text': "This challenge is complete.", "id": -1}}
                 return jsonify(response)
-            history = LLMVChatPair.query.filter_by(generation_id=llmv_generation.id).all().order_by(LLMVChatPair.date)
+            history = llmv_generation.history
             history = [h.json() for h in llmv_generation.history]
             log.debug(f'Found history "{history}" ')
         else:
@@ -155,6 +155,17 @@ def add_routes() -> Blueprint:
         response = {'success': True, 'data': {"models_left": left_over_model}}
         return jsonify(response)
 
+    @llm_verifications.route('/chat_limit/<challenge_id>', methods=['GET'])
+    @authed_only
+    def chat_limit(challenge_id):
+        """Define a route for for showing users their answer submissions."""
+        # Identify the user who would like to see their answer submissions.
+        log.debug(f'User "{get_current_user().name}" '
+                  f'requested their answer submissions for challenge "{challenge_id}"')
+        # Query the database for the user's answer submissions for this challenge.
+        challenge = LlmChallenge.query.filter_by(id=challenge_id).first_or_404()
+        response = {'success': True, 'data': {"chat_limit": challenge.chat_limit}}
+        return jsonify(response)
     
     #@llm_verifications.route('/admin/llm_submissions/pending', methods=['GET'])
     #@admins_only
