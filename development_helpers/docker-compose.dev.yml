@@ -27,10 +27,7 @@ services:
     volumes:
       - ../.data/CTFd/logs:/var/log/CTFd
       - ../.data/CTFd/uploads:/var/uploads
-
-      # I'm not sure what this is but its breaking docker compose
-      # I believe it was copying over all of ctfd for development
-      # - ../:/opt/CTFd:ro
+      - ../:/opt/CTFd/CTFd/plugins/llm_verification/:ro
     depends_on:
       - db
       - llm_router
@@ -57,16 +54,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 55
-
-  nginx:
-    image: nginx:stable
-    restart: always
-    volumes:
-      - ../nginx/http.conf:/etc/nginx/nginx.conf
-    ports:
-      - 80:80
-    depends_on:
-      - ctfd_llmv
 
   db:
     image: mariadb:10.4.12
