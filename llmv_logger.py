@@ -40,7 +40,7 @@ def initialize_llmvctfd_loggers(module_name):
     # Don't pass log records to ancestor loggers.
     log.propagate = False
     log.info(f'Writing logs to CTFd\'s log directory "{llmv_logfile}"')
-    log.info('Initialized LLMV logger')
+    log.info('Initialized LLMV logger %s', log.name)
     return log
 
 ## Set up console handler for log records.

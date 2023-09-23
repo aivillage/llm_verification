@@ -11,6 +11,7 @@ from .llmv_logger import initialize_llmvctfd_loggers
 from .llmv_models import LlmSubmissionChallenge, fill_models_table
 from .llmv_routes import add_routes
 
+
 def load(app):
     """Load plugin config from TOML file and register plugin assets."""
     print('Loading LLM Verification Plugin')

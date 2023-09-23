@@ -20,7 +20,8 @@ from .llmv_models import LLMVSubmission, LlmAwards, LlmChallenge, LlmSolves, LLM
 from .remote_llm import generate_text
 
 
-log = getLogger(__name__)
+log = getLogger("CTFd.plugins.llm_verification")
+log.info("Checking if logging from llmv_routes is working") 
 
 def add_routes() -> Blueprint:
     """Add new GRT/LLMV routes to CTFd."""
@@ -39,6 +40,8 @@ def add_routes() -> Blueprint:
     @authed_only
     def generate_for_challenge():
         """Add a route to CTFd for generating text from a prompt."""
+        log.info("Received test generation request")
+        log.error("NEW Received test generation request. Testing error level logging too")
         log.info(f'Received text generation request from user "{get_current_user().name}" '
                  f'for challenge ID "{request.json["challenge_id"]}"')
         challenge = LlmChallenge.query.filter_by(id=request.json['challenge_id']).first_or_404()
