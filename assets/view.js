@@ -71,12 +71,14 @@ Alpine.data("llm_verification", () => ({
     this.generated_text = "Generating...";
     url = CTFd.config.urlRoot + `/generate`;
 
-    const response = await CTFd.fetch(url, {
-      method: "POST",
-      body: JSON.stringify({
+    const message_body = JSON.stringify({
         challenge_id: this.id,
         prompt: this.prompt
-      }),
+      })
+
+    const response = await CTFd.fetch(url, {
+      method: "POST",
+      body: message_body
     });
     const result = await response.json();
     this.generated_text = result.data.text;

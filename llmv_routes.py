@@ -41,28 +41,25 @@ def add_routes() -> Blueprint:
     @authed_only
     def generate_for_challenge():
         """Add a route to CTFd for generating text from a prompt."""
-        log.error("Log name %s, %s", log.name, log.level)
-        log.info("Received test generation request but his logger is not working for some reason")
-        log.error("NEW Received test generation request. Testing error level logging too")
-        log.error("NEW Received test generation request. Testing error level logging too")
-        log.error('Logger Handlers %s', log.handlers)
-
-        log.info(f'Received text generation request from user "{get_current_user().name}" '
+        log.error(f'Received text generation request from user "{get_current_user().name}" '
                  f'for challenge ID "{request.json["challenge_id"]}"')
         challenge = LlmChallenge.query.filter_by(id=request.json['challenge_id']).first_or_404()
 
         preprompt = challenge.preprompt
-        log.debug(f'Found pre-prompt "{preprompt}" '
-                  f'for challenge {request.json["challenge_id"]} "{challenge.name}"')
-        log.debug(f'User "{get_current_user().name}" '
-                  f'submitted prompt: "{request.json["prompt"]}"')
-        # Combine the pre-prompt and user-provided prompt with a space between them.
         prompt = request.json["prompt"]
-        log.debug(f'pre-prompt {preprompt} and user-provided-prompt: "{prompt}"')
+
+        log.error(f'Found pre-prompt "{preprompt}" '
+                  f'for challenge {request.json["challenge_id"]} "{challenge.name}"')
+        log.error(f'User "{get_current_user().name}" '
+                  f'submitted prompt: "{prompt}"')
+
+        # Combine the pre-prompt and user-provided prompt with a space between them.
+        log.error(f'pre-prompt {preprompt} and user-provided-prompt: "{prompt}"')
         try:
             left_over_model = models_not_submitted(user_id=get_current_user().id, challenge_id=challenge.id)
             if len(left_over_model) == 0:
                 response = {'success': False, 'data': {'text': "This challenge is complete.", "id": -1}}
+                log.error("Challenge Completed: Generated response %s", response)
                 return jsonify(response)
 
             anon_name = random.choice(left_over_model)
@@ -91,6 +88,7 @@ def add_routes() -> Blueprint:
         db.session.commit()
         grt_generation_id = grt_generation.id
         response = {'success': generation_succeeded, 'data': {'text': generated_text, 'id': grt_generation_id}}
+        log.error("Text Generation Success: Generated response %s", response)
         return jsonify(response)
 
 
