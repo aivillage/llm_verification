@@ -22,7 +22,7 @@ def initialize_llmvctfd_loggers(module_name):
     ctfd_logdir = current_app.config["LOG_FOLDER"]
     llmv_logfile = Path(ctfd_logdir, "llmv_verification.log")
     # Ensure that the log file exists.
-    llmv_logfile.touch(exist_ok=True)
+    # llmv_logfile.touch(exist_ok=True)
     llm_verification_log = RotatingFileHandler(llmv_logfile,
                                                maxBytes=10485760,
                                                backupCount=5,

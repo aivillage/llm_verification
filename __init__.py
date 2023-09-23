@@ -32,3 +32,5 @@ def load(app):
     app.register_blueprint(llmv_verifications)
     log.debug('Registered LLMV blueprints with CTFd')
     log.info('Loaded LLM Verification Plugin')
+    log.info('Logger Handlers %s', log.handlers)
+

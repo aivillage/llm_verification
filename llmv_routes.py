@@ -18,10 +18,10 @@ from CTFd.utils.scores import get_standings
 # LLM Verification Plugin module imports.
 from .llmv_models import LLMVSubmission, LlmAwards, LlmChallenge, LlmSolves, LLMVGeneration, LlmModels, models_not_submitted
 from .remote_llm import generate_text
-from .llmv_logger import initialize_llmvctfd_loggers
 
 
 log = getLogger(__name__)
+log.error("Global Scope Log name %s, %s", log.name, log.level)
 
 
 def add_routes() -> Blueprint:
@@ -41,8 +41,12 @@ def add_routes() -> Blueprint:
     @authed_only
     def generate_for_challenge():
         """Add a route to CTFd for generating text from a prompt."""
-        log.info("Received test generation request")
+        log.error("Log name %s, %s", log.name, log.level)
+        log.info("Received test generation request but his logger is not working for some reason")
         log.error("NEW Received test generation request. Testing error level logging too")
+        log.error("NEW Received test generation request. Testing error level logging too")
+        log.error('Logger Handlers %s', log.handlers)
+
         log.info(f'Received text generation request from user "{get_current_user().name}" '
                  f'for challenge ID "{request.json["challenge_id"]}"')
         challenge = LlmChallenge.query.filter_by(id=request.json['challenge_id']).first_or_404()
