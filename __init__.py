@@ -1,6 +1,5 @@
 # Standard library imports.
 from logging import getLogger
-from flask.logging import default_handler
 
 # CTFd imports.
 from CTFd.plugins import register_plugin_assets_directory
@@ -34,5 +33,4 @@ def load(app):
     log.debug('Registered LLMV blueprints with CTFd')
     log.info('Loaded LLM Verification Plugin')
     log.info('Logger Handlers %s', log.handlers)
-    app.logger.removeHandler(default_handler)
 
