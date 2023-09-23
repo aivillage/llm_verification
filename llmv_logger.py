@@ -25,7 +25,10 @@ def initialize_llmvctfd_loggers(module_name):
     llmv_logfile.touch(exist_ok=True)
     llm_verification_log = RotatingFileHandler(llmv_logfile,
                                                maxBytes=10485760,
-                                               backupCount=5)
+                                               backupCount=5,
+
+                                               # Delete existing logs temporarily for testing
+                                               mode="w")
     # Write all LLM Verification Plugin logs to the log file.
     log.addHandler(llm_verification_log)
     # Create a console logger for the LLM Verification Plugin.
@@ -38,7 +41,7 @@ def initialize_llmvctfd_loggers(module_name):
     # Add the colorized console log handler to the LLM Verification Plugin's logger.
     log.addHandler(console_logger)
     # Don't pass log records to ancestor loggers.
-    log.propagate = False
+    # log.propagate = False
     log.info(f'Writing logs to CTFd\'s log directory "{llmv_logfile}"')
     log.info('Initialized LLMV logger %s', log.name)
     return log

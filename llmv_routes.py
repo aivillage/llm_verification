@@ -18,10 +18,11 @@ from CTFd.utils.scores import get_standings
 # LLM Verification Plugin module imports.
 from .llmv_models import LLMVSubmission, LlmAwards, LlmChallenge, LlmSolves, LLMVGeneration, LlmModels, models_not_submitted
 from .remote_llm import generate_text
+from .llmv_logger import initialize_llmvctfd_loggers
 
 
-log = getLogger("CTFd.plugins.llm_verification")
-log.info("Checking if logging from llmv_routes is working") 
+log = getLogger(__name__)
+
 
 def add_routes() -> Blueprint:
     """Add new GRT/LLMV routes to CTFd."""
