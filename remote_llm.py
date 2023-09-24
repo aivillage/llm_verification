@@ -43,9 +43,12 @@ def generate_text(preprompt, prompt, model):
     try:
         json_response = raw_response.json()
     except json.decoder.JSONDecodeError:
-        log.exception("There was a decode error for json in response status code %s",
-                  raw_response.status_code)
-        raise HTTPError('LLM Router return an invalid json with status_code %s' raw_response.status_code)
+        log.exception(("There was a json decode error for model %s "
+                       "at url %s" 
+                        "with response status code %s"),
+                        model, url, raw_response.status_code)
+
+        raise HTTPError('LLM Router return an invalid json with status_code %s', raw_response.status_code)
     
     if raw_response.status_code == 200:
         if json_response.get('error') is not None:
