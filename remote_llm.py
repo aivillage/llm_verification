@@ -1,6 +1,7 @@
 """RESTful API calls to remote LLMs."""
 # Standard library imports.
 import os
+import json
 from ast import List
 from logging import getLogger
 
@@ -32,15 +33,21 @@ def generate_text(preprompt, prompt, model):
     if token is None:
         raise ValueError('LLM Verification Router token is not set')
     
-    log.info(f'Received text generation request for prompt "{prompt}" for model {model}')
+    log.debug(f'Received text generation request for prompt "{prompt}" for model {model} at url {url}')
     # Load the Vanilla Neox API key from the config file.
 
     raw_response = post(url=route,
                         headers={'Authorization': f'Bearer {token}'},
                         json={'prompt': prompt, "preprompt" : preprompt, "model": model})
+
+    try:
+        json_response = raw_response.json()
+    except json.decoder.JSONDecodeError:
+        log.exception("There was a decode error for json in response status code %s",
+                  raw_response.status_code)
+        raise HTTPError(f'LLM Router return an invalid json with status_code {raw_response.status_code}')
     
     if raw_response.status_code == 200:
-        json_response = raw_response.json()
         if json_response.get('error') is not None:
             log.error(f"Error generating: {json_response['error']}")
             raise HTTPError(
