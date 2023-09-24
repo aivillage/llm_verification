@@ -48,7 +48,7 @@ def generate_text(preprompt, prompt, model):
                         "with response status code %s"),
                         model, url, raw_response.status_code)
 
-        raise HTTPError('LLM Router return an invalid json with status_code %s', raw_response.status_code)
+        raise HTTPError(f'LLM Router return an invalid json with status_code {raw_response.status_code}')
     
     if raw_response.status_code == 200:
         if json_response.get('error') is not None:
