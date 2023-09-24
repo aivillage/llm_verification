@@ -33,7 +33,7 @@ def generate_text(preprompt, prompt, model):
     if token is None:
         raise ValueError('LLM Verification Router token is not set')
     
-    log.debug(f'Received text generation request for prompt "{prompt}" for model {model} at url {url}')
+    log.info(f'Received text generation request for prompt "{prompt}" for model {model} at url {url}')
     # Load the Vanilla Neox API key from the config file.
 
     raw_response = post(url=route,
