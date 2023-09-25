@@ -49,11 +49,13 @@ function Moment(d) {
 }
 
 Alpine.data("llm_verification", () => ({
+  chat_limit: 0,
+  is_single_turn: true,
+
   prompt: "",
   generated_text: "",
   history: [],
-  chat_limit: 0,
-  is_single_turn: true,
+  
   is_multi_turn: false,
   gen_id: -1,
   show_generate: true,
@@ -71,12 +73,81 @@ Alpine.data("llm_verification", () => ({
     });
     const result = await response.json();
     this.chat_limit = result.data.chat_limit;
-    if (this.chat_limit != 0) {
+    if (this.chat_limit > 1) {
       this.is_single_turn = false;
       this.is_multi_turn = true;
     }
     await this.getModelsLeft();
   },
+
+
+
+  async showGenerate() {
+    this.show_generate = true;
+    this.show_submissions = false;
+  },
+
+  async showSubmissions() {
+    await this.getSubmissions();
+    this.show_generate = false;
+    this.show_submissions = true;
+  },
+
+  async getSubmissions() {
+    url = CTFd.config.urlRoot + `/submissions/` + this.id;
+
+    const response = await CTFd.fetch(url, {
+      method: "get",
+    });
+    const result = await response.json();
+    this.submissions = result.data.submissions;
+    this.models_left = result.data.models_left;
+    for (var i = 0; i < this.submissions.length; i++) {
+      this.submissions[i].date = Moment(this.submissions[i].date).fromNow();
+    }
+    if (this.models_left.length == 0) {
+      this.show_submit = false;
+      this.show_done = true;
+    }
+  },
+
+  async getModelsLeft() {
+    url = CTFd.config.urlRoot + `/models_left/` + this.id;
+
+    const response = await CTFd.fetch(url, {
+      method: "get",
+    });
+    const result = await response.json();
+    this.models_left = result.data.models_left;
+    if (this.models_left.length == 0) {
+      this.show_submit = false;
+      this.show_done = true;
+    }
+  },
+
+  async submitGenerated() {
+    if (this.gen_id == "") {
+      alert("Please generate a text first!");
+      return;
+    }
+    await this.submitChallenge();
+    await this.getModelsLeft();
+  }
+}));
+
+Alpine.data("single_turn_submission", () => ({
+  prompt: "",
+  generated_text: "",
+  
+  gen_id: -1,
+  show_generate: true,
+  show_submissions: false,
+  submissions: [],
+  models_left: [],
+  show_submit: true,
+  show_done: false,
+
+  async init() {},
 
   async generateText() {
     if (this.prompt == "") {
@@ -95,10 +166,6 @@ Alpine.data("llm_verification", () => ({
     });
     const result = await response.json();
     this.generated_text = result.data.text;
-    this.history = result.data.history;
-    if (result.data.history != []) {
-      this.prompt = "";
-    }
     this.gen_id = result.data.gen_id;
     this.submission = result.data.id.toString();
   },
