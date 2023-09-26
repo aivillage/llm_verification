@@ -44,8 +44,8 @@ def generate_text(preprompt, prompt, model):
         json_response = raw_response.json()
     except json.decoder.JSONDecodeError:
         log.exception(("There was a json decode error for model %s "
-                       "at url %s" 
-                        "with response status code %s"),
+                       "at url %s " 
+                       "with response status code %s"),
                         model, url, raw_response.status_code)
 
         raise HTTPError(f'LLM Router return an invalid json with status_code {raw_response.status_code}')
@@ -77,6 +77,7 @@ def get_models():
     if token is None:
         raise ValueError('LLM Verification Router token is not set')
     log.info(f"Getting models from {route}")
+
     raw_response = get(url=route,
                         headers={'Authorization': f'Bearer {token}'})
     
@@ -87,8 +88,10 @@ def get_models():
             raise HTTPError(
                 "Model Error", headers={"Retry-After": str(60000)}
             )
-        
-        return json_response['models']
+
+        models = json_response['models']
+        log.info(f"Got models {models}")
+        return models
     
     elif 400 <= raw_response.status_code <= 599:
         # ... raise an error.
