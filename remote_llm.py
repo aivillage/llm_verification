@@ -38,7 +38,10 @@ def generate_text(preprompt, prompt, model):
 
     raw_response = post(url=route,
                         headers={'Authorization': f'Bearer {token}'},
-                        json={'prompt': prompt, "preprompt" : preprompt, "model": model})
+                        
+                        # UUID needs to be provided here
+                        # https://github.com/aivillage/llm_router/blob/main/src/chat/mod.rs#L35
+                        json={"uuid": 1234, 'prompt': prompt, "preprompt" : preprompt, "model": model})
 
     try:
         json_response = raw_response.json()
