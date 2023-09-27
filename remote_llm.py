@@ -41,7 +41,13 @@ def generate_text(preprompt, prompt, model):
                         
                         # UUID needs to be provided here
                         # https://github.com/aivillage/llm_router/blob/main/src/chat/mod.rs#L35
-                        json={"uuid": 1234, 'prompt': prompt, "preprompt" : preprompt, "model": model})
+                        # TODO: Add assert isinstance(uuid, str) because rust is picky
+                        # json={"uuid": "1", "prompt": prompt, "preprompt" : preprompt, "model": model})
+
+                        # LLM Router fails with empty preprompt
+                        # https://github.com/aivillage/llm_router/issues/9
+                        json={"uuid": "1", "prompt": prompt, "preprompt" : "test preprompt", "model": model})
+    log.error("JSON payload sent %s", raw_response.request.body)
 
     try:
         json_response = raw_response.json()
