@@ -1,0 +1,22 @@
+<table id="teamsboard" class=" table table-striped">
+    <tbody>
+      {% for pair in conversation %}
+      <tr class="user_prompt">
+        <td>
+          User
+        </td>
+        <td class="text">
+            {{ pair.prompt }}
+        </td>
+      </tr>
+      <tr class="model_prompt">
+          <td>
+            Response
+          </td>
+          <td class="text">
+              {{ pair.generation }}
+          </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>

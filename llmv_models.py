@@ -22,6 +22,7 @@ class LLMVChatPair(db.Model):
     __table_args__ = {'extend_existing': True}
     id = db.Column(db.Integer, primary_key=True)
     generation_id = db.Column(db.Integer, db.ForeignKey('llmv_generation.id', ondelete='CASCADE'))
+    conversation = db.relationship("LLMVGeneration", back_populates="pairs")
     prompt = db.Column(db.Text)
     generation = db.Column(db.Text)
     date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
@@ -49,7 +50,7 @@ class LLMVGeneration(db.Model):
     report = db.Column(db.Text)
     date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
 
-    history = db.relationship('LLMVChatPair')
+    pairs = db.relationship('LLMVChatPair', back_populates='conversation')
 
     @hybrid_property
     def account_id(self):
@@ -59,6 +60,9 @@ class LLMVGeneration(db.Model):
             return self.team_id
         elif user_mode == 'users':
             return self.user_id
+        
+    def conversation(self):
+        return LLMVChatPair.query.filter_by(generation_id=self.id).all()
 
 class LLMVSubmission(db.Model):
     """LLMV CTFd SQLAlchemy table for answer submissions."""
@@ -223,17 +227,10 @@ class LlmSubmissionChallenge(BaseChallenge):
 
         generation = LLMVGeneration.query.add_columns(
             LLMVGeneration.id,
-            LLMVGeneration.text,
-            LLMVGeneration.prompt,
             LLMVGeneration.challenge_id,
             ).filter_by(id=int(submission)).first_or_404()
         db.session.commit()
         assert generation.challenge_id == challenge.id
-
-        text = generation.text
-        prompt = generation.prompt
-        log.info(f'Have generation with prompt and text: {prompt} {text}')
-
 
         if len(models_not_submitted(user_id=user.id, challenge_id=challenge.id)) > 0:
             awards = LlmAwards(user_id=user.id,

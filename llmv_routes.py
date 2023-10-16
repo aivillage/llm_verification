@@ -4,7 +4,7 @@ import random
 from uuid import uuid4
 
 # Third-party imports.
-from flask import Blueprint, jsonify, render_template, request
+from flask import Blueprint, jsonify, render_template, request, abort
 from requests.exceptions import HTTPError
 from werkzeug.exceptions import BadRequest
 
@@ -13,7 +13,7 @@ from CTFd.models import Submissions, db
 from CTFd.plugins import bypass_csrf_protection
 from CTFd.utils.decorators import admins_only, authed_only
 from CTFd.utils.modes import get_model
-from CTFd.utils.user import get_current_user
+from CTFd.utils.user import get_current_user, is_admin
 from CTFd.utils.scores import get_standings
 
 # LLM Verification Plugin module imports.
@@ -120,18 +120,14 @@ def add_routes() -> Blueprint:
         collected_submissions = []
         for status in ['pending', 'correct', 'awarded', 'incorrect']:
             generations = LLMVGeneration.query.add_columns(
-                LLMVGeneration.prompt,
-                LLMVGeneration.text,
-                LLMVGeneration.date,
                 LlmModels.anon_name,
             ).filter_by(user_id=user_id, challenge_id=challenge_id, status=status).join(LlmModels).all()
-            for generation in generations:
+            for generation, model_name in generations:
                 collected_submissions.append({
-                    'prompt': generation.prompt,
-                    'text': generation.text,
                     'date': generation.date,
                     'status': status,
-                    'model': generation.anon_name,
+                    'model': model_name,
+                    "fragment": get_conversation(generation.id),
                 })
 
         left_over_model = models_not_submitted(user_id=user_id, challenge_id=challenge_id)
@@ -185,7 +181,6 @@ def add_routes() -> Blueprint:
         log.debug(f"Total number of submissions: {Submissions.query.count()}")
         log.debug(f"Total number of submissions that are pending: {Submissions.query.filter_by(**filters).count()}")
 
-
         curr_page = abs(int(request.args.get('page', 1, type=int)))
         results_per_page = 50
         page_start = results_per_page * (curr_page - 1)
@@ -201,8 +196,7 @@ def add_routes() -> Blueprint:
                                                      Submissions.date,
                                                      LlmChallenge.name.label('challenge_name'),
                                                      Model.name.label('team_name'),
-                                                     LLMVGeneration.prompt,
-                                                     LLMVGeneration.text).select_from(Submissions)
+                                                     LLMVGeneration.pairs).select_from(Submissions)
                                                                         .filter_by(**filters)
                                                                         .join(LlmChallenge, LlmChallenge.id == Submissions.challenge_id)
                                                                         .join(Model)
@@ -212,10 +206,24 @@ def add_routes() -> Blueprint:
                                                                         .slice(page_start, page_end)
                                                                         .all())
         log.info(f'Showed (admin) {len(submissions)} pending answer submissions')
+        log.info(f'Submissions: {submissions}')
         return render_template('verify_submissions.html',
                                 submissions=submissions,
                                 page_count=page_count,
                                 curr_page=curr_page)
+
+    @llm_verifications.route('/llm_submissions/conversation/<generation_id>', methods=['GET'])
+    @authed_only
+    def get_conversation(generation_id):
+        log.debug(f"Getting conversation for generation {generation_id}")
+        generation = LLMVGeneration.query.filter_by(id=generation_id).first_or_404()
+        if generation.account_id != get_current_user().id or not is_admin():
+            abort(403, description="You are not authorized to view this page.") 
+        
+        conversation = LLMVChatPair.query.filter_by(generation_id=generation_id).order_by(LLMVChatPair.date).all()
+        
+        return render_template('conversation.html',conversation=conversation)
+
 
 
     def get_generations(request, pending_overide=False):
@@ -244,14 +252,7 @@ def add_routes() -> Blueprint:
         page_count = int(sub_count / results_per_page) + (sub_count % results_per_page > 0)
         Model = get_model()
         
-        generations = (LLMVGeneration.query.add_columns(LLMVGeneration.id,
-                                                   LLMVGeneration.challenge_id,
-                                                   LLMVGeneration.prompt,
-                                                   LLMVGeneration.account_id,
-                                                   LLMVGeneration.text,
-                                                   LLMVGeneration.status,
-                                                   LLMVGeneration.points,
-                                                   LLMVGeneration.date,
+        generations = (LLMVGeneration.query.add_columns(
                                                    LlmChallenge.name.label('challenge_name'),
                                                    LlmChallenge.description.label('challenge_description'),
                                                    Model.name.label('team_name')).select_from(LLMVGeneration)
@@ -261,6 +262,7 @@ def add_routes() -> Blueprint:
                                                                                  .order_by(LLMVGeneration.date.desc())
                                                                                  .slice(page_start, page_end)
                                                                                  .all())
+        log.debug(f'generations: {generations}')
         return generations, page_count, curr_page
 
     @llm_verifications.route('/admin/llm_submissions/generations', methods=['GET'])
