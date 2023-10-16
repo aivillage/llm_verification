@@ -40,7 +40,8 @@ def generate_text(idempotency_uuid, preprompt, prompt, model, history= []):
         raw_response = requests.post(url=route,
                             headers={'Authorization': f'Bearer {token}'},
                             json={"uuid": idempotency_uuid,'prompt': prompt, "system" : preprompt, "model": model, "history": history})
-    except requests.Timeout:
+    except (requests.Timeout, requests.ConnectionError) as error:
+      logging.debug(error)
         # try again, with idempotency key
         pass
     except requests.ConnectionError:
