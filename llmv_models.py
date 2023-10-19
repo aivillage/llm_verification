@@ -21,11 +21,12 @@ class LLMVChatPair(db.Model):
     __tablename__ = 'llmv_chat_pair'
     __table_args__ = {'extend_existing': True}
     id = db.Column(db.Integer, primary_key=True)
+    uuid = db.Column(db.String(80))
     generation_id = db.Column(db.Integer, db.ForeignKey('llmv_generation.id', ondelete='CASCADE'))
     conversation = db.relationship("LLMVGeneration", back_populates="pairs")
     prompt = db.Column(db.Text)
-    generation = db.Column(db.Text)
-    date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    generation = db.Column(db.Text, nullable=True)
+    date = db.Column(db.DateTime, default=datetime.datetime.utcnow, nullable=True)
 
     def json(self) -> Dict[str,str]:
         return {

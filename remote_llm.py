@@ -35,13 +35,13 @@ def generate_text(idempotency_uuid, preprompt, prompt, model, history= []):
         raise ValueError('LLM Verification Router token is not set')
     
     log.info(f'Received text generation request for prompt "{prompt}" for model {model}')
-    # Load the Vanilla Neox API key from the config file.
+
     try:
         raw_response = requests.post(url=route,
                             headers={'Authorization': f'Bearer {token}'},
                             json={"uuid": idempotency_uuid,'prompt': prompt, "system" : preprompt, "model": model, "history": history})
     except (requests.Timeout, requests.ConnectionError) as error:
-      logging.debug(error)
+        log.debug(error)
         # try again, with idempotency key
         pass
     except requests.ConnectionError:

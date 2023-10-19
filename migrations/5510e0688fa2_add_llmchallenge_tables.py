@@ -52,9 +52,10 @@ def upgrade(op=None):
         "llmv_chat_pair",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("generation_id", sa.Integer(), nullable=False),
+        sa.Column("uuid", sa.Text(), nullable=False),
         sa.Column("prompt", sa.Text(), nullable=False),
-        sa.Column("generation", sa.Text(), nullable=False),
-        sa.Column("date", sa.DateTime(), nullable=False),
+        sa.Column("generation", sa.Text(), nullable=True),
+        sa.Column("date", sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(["generation_id"], ["llmv_generation.id"]),
         sa.PrimaryKeyConstraint("id"),
     )

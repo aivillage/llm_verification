@@ -132,47 +132,6 @@ Alpine.data("llm_verification", () => ({
     }
     await this.submitChallenge();
     await this.getModelsLeft();
-  }
-}));
-
-Alpine.data("single_turn_submission", () => ({
-  prompt: "",
-  generated_text: "",
-  
-  gen_id: -1,
-  show_generate: true,
-  show_submissions: false,
-  submissions: [],
-  models_left: [],
-  show_submit: true,
-  show_done: false,
-
-  async init() {},
-
-  async generateText() {
-    if (this.prompt == "") {
-      alert("Please enter a prompt!");
-      return;
-    }
-    this.generated_text = "Generating...";
-    url = CTFd.config.urlRoot + `/generate`;
-
-    const response = await CTFd.fetch(url, {
-      method: "POST",
-      body: JSON.stringify({
-        challenge_id: this.id,
-        prompt: this.prompt
-      }),
-    });
-    const result = await response.json();
-    this.generated_text = result.data.text;
-    this.gen_id = result.data.gen_id;
-    this.submission = result.data.id.toString();
-  },
-
-  async showGenerate() {
-    this.show_generate = true;
-    this.show_submissions = false;
   },
 
   async showSubmissions() {
@@ -221,4 +180,63 @@ Alpine.data("single_turn_submission", () => ({
     await this.submitChallenge();
     await this.getModelsLeft();
   }
+}));
+
+Alpine.data("single_turn_interface", () => ({
+  prompt: "",
+  generated_text: "",
+
+  async init() {},
+
+  async generateText() {
+    if (this.prompt == "") {
+      alert("Please enter a prompt!");
+      return;
+    }
+    this.generated_text = "Generating...";
+    url = CTFd.config.urlRoot + `/generate`;
+
+    const response = await CTFd.fetch(url, {
+      method: "POST",
+      body: JSON.stringify({
+        challenge_id: this.id,
+        prompt: this.prompt
+      }),
+    });
+    const result = await response.json();
+    this.generated_text = result.data.text;
+    // This affects the container x-data object - llm_verification
+    this.gen_id = result.data.gen_id;
+    this.submission = result.data.id.toString();
+  },
+}));
+
+Alpine.data("multi_turn_interface", () => ({
+  history: [],
+  prompt: "",
+
+  async init() {},
+
+  async generateText() {
+    if (this.prompt == "") {
+      alert("Please enter a prompt!");
+      return;
+    }
+    this.generated_text = "Generating...";
+    url = CTFd.config.urlRoot + `/generate`;
+
+    const response = await CTFd.fetch(url, {
+      method: "POST",
+      body: JSON.stringify({
+        challenge_id: this.id,
+        prompt: this.prompt
+      }),
+    });
+    const result = await response.json();
+    this.history.push({"prompt": this.prompt, "text": result.data.text});
+
+    // This affects the container x-data object - llm_verification
+    this.gen_id = result.data.gen_id;
+    this.submission = result.data.id.toString();
+  },
 }));
