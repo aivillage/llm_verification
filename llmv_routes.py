@@ -46,20 +46,23 @@ def add_routes() -> Blueprint:
         challenge = LlmChallenge.query.filter_by(id=request.json['challenge_id']).first_or_404()
 
         if 'generation_id' in request.json:
-            log.info("Found old generation id, using that")
+            log.info(f"Found old generation id {request.json['generation_id']}, using that")
             llmv_generation = LLMVGeneration.query.filter_by(id=request.json['generation_id']).first_or_404()
-            if llmv_generation.status != "pending":
+            if llmv_generation.status != "unsubmitted":
+                log.error(f"Generation {request.json['generation_id']} has been submitted, status: {llmv_generation.status}, returning")
                 response = {'success': False, 'data': {'text': "This challenge is complete.", "id": -1}}
                 return jsonify(response)
             if llmv_generation.account_id != get_current_user().id:
+                log.error(f"Generation {request.json['generation_id']} is not owned by user {get_current_user().id}, returning")
                 response = {'success': False, 'data': {'text': "This challenge is complete.", "id": -1}}
                 return jsonify(response)
             if llmv_generation.challenge_id != challenge.id:
+                log.error(f"Generation {request.json['generation_id']} is not for challenge {challenge.id}, returning")
                 response = {'success': False, 'data': {'text': "This challenge is complete.", "id": -1}}
                 return jsonify(response)
-            history = llmv_generation.history
-            history = [h.json() for h in llmv_generation.history]
-            log.debug(f'Found history "{history}" ')
+            history = llmv_generation.pairs
+            history = [h.json() for h in llmv_generation.pairs]
+            log.info(f'Found history "{history}" ')
         else:
             left_over_model = models_not_submitted(user_id=get_current_user().id, challenge_id=challenge.id)
             if len(left_over_model) == 0:
@@ -100,11 +103,12 @@ def add_routes() -> Blueprint:
             response = {'success': False, 'data': {'text': "There was an error in the backend, try again?", "id": -1}}
             return jsonify(response)
 
-        chatpair = LLMVChatPair(generation_id=llmv_generation.id, generation=generated_text, prompt=prompt)
+        chatpair = LLMVChatPair(generation_id=llmv_generation.id, generation=generated_text, prompt=prompt, uuid=idempotency_uuid)
         db.session.add(chatpair)
         db.session.commit()
         generation_id = llmv_generation.id
-        response = {'success': generation_succeeded, 'data': {'text': generated_text, 'history': history, 'id': generation_id}}
+        fragment = get_conversation(generation_id)
+        response = {'success': generation_succeeded, 'data': {'text': generated_text, 'fragment': fragment, 'id': generation_id}}
         return jsonify(response)
 
 

@@ -236,7 +236,6 @@ class LlmSubmissionChallenge(BaseChallenge):
         if len(models_not_submitted(user_id=user.id, challenge_id=challenge.id)) > 0:
             awards = LlmAwards(user_id=user.id,
                             name=f'Challenge {challenge.name}',
-                            description=f"{generation.text}",
                             value=challenge.value,
                             category=challenge.category,
                             generation_id=generation.id,

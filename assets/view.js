@@ -212,7 +212,7 @@ Alpine.data("single_turn_interface", () => ({
 }));
 
 Alpine.data("multi_turn_interface", () => ({
-  history: [],
+  fragment: "",
   prompt: "",
 
   async init() {},
@@ -224,19 +224,24 @@ Alpine.data("multi_turn_interface", () => ({
     }
     this.generated_text = "Generating...";
     url = CTFd.config.urlRoot + `/generate`;
-
+    var body = {
+      challenge_id: this.id,
+      prompt: this.prompt
+    };
+    if (this.gen_id != -1) {
+      body["generation_id"] = this.gen_id;
+    };
     const response = await CTFd.fetch(url, {
       method: "POST",
-      body: JSON.stringify({
-        challenge_id: this.id,
-        prompt: this.prompt
-      }),
+      body: JSON.stringify(body),
     });
     const result = await response.json();
-    this.history.push({"prompt": this.prompt, "text": result.data.text});
+    console.log(result);
+    this.fragment = result.data.fragment;
+    this.gen_id = result.data.id;
 
     // This affects the container x-data object - llm_verification
-    this.gen_id = result.data.gen_id;
+    this.gen_id = result.data.id;
     this.submission = result.data.id.toString();
   },
 }));
