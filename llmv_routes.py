@@ -46,7 +46,7 @@ def add_routes() -> Blueprint:
         challenge = LlmChallenge.query.filter_by(id=request.json['challenge_id']).first_or_404()
 
         if 'generation_id' in request.json:
-            log.info(f"Found old generation id {request.json['generation_id']}, using that")
+            log.info("Found old generation id %s, using that", request.json['generation_id'])
             llmv_generation = LLMVGeneration.query.filter_by(id=request.json['generation_id']).first_or_404()
             if llmv_generation.status != "unsubmitted":
                 log.error(f"Generation {request.json['generation_id']} has been submitted, status: {llmv_generation.status}, returning")
@@ -62,7 +62,7 @@ def add_routes() -> Blueprint:
                 return jsonify(response)
             history = llmv_generation.pairs
             history = [h.json() for h in llmv_generation.pairs]
-            log.info(f'Found history "{history}" ')
+            log.info('Found history "%s"', history)
         else:
             left_over_model = models_not_submitted(user_id=get_current_user().id, challenge_id=challenge.id)
             if len(left_over_model) == 0:
