@@ -59,7 +59,7 @@ def add_routes() -> Blueprint:
                 return jsonify(response)
             history = llmv_generation.history
             history = [h.json() for h in llmv_generation.history]
-            log.debug(f'Found history "{history}" ')
+            log.debug('Found history %s ', history)
         else:
             left_over_model = models_not_submitted(user_id=get_current_user().id, challenge_id=challenge.id)
             if len(left_over_model) == 0:
