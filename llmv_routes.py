@@ -46,7 +46,7 @@ def add_routes() -> Blueprint:
         challenge = LlmChallenge.query.filter_by(id=request.json['challenge_id']).first_or_404()
 
         if 'generation_id' in request.json:
-            log.info("Found old generation id, using that")
+            log.info("Found old generation id %s, using that", request.json['generation_id'])
             llmv_generation = LLMVGeneration.query.filter_by(id=request.json['generation_id']).first_or_404()
             if llmv_generation.status != "pending":
                 response = {'success': False, 'data': {'text': "This challenge is complete.", "id": -1}}
