@@ -13,8 +13,8 @@ from requests.exceptions import HTTPError
 log = getLogger(__name__)
 
 def generate_text(idempotency_uuid, preprompt, prompt, model, history= None):
-  if history is None:
-    history = []
+    if history is None:
+        history = []
     """Generate text from a prompt using the EleutherAI GPT-NeoX-20B model.
 
     Arguments:
