@@ -171,6 +171,36 @@ class LlmSubmissionChallenge(BaseChallenge):
         db.session.commit()
         log.info(f'Created challenge: {data}')
         return challenge
+    
+    @classmethod
+    def read(cls, challenge):
+        """
+        This method is in used to access the data of a challenge in a format processable by the front end.
+
+        :param challenge:
+        :return: Challenge object, data dictionary to be returned to the user
+        """
+        data = {
+            "id": challenge.id,
+            "name": challenge.name,
+            "value": challenge.value,
+            "description": challenge.description,
+            "preprompt": challenge.preprompt,
+            "chat_limit": challenge.chat_limit,
+            "connection_info": challenge.connection_info,
+            "next_id": challenge.next_id,
+            "category": challenge.category,
+            "state": challenge.state,
+            "max_attempts": challenge.max_attempts,
+            "type": challenge.type,
+            "type_data": {
+                "id": cls.id,
+                "name": cls.name,
+                "templates": cls.templates,
+                "scripts": cls.scripts,
+            },
+        }
+        return data
 
     @staticmethod
     def attempt(challenge, request):
