@@ -1,9 +1,10 @@
 """Additional LLMV RESTful API routes that are added to CTFd."""
 from logging import getLogger
 import random
+from uuid import uuid4
 
 # Third-party imports.
-from flask import Blueprint, jsonify, render_template, request
+from flask import Blueprint, jsonify, render_template, request, abort
 from requests.exceptions import HTTPError
 from werkzeug.exceptions import BadRequest
 
@@ -12,11 +13,11 @@ from CTFd.models import Submissions, db
 from CTFd.plugins import bypass_csrf_protection
 from CTFd.utils.decorators import admins_only, authed_only
 from CTFd.utils.modes import get_model
-from CTFd.utils.user import get_current_user
+from CTFd.utils.user import get_current_user, is_admin
 from CTFd.utils.scores import get_standings
 
 # LLM Verification Plugin module imports.
-from .llmv_models import LLMVSubmission, LlmAwards, LlmChallenge, LlmSolves, LLMVGeneration, LlmModels, models_not_submitted
+from .llmv_models import LLMVSubmission, LlmAwards, LlmChallenge, LlmSolves, LLMVGeneration, LlmModels, models_not_submitted, LLMVChatPair
 from .remote_llm import generate_text
 
 
@@ -41,7 +42,46 @@ def add_routes() -> Blueprint:
         """Add a route to CTFd for generating text from a prompt."""
         log.info(f'Received text generation request from user "{get_current_user().name}" '
                  f'for challenge ID "{request.json["challenge_id"]}"')
+        
         challenge = LlmChallenge.query.filter_by(id=request.json['challenge_id']).first_or_404()
+
+        if 'generation_id' in request.json:
+            log.info("Found old generation id %s, using that", request.json['generation_id'])
+            llmv_generation = LLMVGeneration.query.filter_by(id=request.json['generation_id']).first_or_404()
+            if llmv_generation.status != "unsubmitted":
+                log.error(f"Generation {request.json['generation_id']} has been submitted, status: {llmv_generation.status}, returning")
+                response = {'success': False, 'data': {'text': "This challenge is complete.", "id": -1}}
+                return jsonify(response)
+            if llmv_generation.account_id != get_current_user().id:
+                log.error(f"Generation {request.json['generation_id']} is not owned by user {get_current_user().id}, returning")
+                response = {'success': False, 'data': {'text': "This challenge is complete.", "id": -1}}
+                return jsonify(response)
+            if llmv_generation.challenge_id != challenge.id:
+                log.error(f"Generation {request.json['generation_id']} is not for challenge {challenge.id}, returning")
+                response = {'success': False, 'data': {'text': "This challenge is complete.", "id": -1}}
+                return jsonify(response)
+            history = llmv_generation.pairs
+            history = [h.json() for h in llmv_generation.pairs]
+            log.info('Found history "%s"', history)
+        else:
+            left_over_model = models_not_submitted(user_id=get_current_user().id, challenge_id=challenge.id)
+            if len(left_over_model) == 0:
+                response = {'success': False, 'data': {'text': "This challenge is complete.", "id": -1}}
+                return jsonify(response)
+            # Add the generated text to the database.
+            user_id = get_current_user().id
+            team_id = get_current_user().team_id
+            challenge_id = request.json['challenge_id']
+            anon_name = random.choice(left_over_model)
+            # Return a random model that isn't submitted by the user.
+            model = LlmModels.query.filter_by(anon_name=anon_name).first()
+            llmv_generation = LLMVGeneration(user_id=user_id,
+                                        team_id=team_id,
+                                        challenge_id=challenge_id,
+                                        model_id=model.id,)
+            db.session.add(llmv_generation)
+            history = []
+            log.info("No old generation id, starting new generation")
 
         preprompt = challenge.preprompt
         log.debug(f'Found pre-prompt "{preprompt}" '
@@ -51,16 +91,10 @@ def add_routes() -> Blueprint:
         # Combine the pre-prompt and user-provided prompt with a space between them.
         prompt = request.json["prompt"]
         log.debug(f'pre-prompt {preprompt} and user-provided-prompt: "{prompt}"')
+        idempotency_uuid = str(uuid4())
         try:
-            left_over_model = models_not_submitted(user_id=get_current_user().id, challenge_id=challenge.id)
-            if len(left_over_model) == 0:
-                response = {'success': False, 'data': {'text': "This challenge is complete.", "id": -1}}
-                return jsonify(response)
-
-            anon_name = random.choice(left_over_model)
-            # Return a random model that isn't submitted by the user.
-            model = LlmModels.query.filter_by(anon_name=anon_name).first()
-            generated_text = generate_text(preprompt, prompt, model.model)
+            model = LlmModels.query.filter_by(id=llmv_generation.model_id).first()
+            generated_text = generate_text(idempotency_uuid, preprompt, prompt, model.model, history)
             generation_succeeded = True
 
         except HTTPError as error:
@@ -69,20 +103,12 @@ def add_routes() -> Blueprint:
             response = {'success': False, 'data': {'text': "There was an error in the backend, try again?", "id": -1}}
             return jsonify(response)
 
-        # Add the generated text to the database.
-        user_id = get_current_user().id
-        team_id = get_current_user().team_id
-        challenge_id = request.json['challenge_id']
-        grt_generation = LLMVGeneration(user_id=user_id,
-                                    team_id=team_id,
-                                    challenge_id=challenge_id,
-                                    text=generated_text,
-                                    prompt=prompt,
-                                    model_id=model.id,)
-        db.session.add(grt_generation)
+        chatpair = LLMVChatPair(generation_id=llmv_generation.id, generation=generated_text, prompt=prompt, uuid=idempotency_uuid)
+        db.session.add(chatpair)
         db.session.commit()
-        grt_generation_id = grt_generation.id
-        response = {'success': generation_succeeded, 'data': {'text': generated_text, 'id': grt_generation_id}}
+        generation_id = llmv_generation.id
+        fragment = get_conversation(generation_id)
+        response = {'success': generation_succeeded, 'data': {'text': generated_text, 'fragment': fragment, 'id': generation_id}}
         return jsonify(response)
 
 
@@ -98,18 +124,14 @@ def add_routes() -> Blueprint:
         collected_submissions = []
         for status in ['pending', 'correct', 'awarded', 'incorrect']:
             generations = LLMVGeneration.query.add_columns(
-                LLMVGeneration.prompt,
-                LLMVGeneration.text,
-                LLMVGeneration.date,
                 LlmModels.anon_name,
             ).filter_by(user_id=user_id, challenge_id=challenge_id, status=status).join(LlmModels).all()
-            for generation in generations:
+            for generation, model_name in generations:
                 collected_submissions.append({
-                    'prompt': generation.prompt,
-                    'text': generation.text,
                     'date': generation.date,
                     'status': status,
-                    'model': generation.anon_name,
+                    'model': model_name,
+                    "fragment": get_conversation(generation.id),
                 })
 
         left_over_model = models_not_submitted(user_id=user_id, challenge_id=challenge_id)
@@ -133,6 +155,17 @@ def add_routes() -> Blueprint:
         response = {'success': True, 'data': {"models_left": left_over_model}}
         return jsonify(response)
 
+    @llm_verifications.route('/chat_limit/<challenge_id>', methods=['GET'])
+    @authed_only
+    def chat_limit(challenge_id):
+        """Define a route for for showing users their answer submissions."""
+        # Identify the user who would like to see their answer submissions.
+        log.debug(f'User "{get_current_user().name}" '
+                  f'requested their answer submissions for challenge "{challenge_id}"')
+        # Query the database for the user's answer submissions for this challenge.
+        challenge = LlmChallenge.query.filter_by(id=challenge_id).first_or_404()
+        response = {'success': True, 'data': {"chat_limit": challenge.chat_limit}}
+        return jsonify(response)
     
     #@llm_verifications.route('/admin/llm_submissions/pending', methods=['GET'])
     #@admins_only
@@ -152,7 +185,6 @@ def add_routes() -> Blueprint:
         log.debug(f"Total number of submissions: {Submissions.query.count()}")
         log.debug(f"Total number of submissions that are pending: {Submissions.query.filter_by(**filters).count()}")
 
-
         curr_page = abs(int(request.args.get('page', 1, type=int)))
         results_per_page = 50
         page_start = results_per_page * (curr_page - 1)
@@ -168,8 +200,7 @@ def add_routes() -> Blueprint:
                                                      Submissions.date,
                                                      LlmChallenge.name.label('challenge_name'),
                                                      Model.name.label('team_name'),
-                                                     LLMVGeneration.prompt,
-                                                     LLMVGeneration.text).select_from(Submissions)
+                                                     LLMVGeneration.pairs).select_from(Submissions)
                                                                         .filter_by(**filters)
                                                                         .join(LlmChallenge, LlmChallenge.id == Submissions.challenge_id)
                                                                         .join(Model)
@@ -179,10 +210,24 @@ def add_routes() -> Blueprint:
                                                                         .slice(page_start, page_end)
                                                                         .all())
         log.info(f'Showed (admin) {len(submissions)} pending answer submissions')
+        log.info(f'Submissions: {submissions}')
         return render_template('verify_submissions.html',
                                 submissions=submissions,
                                 page_count=page_count,
                                 curr_page=curr_page)
+
+    @llm_verifications.route('/llm_submissions/conversation/<generation_id>', methods=['GET'])
+    @authed_only
+    def get_conversation(generation_id):
+        log.debug(f"Getting conversation for generation {generation_id}")
+        generation = LLMVGeneration.query.filter_by(id=generation_id).first_or_404()
+        if generation.account_id != get_current_user().id or not is_admin():
+            abort(403, description="You are not authorized to view this page.") 
+        
+        conversation = LLMVChatPair.query.filter_by(generation_id=generation_id).order_by(LLMVChatPair.date).all()
+        
+        return render_template('conversation.html',conversation=conversation)
+
 
 
     def get_generations(request, pending_overide=False):
@@ -211,14 +256,7 @@ def add_routes() -> Blueprint:
         page_count = int(sub_count / results_per_page) + (sub_count % results_per_page > 0)
         Model = get_model()
         
-        generations = (LLMVGeneration.query.add_columns(LLMVGeneration.id,
-                                                   LLMVGeneration.challenge_id,
-                                                   LLMVGeneration.prompt,
-                                                   LLMVGeneration.account_id,
-                                                   LLMVGeneration.text,
-                                                   LLMVGeneration.status,
-                                                   LLMVGeneration.points,
-                                                   LLMVGeneration.date,
+        generations = (LLMVGeneration.query.add_columns(
                                                    LlmChallenge.name.label('challenge_name'),
                                                    LlmChallenge.description.label('challenge_description'),
                                                    Model.name.label('team_name')).select_from(LLMVGeneration)
@@ -228,6 +266,7 @@ def add_routes() -> Blueprint:
                                                                                  .order_by(LLMVGeneration.date.desc())
                                                                                  .slice(page_start, page_end)
                                                                                  .all())
+        log.debug(f'generations: {generations}')
         return generations, page_count, curr_page
 
     @llm_verifications.route('/admin/llm_submissions/generations', methods=['GET'])

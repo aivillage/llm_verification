@@ -91,42 +91,46 @@ $(document).ready(function() {
     var td_row = $(this)
       .parent()
       .parent();
-
-    ezgrade({
-      title: "Submission",
-      body: " {0}'s submission for {1}:<strong> <br> Challenge Description: <br> </strong> {2} <strong> <br> Prompt: <br> </strong> {2} <strong> <br> Generation: </strong> <br> {3}".format(
-        "<strong>" + htmlentities(team_name) + "</strong>",
-        "<strong>" + htmlentities(chal_name) + "</strong>",
-        "<pre>" + htmlentities(description) + "</pre>",
-        "<pre>" + htmlentities(prompt_content) + "</pre>",
-        "<pre>" + htmlentities(text_content) + "</pre>"
-      ),
-      success: function() {
-        CTFd.fetch("/admin/verify_submissions/" + key_id + "/solve", {
-          method: "POST"
-        })
-          .then(function(response) {
-            return response.json();
+    
+    CTFd.fetch("/llm_submissions/conversation/" + key_id, {
+      method: "GET"
+    }).then((response) => response.text()).then(function(fragment) {
+      console.log(fragment);
+      ezgrade({
+        title: "Submission",
+        body: " {0}'s submission for {1}:<strong> <br> Challenge Description: <br> </strong> {2} <br> Conversation: <br> </strong> {3}".format(
+          "<strong>" + htmlentities(team_name) + "</strong>",
+          "<strong>" + htmlentities(chal_name) + "</strong>",
+          "<pre>" + htmlentities(description) + "</pre>",
+          fragment
+        ),
+        success: function() {
+          CTFd.fetch("/admin/verify_submissions/" + key_id + "/solve", {
+            method: "POST"
           })
-          .then(function(response) {
-            if (response.success) {
-              td_row.remove();
-            }
-          });
-      },
-      error: function() {
-        CTFd.fetch("/admin/verify_submissions/" + key_id + "/fail", {
-          method: "POST"
-        })
-          .then(function(response) {
-            return response.json();
+            .then(function(response) {
+              return response.json();
+            })
+            .then(function(response) {
+              if (response.success) {
+                td_row.remove();
+              }
+            });
+        },
+        error: function() {
+          CTFd.fetch("/admin/verify_submissions/" + key_id + "/fail", {
+            method: "POST"
           })
-          .then(function(response) {
-            if (response.success) {
-              td_row.remove();
-            }
-          });
-      }
+            .then(function(response) {
+              return response.json();
+            })
+            .then(function(response) {
+              if (response.success) {
+                td_row.remove();
+              }
+            });
+        }
+      });
     });
   });
 });

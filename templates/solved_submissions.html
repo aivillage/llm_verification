@@ -21,39 +21,39 @@
             <td><b>Team</b></td>
             <td><b>Challenge</b></td>
             <td><b>Type</b></td>
-            <td><b>Prompt</b></td>
-            <td><b>Text</b></td>
+            <td><b>Last Prompt</b></td>
+            <td><b>Last Text</b></td>
             <td class="text-center"><b>Date</b></td>
             <td class="text-center"><b>View</b></td>
           </tr>
         </thead>
         <tbody>
-          {% for sub in submissions %}
-          <tr>
-            <td class="text-center" id="{{ sub.id }}">
-              {{ sub.id }}
+          {% for gen, chal_name, chal_description, team_name in submissions %}
+          <tr class="{{ gen.status }}">
+            <td class="text-center" id="{{ gen.id }}">
+              {{ gen.id }}
             </td>
-            <td class="team" id="{{ sub.team_id }}">
-              <a href="{{ generate_account_url(sub.account_id, admin=True) }}">{{ sub.team_name }}</a>
+            <td class="team" id="{{ gen.team_id }}">
+              <a href="{{ generate_account_url(gen.account_id, admin=True) }}">{{ team_name }}</a>
             </td>
-            <td class="chal" id="{{ sub.challenge_id }}">
-              {{ sub.challenge_name }} <div class="desc" id="{{ sub.challenge_id }}" hidden>{{ sub.challenge_description }}</div>
+            <td class="chal" id="{{ gen.challenge_id }}">
+              {{ chal_name }} <div class="desc" id="{{ gen.challenge_id }}" hidden>{{ chal_description }}</div>
             </td>
             <td>
-              {{ sub.type }}
+              {{ gen.status }}
             </td>
-            <td class="prompt" id="{{ sub.id }}">
-              <pre class="mb-0">{{ sub.prompt }}</pre>
+            <td class="prompt" id="{{ gen.id }}">
+              <pre class="mb-0">{{ gen.pairs[-1].prompt }}</pre>
             </td>
-            <td class="flag" id="{{ sub.id }}">
-              <pre class="mb-0">{{ sub.text }}</pre>
+            <td class="flag" id="{{ gen.id }}">
+              <pre class="mb-0">{{ gen.pairs[-1].generation }}</pre>
             </td>
             <td class="text-center solve-time">
-              <span data-time="{{ sub.date | isoformat }}"></span>
+              <span data-time="{{ gen.date | isoformat }}"></span>
             </td>
             <td class="text-center">
               <span class="view-submission" data-toggle="tooltip" data-placement="top"
-                title="View submission #{{ sub.id }}">
+                title="View generation #{{ gen.id }}">
                 <i class="far fa-comment"></i>
               </span>
             </td>

@@ -13,52 +13,59 @@
                 <a class="nav-link" id="pills-prev-submissions-tab" data-toggle="pill" @click.debounce.500ms="showSubmissions()" role="tab">Previous Submissions</a>
             </li>
         </ul>
-        <div class="tab-content">
-            <div class="tab-pane fade show active" id="pills-new-submission" x-show="show_generate">
-                <div class="tab-content">
-                    <textarea id="challenge-prompt" class="challenge-input mb-3" type="text" name="answer" placeholder="Prompt" rows="5" x-model="prompt"></textarea>
-                    <div class="row submit-row">
-                        <div class="col-12 col-sm-4 mt-3 mt-sm-0 key-submit">
-                            <button id="challenge-generate" class="challenge-submit btn btn-outline-secondary w-100 h-100" type="submit" @click.debounce.500ms="generateText()">Generate</button>
-                        </div>
-                    </div>
-                </div>
-                <br>
-                <br>
-                <div class="tab-content">
-                    <textarea id="challenge-generated" class="challenge-input mb-3" type="text" name="answer" placeholder="Generated Text" x-model="generated_text" readonly></textarea>
-                </div>
-                <div class="row submit-row" x-show="show_submit">
-                    <div class="col-12 col-sm-4 mt-3 mt-sm-0 key-submit">
-                        <button
-                            id="challenge-submit"
-                            class="challenge-submit btn btn-outline-secondary w-100 h-100" type="submit"
-                            @click.debounce.500ms="submitGenerated()"
-                        >
-                          {% trans %}Submit{% endtrans %}
-                        </button>
-                    </div>
-                  </div>
-            </div>
-            </div>
 
-            <div x-show="show_submissions">
-                <div class="row">
-                    <div class="col-md-12" id="challenge-submissions"></div>
-                    <h2>Submissions</h2>
-                    <template x-for="submission in submissions">
-                        <div>
-                            <hr>
-                            <b>Model:</b><p x-text="submission.model"></p>
-                            <b>Prompt:</b> <p x-text="submission.prompt"></p>
-                            <b>Generation:</b> <p x-text="submission.text"></p>
-                            <small class="text-muted" x-text="submission.status"></small>
-                            <br>
-                            <small class="text-muted" x-text="submission.date"></small>
+        <div x-data="single_turn_interface" x-show="is_single_turn">
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="pills-new-submission" x-show="show_generate">
+                    <div class="tab-content">
+                        <textarea id="challenge-prompt" class="challenge-input mb-3" type="text" name="answer" placeholder="Prompt" rows="5" x-model="prompt"></textarea>
+                        <div class="row submit-row">
+                            <div class="col-12 col-sm-4 mt-3 mt-sm-0 key-submit">
+                                <button id="challenge-generate" class="challenge-submit btn btn-outline-secondary w-100 h-100" type="submit" @click.debounce.500ms="generateText()">Generate</button>
+                            </div>
                         </div>
-                    </template>
+                    </div>
+                    <br>
+                    <br>
+                    <div class="tab-content">
+                        <textarea id="challenge-generated" class="challenge-input mb-3" type="text" name="answer" placeholder="Generated Text" x-model="generated_text" readonly></textarea>
+                    </div>
                 </div>
             </div>
+        </div>
+
+        <div x-data="multi_turn_interface" x-show="is_multi_turn">
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="pills-new-submission" x-show="show_generate">
+                    <div class="tab-content" x-html="fragment">
+                    </div>
+                    <br>
+                    <br>
+                    <div class="tab-content">
+                        <textarea id="challenge-prompt" class="challenge-input mb-3" type="text" name="answer" placeholder="Prompt" rows="5" x-model="prompt"></textarea>
+                        <div class="row submit-row">
+                            <div class="col-12 col-sm-4 mt-3 mt-sm-0 key-submit">
+                                <button id="challenge-generate" class="challenge-submit btn btn-outline-secondary w-100 h-100" type="submit" @click.debounce.500ms="generateText()">Generate</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row submit-row" x-show="show_submit">
+            <div class="col-12 col-sm-4 mt-3 mt-sm-0 key-submit">
+                <button
+                    id="challenge-submit"
+                    class="challenge-submit btn btn-outline-secondary w-100 h-100" type="submit"
+                    @click.debounce.500ms="submitGenerated()"
+                >
+                {% trans %}Submit{% endtrans %}
+                </button>
+            </div>
+        </div>
+
+        <div class="completion">
             <div x-show="show_submit">
                 <h2>Models Left</h2>
                     <template x-for="model in models_left">
@@ -69,8 +76,27 @@
                 <h2>All Models Done!</h2>
             </div>
         </div>
+
+        <div x-show="show_submissions">
+            <div class="row">
+                <div class="col-md-12" id="challenge-submissions"></div>
+                <h2>Submissions</h2>
+                <template x-for="pair in history">
+                    <div>
+                        <hr>
+                        <b>Model:</b><p x-text="submission.model"></p>
+                        <b>Prompt:</b> <p x-text="submission.prompt"></p>
+                        <b>Generation:</b> <p x-text="submission.text"></p>
+                        <small class="text-muted" x-text="submission.status"></small>
+                        <br>
+                        <small class="text-muted" x-text="submission.date"></small>
+                        <br>
+                        <div x-html="submission.fragment"></div>
+                    </div>
+                </template>
+            </div>
+        </div>
     </div>
-</div>
 {% endblock %}
 
 {% block input %}
