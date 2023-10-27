@@ -7,6 +7,7 @@ from uuid import uuid4
 from flask import Blueprint, jsonify, render_template, request, abort
 from requests.exceptions import HTTPError
 from werkzeug.exceptions import BadRequest
+import requests
 
 # CTFd imports.
 from CTFd.models import Submissions, db
@@ -100,8 +101,15 @@ def add_routes() -> Blueprint:
         except HTTPError as error:
             log.error(f'Remote LLM experienced an error when generating text: {error}')
             # Send the error message from the HTTPError as the response to the user.
-            response = {'success': False, 'data': {'text': "There was an error in the backend, try again?", "id": -1}}
+            generation_id = llmv_generation.id
+            fragment = get_conversation(generation_id)
+            response = {'success': False, "error": "There was an error in the backend, try again?", 'data': {'text': "", 'fragment': fragment, 'id': generation_id}}
             return jsonify(response)
+        except requests.ConnectionError as error:
+            generation_id = llmv_generation.id
+            fragment = get_conversation(generation_id)
+            response = {'success': False, "error": "There was a connection error to the router, try again? If this persists contact the organizer", 'data': {'text': "", 'fragment': fragment, 'id': generation_id}}
+
 
         chatpair = LLMVChatPair(generation_id=llmv_generation.id, generation=generated_text, prompt=prompt, uuid=idempotency_uuid)
         db.session.add(chatpair)

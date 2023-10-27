@@ -37,17 +37,20 @@ def generate_text(idempotency_uuid, preprompt, prompt, model, history= None):
         raise ValueError('LLM Verification Router token is not set')
     
     log.info(f'Received text generation request for prompt "{prompt}" for model {model}')
-
-    try:
-        raw_response = requests.post(url=route,
-                            headers={'Authorization': f'Bearer {token}'},
-                            json={"uuid": idempotency_uuid,'prompt': prompt, "system" : preprompt, "model": model, "history": history})
-    except (requests.Timeout, requests.ConnectionError) as error:
-        log.debug(error)
-        # try again, with idempotency key
-        pass
-    except requests.ConnectionError:
-        pass
+    retries = 0
+    retry_limit = 5
+    raw_response = None
+    while retries < retry_limit:
+        try:
+            raw_response = requests.post(url=route,
+                                headers={'Authorization': f'Bearer {token}'},
+                                json={"uuid": idempotency_uuid,'prompt': prompt, "system" : preprompt, "model": model, "history": history})
+            break
+        except (requests.Timeout, requests.ConnectionError) as error:
+            log.error(f'LLM Router API failed to respond on attempt {retries} of {retry_limit}, error: {error}')
+            retries += 1
+    if raw_response is None:
+        raise requests.ConnectionError(f'LLM Router API failed to respond after {retry_limit} retries')
     
     if raw_response.status_code == 200:
         json_response = raw_response.json()
