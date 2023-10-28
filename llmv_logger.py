@@ -1,5 +1,14 @@
 from flask import current_app
-from logging import CRITICAL, DEBUG, ERROR, Formatter, getLogger, INFO, StreamHandler, WARNING
+from logging import (
+    CRITICAL,
+    DEBUG,
+    ERROR,
+    Formatter,
+    getLogger,
+    INFO,
+    StreamHandler,
+    WARNING,
+)
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 import sys
@@ -23,9 +32,9 @@ def initialize_llmvctfd_loggers(module_name):
     llmv_logfile = Path(ctfd_logdir, "llmv_verification.log")
     # Ensure that the log file exists.
     llmv_logfile.touch(exist_ok=True)
-    llm_verification_log = RotatingFileHandler(llmv_logfile,
-                                               maxBytes=10485760,
-                                               backupCount=5)
+    llm_verification_log = RotatingFileHandler(
+        llmv_logfile, maxBytes=10485760, backupCount=5
+    )
     # Write all LLM Verification Plugin logs to the log file.
     log.addHandler(llm_verification_log)
     # Create a console logger for the LLM Verification Plugin.
@@ -40,24 +49,29 @@ def initialize_llmvctfd_loggers(module_name):
     # Don't pass log records to ancestor loggers.
     log.propagate = False
     log.info(f'Writing logs to CTFd\'s log directory "{llmv_logfile}"')
-    log.info('Initialized LLMV logger')
+    log.info("Initialized LLMV logger")
     return log
+
 
 ## Set up console handler for log records.
 class ColorizedFormatter(Formatter):
     """Colorized log record formatter that's keyed to the record's severity level."""
+
     def __init__(self):
         Formatter.__init__(self)
         # Define the output format for each log record.
-        self.logline_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        self.logline_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         # Set the color for each log record severity level type.
-        self.severity_colors = {log_level: f'\033[1;{color_code}m{self.logline_format}\033[0m'
-                                                for log_level, color_code
-                                                in ((DEBUG, 90),  # Grey text.
-                                                    (INFO, 36),  # Cyan text.
-                                                    (WARNING, 33),  # Yellow text.
-                                                    (ERROR, 31),  # Red text.
-                                                    (CRITICAL, 41))}  # White text with red background.
+        self.severity_colors = {
+            log_level: f"\033[1;{color_code}m{self.logline_format}\033[0m"
+            for log_level, color_code in (
+                (DEBUG, 90),  # Grey text.
+                (INFO, 36),  # Cyan text.
+                (WARNING, 33),  # Yellow text.
+                (ERROR, 31),  # Red text.
+                (CRITICAL, 41),
+            )
+        }  # White text with red background.
 
     def format(self, record) -> str:
         """Take a log record and return a colorized log entry.
