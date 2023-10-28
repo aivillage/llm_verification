@@ -61,10 +61,8 @@ def generate_text(idempotency_uuid, preprompt, prompt, model, history= None):
     elif 400 <= raw_response.status_code <= 599:
         # ... raise an error.
         raise HTTPError(f'LLM Router API returned error status code {raw_response.status_code}: '
-                        f'Response: {
+                        f'Response: {raw_response.json()}')
 
-
-}')
     # ... Otherwise, if it's an unrecognized HTTP status code, then...
     else:
         raise HTTPError(f'LLM Router API returned unrecognized status code {raw_response.status_code}: '
