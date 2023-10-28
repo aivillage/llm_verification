@@ -4,14 +4,18 @@ import os
 import json
 from ast import List
 from logging import getLogger
+from typing import Dict
+
 
 # Third-party imports.
-from requests import post, get
+import requests
 from requests.exceptions import HTTPError
 
 log = getLogger(__name__)
 
-def generate_text(preprompt, prompt, model):
+def generate_text(idempotency_uuid, preprompt, prompt, model, history= None):
+    if history is None:
+        history = []
     """Generate text from a prompt using the EleutherAI GPT-NeoX-20B model.
 
     Arguments:
@@ -33,31 +37,18 @@ def generate_text(preprompt, prompt, model):
     if token is None:
         raise ValueError('LLM Verification Router token is not set')
     
-    log.info(f'Received text generation request for prompt "{prompt}" for model {model} at url {url}')
-    # Load the Vanilla Neox API key from the config file.
-
-    raw_response = post(url=route,
-                        headers={'Authorization': f'Bearer {token}'},
-                        
-                        # UUID needs to be provided here
-                        # https://github.com/aivillage/llm_router/blob/main/src/chat/mod.rs#L35
-                        # TODO: Add assert isinstance(uuid, str) because rust is picky
-                        # json={"uuid": "1", "prompt": prompt, "preprompt" : preprompt, "model": model})
-
-                        # LLM Router fails with empty preprompt
-                        # https://github.com/aivillage/llm_router/issues/9
-                        json={"uuid": "1", "prompt": prompt, "preprompt" : "test preprompt", "model": model})
-    log.error("JSON payload sent %s", raw_response.request.body)
+    log.info(f'Received text generation request for prompt "{prompt}" for model {model}')
 
     try:
-        json_response = raw_response.json()
-    except json.decoder.JSONDecodeError:
-        log.exception(("There was a json decode error for model %s "
-                       "at url %s " 
-                       "with response status code %s"),
-                        model, url, raw_response.status_code)
-
-        raise HTTPError(f'LLM Router return an invalid json with status_code {raw_response.status_code}')
+        raw_response = requests.post(url=route,
+                            headers={'Authorization': f'Bearer {token}'},
+                            json={"uuid": idempotency_uuid,'prompt': prompt, "system" : preprompt, "model": model, "history": history})
+    except (requests.Timeout, requests.ConnectionError) as error:
+        log.debug(error)
+        # try again, with idempotency key
+        pass
+    except requests.ConnectionError:
+        pass
     
     if raw_response.status_code == 200:
         if json_response.get('error') is not None:
@@ -70,7 +61,10 @@ def generate_text(preprompt, prompt, model):
     elif 400 <= raw_response.status_code <= 599:
         # ... raise an error.
         raise HTTPError(f'LLM Router API returned error status code {raw_response.status_code}: '
-                        f'Response: {raw_response.json()}')
+                        f'Response: {
+
+
+}')
     # ... Otherwise, if it's an unrecognized HTTP status code, then...
     else:
         raise HTTPError(f'LLM Router API returned unrecognized status code {raw_response.status_code}: '
@@ -87,7 +81,7 @@ def get_models():
         raise ValueError('LLM Verification Router token is not set')
     log.info(f"Getting models from {route}")
 
-    raw_response = get(url=route,
+    raw_response = requests.get(url=route,
                         headers={'Authorization': f'Bearer {token}'})
     
     if raw_response.status_code == 200:

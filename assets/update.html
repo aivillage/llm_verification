@@ -5,3 +5,31 @@
 	LLM verification challenges requires admins to mark submissions as solved. Flags are not required. Submissions can be graded from the "LLM Submissions" plugin interface.
 </div>
 {% endblock %}
+
+{% block message %}
+		<div class="form-group">
+			<label>
+				Message:<br>
+				<small class="form-text text-muted">
+					Use this to give a brief introduction to your challenge.
+				</small>
+			</label>
+			<textarea id="new-desc-editor" class="form-control markdown" name="description" rows="10">{{ challenge.description }}</textarea>
+
+			<label>
+				Pre-Prompt:<br>
+				<small class="form-text text-muted">
+					Use this as a secret preprompt for your challenge.
+				</small>
+			</label>
+			<textarea id="new-desc-editor" class="form-control markdown" name="preprompt" rows="5">{{ challenge.preprompt }}</textarea>
+
+			<label>
+				Chat Limit:<br>
+				<small class="form-text text-muted">
+					Encourage more exploration with lower chat limits, but it makes the challenges harder. Especially with subjective challenges!
+				</small>
+			</label>
+			<input type="number" id="new-desc-editor" class="form-control markdown" name="chat_limit" min="1" value="1">{{ challenge.chat_limit }}</input>
+		</div>
+	{% endblock %}

@@ -21,32 +21,32 @@
             <td><b>Team</b></td>
             <td><b>Challenge</b></td>
             <td><b>Type</b></td>
-            <td><b>Prompt</b></td>
-            <td><b>Text</b></td>
+            <td><b>Last Prompt</b></td>
+            <td><b>Last Text</b></td>
             <td class="text-center"><b>Date</b></td>
             <td class="text-center"><b>View</b></td>
           </tr>
         </thead>
         <tbody>
-          {% for gen in generations %}
+          {% for gen, chal_name, chal_description, team_name in generations %}
           <tr class="{{ gen.status }}">
             <td class="text-center" id="{{ gen.id }}">
               {{ gen.id }}
             </td>
             <td class="team" id="{{ gen.team_id }}">
-              <a href="{{ generate_account_url(gen.account_id, admin=True) }}">{{ gen.team_name }}</a>
+              <a href="{{ generate_account_url(gen.account_id, admin=True) }}">{{ team_name }}</a>
             </td>
             <td class="chal" id="{{ gen.challenge_id }}">
-              {{ gen.challenge_name }} <div class="desc" id="{{ gen.challenge_id }}" hidden>{{ gen.challenge_description }}</div>
+              {{ chal_name }} <div class="desc" id="{{ gen.challenge_id }}" hidden>{{ chal_description }}</div>
             </td>
             <td>
               {{ gen.status }}
             </td>
             <td class="prompt" id="{{ gen.id }}">
-              <pre class="mb-0">{{ gen.prompt }}</pre>
+              <pre class="mb-0">{{ gen.pairs[-1].prompt }}</pre>
             </td>
             <td class="flag" id="{{ gen.id }}">
-              <pre class="mb-0">{{ gen.text }}</pre>
+              <pre class="mb-0">{{ gen.pairs[-1].generation }}</pre>
             </td>
             <td class="text-center solve-time">
               <span data-time="{{ gen.date | isoformat }}"></span>

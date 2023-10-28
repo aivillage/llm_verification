@@ -2,6 +2,7 @@
 # Standard library imports.
 import datetime, random
 from logging import getLogger
+from typing import Dict
 
 # Third-party imports.
 from flask import Blueprint
@@ -16,6 +17,24 @@ from .remote_llm import get_models
 
 log = getLogger(__name__)
 
+class LLMVChatPair(db.Model):
+    __tablename__ = 'llmv_chat_pair'
+    __table_args__ = {'extend_existing': True}
+    id = db.Column(db.Integer, primary_key=True)
+    uuid = db.Column(db.String(80))
+    generation_id = db.Column(db.Integer, db.ForeignKey('llmv_generation.id', ondelete='CASCADE'))
+    conversation = db.relationship("LLMVGeneration", back_populates="pairs")
+    prompt = db.Column(db.Text)
+    generation = db.Column(db.Text, nullable=True)
+    date = db.Column(db.DateTime, default=datetime.datetime.utcnow, nullable=True)
+
+    def json(self) -> Dict[str,str]:
+        return {
+            "prompt": self.prompt,
+            "generation": self.generation,
+        }
+
+
 class LLMVGeneration(db.Model):
     """LLMV CTFd SQLAlchemy table for answer generation."""
     __tablename__ = 'llmv_generation'
@@ -27,12 +46,12 @@ class LLMVGeneration(db.Model):
     challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id', ondelete='CASCADE'))
     model_id = db.Column(db.Integer, db.ForeignKey('llm_models.id', ondelete='CASCADE'))
 
-    text = db.Column(db.Text)
-    prompt = db.Column(db.Text)
     points = db.Column(db.Integer, default=0)
     status = db.Column(db.String(80), default="unsubmitted")
     report = db.Column(db.Text)
     date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+
+    pairs = db.relationship('LLMVChatPair', back_populates='conversation')
 
     @hybrid_property
     def account_id(self):
@@ -42,6 +61,9 @@ class LLMVGeneration(db.Model):
             return self.team_id
         elif user_mode == 'users':
             return self.user_id
+        
+    def conversation(self):
+        return LLMVChatPair.query.filter_by(generation_id=self.id).all()
 
 class LLMVSubmission(db.Model):
     """LLMV CTFd SQLAlchemy table for answer submissions."""
@@ -60,6 +82,7 @@ class LlmChallenge(Challenges):
                    db.ForeignKey('challenges.id', ondelete='CASCADE'),
                    primary_key=True)
     preprompt = db.Column(db.Text)
+    chat_limit = db.Column(db.Integer, default=0)
 
     def __init__(self, *args, **kwargs):
         super(LlmChallenge, self).__init__(**kwargs)
@@ -148,6 +171,36 @@ class LlmSubmissionChallenge(BaseChallenge):
         db.session.commit()
         log.info(f'Created challenge: {data}')
         return challenge
+    
+    @classmethod
+    def read(cls, challenge):
+        """
+        This method is in used to access the data of a challenge in a format processable by the front end.
+
+        :param challenge:
+        :return: Challenge object, data dictionary to be returned to the user
+        """
+        data = {
+            "id": challenge.id,
+            "name": challenge.name,
+            "value": challenge.value,
+            "description": challenge.description,
+            "preprompt": challenge.preprompt,
+            "chat_limit": challenge.chat_limit,
+            "connection_info": challenge.connection_info,
+            "next_id": challenge.next_id,
+            "category": challenge.category,
+            "state": challenge.state,
+            "max_attempts": challenge.max_attempts,
+            "type": challenge.type,
+            "type_data": {
+                "id": cls.id,
+                "name": cls.name,
+                "templates": cls.templates,
+                "scripts": cls.scripts,
+            },
+        }
+        return data
 
     @staticmethod
     def attempt(challenge, request):
@@ -205,22 +258,14 @@ class LlmSubmissionChallenge(BaseChallenge):
 
         generation = LLMVGeneration.query.add_columns(
             LLMVGeneration.id,
-            LLMVGeneration.text,
-            LLMVGeneration.prompt,
             LLMVGeneration.challenge_id,
             ).filter_by(id=int(submission)).first_or_404()
         db.session.commit()
         assert generation.challenge_id == challenge.id
 
-        text = generation.text
-        prompt = generation.prompt
-        log.info(f'Have generation with prompt and text: {prompt} {text}')
-
-
         if len(models_not_submitted(user_id=user.id, challenge_id=challenge.id)) > 0:
             awards = LlmAwards(user_id=user.id,
                             name=f'Challenge {challenge.name}',
-                            description=f"{generation.text}",
                             value=challenge.value,
                             category=challenge.category,
                             generation_id=generation.id,

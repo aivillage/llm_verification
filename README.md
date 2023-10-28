@@ -1,8 +1,15 @@
 # 🤖 LLM Verification Plugin
 
-The LLMM Verification Plugin ("LLMV") is a [CTFd](https://github.com/CTFd/CTFd) plugin that adds a new challenge type called "LLM Verification." This new challenge type tasks users with creating prompts for external LLM APIs (such as [gpt-neox-20b](https://huggingface.co/EleutherAI/gpt-neox-20b)) that generate cheeky responses. These responses are reviewed manually by graders, who assign points based on how successfully the answer managed to subvert the model.
+The LLMM Verification Plugin ("LLMV") is a [CTFd](https://github.com/CTFd/CTFd) plugin that adds a new challenge type called "LLM Verification." This new challenge type tasks users with creating prompts for external LLM APIs (such as [gpt-neox-20b](https://huggingface.co/EleutherAI/gpt-neox-20b)) that generate cheeky responses. These responses are reviewed manually by graders, who assign points based on how successfully the answer managed to subvert the model.'
+
+This plugin is should be used wth [LLM Router](https://github.com/aivillage/llm_router) which provides routes the requests to the configured LLM providers.
 
 ## 🖥️ Installation
+
+### With Docker
+This is the suggested approach.  Instructions Coming soon
+
+### Without Docker
 
 1. Copy the `llm_verification` folder that contains this `README.md` file to `CTFd/plugins/`.
 
@@ -86,7 +93,7 @@ The LLMM Verification Plugin ("LLMV") is a [CTFd](https://github.com/CTFd/CTFd) 
 ### 📖 tl;dr
 
 Use `docker-compose.dev.yml` for making code changes to CTFd or plugins. Add `--build` for non-code changes such as dependency changes in `requirements.txt` or entrypoint changes in `Dockerfile`. CTFd will be available at [https://localhost:8000](https://localhost:8000).
-
+Since the repo directory's already mounted as a [volume](https://docs.docker.com/storage/volumes/) in `docker-compose.yml`, container images don't need to be rebuilt for code changes to take effect. However, (the production server) Gunicorn won't recognize these changes, so we need to start it with Flask instead.
    ```console
    $ docker compose -f docker-compose.dev.yml up --build
    ```
@@ -94,8 +101,6 @@ Use `docker-compose.dev.yml` for making code changes to CTFd or plugins. Add `--
 ### 👩🏼‍💻 Development Mode
 
 To hack on the plugin's code, we want to start [Flask (CTFd's RESTful)](https://flask.palletsprojects.com/en/2.3.x/) in development mode so code changes trigger hot reloads.
-
-Since the repo directory's already mounted as a [volume](https://docs.docker.com/storage/volumes/) in `docker-compose.yml`, container images don't need to be rebuilt for code changes to take effect. However, (the production server) Gunicorn won't recognize these changes, so we need to start it with Flask instead.
 
 The `Dockerfile.dev`, `docker-compose.dev.yml`, and `docker-entrypoint.dev.sh` are near-exact copies of `Dockerfile`, `docker-compose.yml`, and `docker-entrypoint.sh`. `Dockerfile.dev` uses a different entrypoint (`docker-entrypoint.dev.sh`) and `docker-compose.dev.yml` uses a [different Dockerfile for builds](https://docs.docker.com/compose/compose-file/build/#illustrative-example). They work together to start the application with Flask instead of Gunicorn (via `docker-entrypoint.dev.sh`).
 
