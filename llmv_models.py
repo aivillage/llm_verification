@@ -17,18 +17,21 @@ from .remote_llm import get_models
 
 log = getLogger(__name__)
 
+
 class LLMVChatPair(db.Model):
-    __tablename__ = 'llmv_chat_pair'
-    __table_args__ = {'extend_existing': True}
+    __tablename__ = "llmv_chat_pair"
+    __table_args__ = {"extend_existing": True}
     id = db.Column(db.Integer, primary_key=True)
     uuid = db.Column(db.String(80))
-    generation_id = db.Column(db.Integer, db.ForeignKey('llmv_generation.id', ondelete='CASCADE'))
+    generation_id = db.Column(
+        db.Integer, db.ForeignKey("llmv_generation.id", ondelete="CASCADE")
+    )
     conversation = db.relationship("LLMVGeneration", back_populates="pairs")
     prompt = db.Column(db.Text)
     generation = db.Column(db.Text, nullable=True)
     date = db.Column(db.DateTime, default=datetime.datetime.utcnow, nullable=True)
 
-    def json(self) -> Dict[str,str]:
+    def json(self) -> Dict[str, str]:
         return {
             "prompt": self.prompt,
             "generation": self.generation,
@@ -37,50 +40,62 @@ class LLMVChatPair(db.Model):
 
 class LLMVGeneration(db.Model):
     """LLMV CTFd SQLAlchemy table for answer generation."""
-    __tablename__ = 'llmv_generation'
-    __table_args__ = {'extend_existing': True}
+
+    __tablename__ = "llmv_generation"
+    __table_args__ = {"extend_existing": True}
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'))
-    team_id = db.Column(db.Integer, db.ForeignKey('teams.id', ondelete='CASCADE'))
-    challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id', ondelete='CASCADE'))
-    model_id = db.Column(db.Integer, db.ForeignKey('llm_models.id', ondelete='CASCADE'))
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"))
+    team_id = db.Column(db.Integer, db.ForeignKey("teams.id", ondelete="CASCADE"))
+    challenge_id = db.Column(
+        db.Integer, db.ForeignKey("challenges.id", ondelete="CASCADE")
+    )
+    model_id = db.Column(db.Integer, db.ForeignKey("llm_models.id", ondelete="CASCADE"))
 
     points = db.Column(db.Integer, default=0)
     status = db.Column(db.String(80), default="unsubmitted")
     report = db.Column(db.Text)
     date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
 
-    pairs = db.relationship('LLMVChatPair', back_populates='conversation')
+    pairs = db.relationship("LLMVChatPair", back_populates="conversation")
 
     @hybrid_property
     def account_id(self):
         from CTFd.utils import get_config
-        user_mode = get_config('user_mode')
-        if user_mode == 'teams':
+
+        user_mode = get_config("user_mode")
+        if user_mode == "teams":
             return self.team_id
-        elif user_mode == 'users':
+        elif user_mode == "users":
             return self.user_id
-        
+
     def conversation(self):
         return LLMVChatPair.query.filter_by(generation_id=self.id).all()
 
+
 class LLMVSubmission(db.Model):
     """LLMV CTFd SQLAlchemy table for answer submissions."""
-    __tablename__ = 'llmv_submissions'
+
+    __tablename__ = "llmv_submissions"
 
     id = db.Column(db.Integer, primary_key=True)
-    generation_id = db.Column(db.Integer, db.ForeignKey('llmv_generation.id', ondelete='CASCADE'))
-    submission_id = db.Column(db.Integer, db.ForeignKey('submissions.id', ondelete='CASCADE'))
+    generation_id = db.Column(
+        db.Integer, db.ForeignKey("llmv_generation.id", ondelete="CASCADE")
+    )
+    submission_id = db.Column(
+        db.Integer, db.ForeignKey("submissions.id", ondelete="CASCADE")
+    )
+
 
 class LlmChallenge(Challenges):
     """SQLAlchemy Table model for LLM Challenges."""
-    __mapper_args__ = {'polymorphic_identity': 'llm_verification'}
-    __table_args__ = {'extend_existing': True}
 
-    id = db.Column(db.Integer,
-                   db.ForeignKey('challenges.id', ondelete='CASCADE'),
-                   primary_key=True)
+    __mapper_args__ = {"polymorphic_identity": "llm_verification"}
+    __table_args__ = {"extend_existing": True}
+
+    id = db.Column(
+        db.Integer, db.ForeignKey("challenges.id", ondelete="CASCADE"), primary_key=True
+    )
     preprompt = db.Column(db.Text)
     chat_limit = db.Column(db.Integer, default=0)
 
@@ -91,66 +106,91 @@ class LlmChallenge(Challenges):
     def html(self):
         from CTFd.utils.config.pages import build_markdown
         from CTFd.utils.helpers import markup
+
         return markup(build_markdown(self.description))
-    
+
+
 class LlmAwards(Awards):
     """SQLAlchemy Table model for LLM Awards."""
-    __tablename__ = "llm_awards"
-    __mapper_args__ = {'polymorphic_identity': 'llm_awards'}
-    __table_args__ = {'extend_existing': True}
 
-    id = db.Column(db.Integer,
-                   db.ForeignKey('awards.id', ondelete='CASCADE'),
-                   primary_key=True)
-    generation_id = db.Column(db.Integer, db.ForeignKey('llmv_generation.id', ondelete='CASCADE'))
-    challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id', ondelete='CASCADE'))
+    __tablename__ = "llm_awards"
+    __mapper_args__ = {"polymorphic_identity": "llm_awards"}
+    __table_args__ = {"extend_existing": True}
+
+    id = db.Column(
+        db.Integer, db.ForeignKey("awards.id", ondelete="CASCADE"), primary_key=True
+    )
+    generation_id = db.Column(
+        db.Integer, db.ForeignKey("llmv_generation.id", ondelete="CASCADE")
+    )
+    challenge_id = db.Column(
+        db.Integer, db.ForeignKey("challenges.id", ondelete="CASCADE")
+    )
 
     def __init__(self, *args, **kwargs):
         super(LlmAwards, self).__init__(**kwargs)
 
+
 class LlmSolves(Solves):
     """SQLAlchemy Table model for LLM Awards."""
-    __tablename__ = "llm_solves"
-    __mapper_args__ = {'polymorphic_identity': 'llm_solves'}
-    __table_args__ = {'extend_existing': True}
 
-    id = db.Column(db.Integer,
-                   db.ForeignKey('solves.id', ondelete='CASCADE'),
-                   primary_key=True)
-    generation_id = db.Column(db.Integer, db.ForeignKey('llmv_generation.id', ondelete='CASCADE'))
+    __tablename__ = "llm_solves"
+    __mapper_args__ = {"polymorphic_identity": "llm_solves"}
+    __table_args__ = {"extend_existing": True}
+
+    id = db.Column(
+        db.Integer, db.ForeignKey("solves.id", ondelete="CASCADE"), primary_key=True
+    )
+    generation_id = db.Column(
+        db.Integer, db.ForeignKey("llmv_generation.id", ondelete="CASCADE")
+    )
 
     def __init__(self, *args, **kwargs):
         super(LlmSolves, self).__init__(**kwargs)
-    
+
+
 class LlmModels(db.Model):
     """SQLAlchemy Table model for LLM Models."""
-    __tablename__ = 'llm_models'
-    __table_args__ = {'extend_existing': True}
+
+    __tablename__ = "llm_models"
+    __table_args__ = {"extend_existing": True}
 
     id = db.Column(db.Integer, primary_key=True)
     anon_name = db.Column(db.String(80))
     model = db.Column(db.String(80))
 
+
 class Pending(Submissions):
-    __mapper_args__ = {'polymorphic_identity': 'pending'}
+    __mapper_args__ = {"polymorphic_identity": "pending"}
+
 
 class LlmSubmissionChallenge(BaseChallenge):
     """Customized CTFd challenge type for LLM submissions."""
-    __version__ = '1.1.1'
-    id = 'llm_verification'  # Unique identifier used to register challenges
-    name = 'llm_verification'  # Name of a challenge type
+
+    __version__ = "1.1.1"
+    id = "llm_verification"  # Unique identifier used to register challenges
+    name = "llm_verification"  # Name of a challenge type
     # Handlebars templates used for each aspect of challenge editing & viewing
-    templates = {'create': '/plugins/llm_verification/assets/create.html',
-                           'update': '/plugins/llm_verification/assets/update.html',
-                           'view': '/plugins/llm_verification/assets/view.html',}
+    templates = {
+        "create": "/plugins/llm_verification/assets/create.html",
+        "update": "/plugins/llm_verification/assets/update.html",
+        "view": "/plugins/llm_verification/assets/view.html",
+    }
     # Scripts that are loaded when a template is loaded
-    scripts = {'create': '/plugins/llm_verification/assets/create.js',
-                         'update': '/plugins/llm_verification/assets/update.js',
-                         'view': '/plugins/llm_verification/assets/view.js',}
+    scripts = {
+        "create": "/plugins/llm_verification/assets/create.js",
+        "update": "/plugins/llm_verification/assets/update.js",
+        "view": "/plugins/llm_verification/assets/view.js",
+    }
     # Route at which files are accessible. This must be registered using register_plugin_assets_directory()
-    route = '/plugins/llm_verification/assets/'
+    route = "/plugins/llm_verification/assets/"
     # Blueprint used to access the static_folder directory.
-    blueprint = Blueprint('llm_verification', __name__, template_folder='templates', static_folder='assets',)
+    blueprint = Blueprint(
+        "llm_verification",
+        __name__,
+        template_folder="templates",
+        static_folder="assets",
+    )
     challenge_model = LlmChallenge
 
     @classmethod
@@ -165,13 +205,13 @@ class LlmSubmissionChallenge(BaseChallenge):
         """
         data = request.form or request.get_json()
         # Make LLM challenges visible to users by default.
-        data['state'] = 'visible'
+        data["state"] = "visible"
         challenge = cls.challenge_model(**data)
         db.session.add(challenge)
         db.session.commit()
-        log.info(f'Created challenge: {data}')
+        log.info(f"Created challenge: {data}")
         return challenge
-    
+
     @classmethod
     def read(cls, challenge):
         """
@@ -219,7 +259,7 @@ class LlmSubmissionChallenge(BaseChallenge):
                 llm submissions need manual review.
         """
         log.info('Attempt: Rejected "attempt" because manual verification is needed')
-        return False, 'Submission under review'
+        return False, "Submission under review"
 
     @staticmethod
     def solve(user, team, challenge, request):
@@ -250,42 +290,54 @@ class LlmSubmissionChallenge(BaseChallenge):
         Returns:
             `None`
         """
-        
-        data = request.form or request.get_json()
-        submission = data['submission'].strip()
-        log.info(data)
-        generation = LLMVGeneration.query.filter_by(id=int(submission)).update({"status": "pending"})
 
-        generation = LLMVGeneration.query.add_columns(
-            LLMVGeneration.id,
-            LLMVGeneration.challenge_id,
-            ).filter_by(id=int(submission)).first_or_404()
+        data = request.form or request.get_json()
+        submission = data["submission"].strip()
+        log.info(data)
+        generation = LLMVGeneration.query.filter_by(id=int(submission)).update(
+            {"status": "pending"}
+        )
+
+        generation = (
+            LLMVGeneration.query.add_columns(
+                LLMVGeneration.id,
+                LLMVGeneration.challenge_id,
+            )
+            .filter_by(id=int(submission))
+            .first_or_404()
+        )
         db.session.commit()
         assert generation.challenge_id == challenge.id
 
         if len(models_not_submitted(user_id=user.id, challenge_id=challenge.id)) > 0:
-            awards = LlmAwards(user_id=user.id,
-                            name=f'Challenge {challenge.name}',
-                            value=challenge.value,
-                            category=challenge.category,
-                            generation_id=generation.id,
-                            challenge_id=challenge.id,
-                            )
+            awards = LlmAwards(
+                user_id=user.id,
+                name=f"Challenge {challenge.name}",
+                value=challenge.value,
+                category=challenge.category,
+                generation_id=generation.id,
+                challenge_id=challenge.id,
+            )
             db.session.add(awards)
         else:
-            solve = LlmSolves(user_id=user.id,
-                           challenge_id=challenge.id,
-                           ip=request.remote_addr,
-                           provided="",
-                           date=datetime.datetime.utcnow(),
-                           generation_id=generation.id,
-                           )
+            solve = LlmSolves(
+                user_id=user.id,
+                challenge_id=challenge.id,
+                ip=request.remote_addr,
+                provided="",
+                date=datetime.datetime.utcnow(),
+                generation_id=generation.id,
+            )
             db.session.add(solve)
         db.session.commit()
 
-        log.info(f"Number of awards: {len(LlmAwards.query.filter_by(user_id=user.id, challenge_id=challenge.id).all())}")
-        log.info(f"Number of solves: {len(LlmSolves.query.filter_by(user_id=user.id, challenge_id=challenge.id).all())}")
-        log.info(f'Fail: marked attempt as pending: {submission}')
+        log.info(
+            f"Number of awards: {len(LlmAwards.query.filter_by(user_id=user.id, challenge_id=challenge.id).all())}"
+        )
+        log.info(
+            f"Number of solves: {len(LlmSolves.query.filter_by(user_id=user.id, challenge_id=challenge.id).all())}"
+        )
+        log.info(f"Fail: marked attempt as pending: {submission}")
 
 
 def fill_models_table():
@@ -296,49 +348,53 @@ def fill_models_table():
     """
     # For each model in the `models` directory...
     anon_names = [
-        'Anu',
-        'Ellil',
-        'Enki',
-        'Marduk',
-        'Ashur',
-        'Nabu',
-        'Nanna',
-        'Utu',
-        'Inanna',
-        'Ninhursag',
-        'Ninurta',
-        'Nergal',
-        'Dumuzid',
-        'Ereshkigal'
+        "Anu",
+        "Ellil",
+        "Enki",
+        "Marduk",
+        "Ashur",
+        "Nabu",
+        "Nanna",
+        "Utu",
+        "Inanna",
+        "Ninhursag",
+        "Ninurta",
+        "Nergal",
+        "Dumuzid",
+        "Ereshkigal",
     ]
     for model, anon_name in zip(get_models(), anon_names):
         if LlmModels.query.filter_by(model=model).first():
             continue
         # ... create a database entry for the model.
-        db.session.add(LlmModels(model=model,
-                             anon_name=anon_name))
+        db.session.add(LlmModels(model=model, anon_name=anon_name))
     # Commit the changes to the database.
     db.session.commit()
 
 
 def models_not_submitted(user_id, challenge_id):
-    '''
+    """
     Gets a random model that isn't submitted by the user for the challenge.
-    '''
+    """
     models = []
-    for status in ['pending', 'correct', 'awarded', 'incorrect']:
+    for status in ["pending", "correct", "awarded", "incorrect"]:
         # Get the user's submissions for the challenge.
-        statused_models = LLMVGeneration.query.add_columns(
-            LLMVGeneration.user_id,
-            LLMVGeneration.challenge_id,
-            LLMVGeneration.status,
-            LLMVGeneration.model_id,
-            LlmModels.anon_name,
-        ).filter_by(
-            user_id=user_id,
-            challenge_id=challenge_id,
-            status=status,
-        ).join(LlmModels).all()
+        statused_models = (
+            LLMVGeneration.query.add_columns(
+                LLMVGeneration.user_id,
+                LLMVGeneration.challenge_id,
+                LLMVGeneration.status,
+                LLMVGeneration.model_id,
+                LlmModels.anon_name,
+            )
+            .filter_by(
+                user_id=user_id,
+                challenge_id=challenge_id,
+                status=status,
+            )
+            .join(LlmModels)
+            .all()
+        )
         # Add the models to the list.
         for model in statused_models:
             models.append(model.anon_name)
