@@ -1,56 +1,53 @@
+import sys
 from flask import current_app
+
+import pathlib
+
+import logging
+
 from logging import (
     CRITICAL,
     DEBUG,
     ERROR,
     Formatter,
-    getLogger,
     INFO,
-    StreamHandler,
     WARNING,
 )
-from logging.handlers import RotatingFileHandler
-from pathlib import Path
-import sys
 
-
-def initialize_llmvctfd_loggers(module_name):
-    """Create and initialize the loggers for the llmvctfd LLM Verification plugin.
-
-    Arguments:
-        module_name (str, required): Name of the LLMV module.
-
-    Returns:
-        logger: The logger for the llmvctfd LLM Verification plugin.
-            This is here for posterity because `logging.get_logger(__name__)` is a cleaner way to
-            get the logger.
-    """
-    # Use the module name as the logger name so this logger applies to all files in LLMV.
-    log = getLogger(module_name)
+def configure_logger(log):
     # Assume that CTFd's log folder already exists (defined in `CTFd/utils/initialization/__init__.py`) and store logfiles there.
     ctfd_logdir = current_app.config["LOG_FOLDER"]
-    llmv_logfile = Path(ctfd_logdir, "llmv_verification.log")
+    llmv_logfile = pathlib.Path(ctfd_logdir, "llmv_verification.log")
+
     # Ensure that the log file exists.
     llmv_logfile.touch(exist_ok=True)
-    llm_verification_log = RotatingFileHandler(
+    llm_verification_log = logging.handlers.RotatingFileHandler(
         llmv_logfile, maxBytes=10485760, backupCount=5
     )
+
     # Write all LLM Verification Plugin logs to the log file.
     log.addHandler(llm_verification_log)
+
     # Create a console logger for the LLM Verification Plugin.
-    console_logger = StreamHandler(stream=sys.stdout)
-    # todo: Make LLM Verification Plugin log severity level configurable via `config.json`.
+    console_logger = logging.StreamHandler(stream=sys.stdout)
+
     # Show console logs for all severity levels.
-    console_logger.setLevel(DEBUG)
+    console_logger.setLevel(logging.DEBUG)
+
     # Add colorized formatter to console logger.
     console_logger.setFormatter(ColorizedFormatter())
+
     # Add the colorized console log handler to the LLM Verification Plugin's logger.
     log.addHandler(console_logger)
+
     # Don't pass log records to ancestor loggers.
     log.propagate = False
     log.info(f'Writing logs to CTFd\'s log directory "{llmv_logfile}"')
+
     log.info("Initialized LLMV logger")
-    return log
+    log.info("Logging Level %s", log.level)
+    log.info("Logging Handlers %s", log.handlers)
+
 
 
 ## Set up console handler for log records.

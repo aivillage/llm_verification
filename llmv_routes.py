@@ -28,10 +28,11 @@ from .llmv_models import (
     LLMVChatPair,
 )
 from .remote_llm import generate_text
+from . import llmv_logger
 
 
 log = getLogger(__name__)
-
+llmv_logger.configure_logger(log)
 
 def add_routes() -> Blueprint:
     """Add new GRT/LLMV routes to CTFd."""
@@ -52,7 +53,34 @@ def add_routes() -> Blueprint:
     @authed_only
     def generate_for_challenge():
         """Add a route to CTFd for generating text from a prompt."""
+
+        import logging
+
+        class DebugConsoleHandler(logging.Handler):
+            def emit(self, record):
+                print(f"Custom Handler: {record.levelname} - {record.msg}")
+
+        log.addHandler(DebugConsoleHandler())
+
+        log.error("Initialized llm_route in verifications")
+        log.error(f"Logger name {log.name}")
+        log.error("Logging Level %s", log.level)
+        log.setLevel(logging.NOTSET)
+        log.error("Logging Level %s", log.level)
+        log.error("Logging Handlers %s", log.handlers)
+        log.error("Logging filters %s", log.filters)
+
+        for handler in log.handlers:
+            log.error(handler.filters)
+            # # record = logging.LogRecord("test", level=20, msg="test")
+            # handler.emit("Test Message")
+
         log.info(
+            f'Received text generation request from user "{get_current_user().name}" '
+            f'for challenge ID "{request.json["challenge_id"]}"'
+        )
+
+        log.error(
             f'Received text generation request from user "{get_current_user().name}" '
             f'for challenge ID "{request.json["challenge_id"]}"'
         )
