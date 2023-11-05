@@ -98,7 +98,11 @@ def get_models():
             log.error(f"Error generating: {json_response['error']}")
             raise HTTPError("Model Error", headers={"Retry-After": str(60000)})
 
-        return json_response["models"]
+
+        models = json_response['models']
+        log.info("Available models are %s", models)
+
+        return models
 
     elif 400 <= raw_response.status_code <= 599:
         # ... raise an error.
