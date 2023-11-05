@@ -40,6 +40,7 @@ def load(app):
 
     # Register LLMV blueprints with CTFd.
     app.register_blueprint(llmv_verifications)
+    app.logger.setLevel(logging.DEBUG)
     log.debug("Registered LLMV blueprints with CTFd")
     log.info('Loaded LLM Verification Plugin "LLMV"')
 
