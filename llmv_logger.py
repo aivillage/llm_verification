@@ -1,17 +1,12 @@
-from flask import current_app
-from logging import (
-    CRITICAL,
-    DEBUG,
-    ERROR,
-    Formatter,
-    getLogger,
-    INFO,
-    StreamHandler,
-    WARNING,
-)
+import os
+import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 import sys
+
+from flask import current_app
+
+
 
 
 def initialize_llmvctfd_loggers(module_name):
@@ -26,26 +21,34 @@ def initialize_llmvctfd_loggers(module_name):
             get the logger.
     """
     # Use the module name as the logger name so this logger applies to all files in LLMV.
-    log = getLogger(module_name)
+    log = logging.getLogger(module_name)
+
     # Assume that CTFd's log folder already exists (defined in `CTFd/utils/initialization/__init__.py`) and store logfiles there.
     ctfd_logdir = current_app.config["LOG_FOLDER"]
     llmv_logfile = Path(ctfd_logdir, "llmv_verification.log")
+
     # Ensure that the log file exists.
     llmv_logfile.touch(exist_ok=True)
     llm_verification_log = RotatingFileHandler(
         llmv_logfile, maxBytes=10485760, backupCount=5
     )
+
     # Write all LLM Verification Plugin logs to the log file.
     log.addHandler(llm_verification_log)
+
     # Create a console logger for the LLM Verification Plugin.
-    console_logger = StreamHandler(stream=sys.stdout)
-    # todo: Make LLM Verification Plugin log severity level configurable via `config.json`.
+    console_logger = logging.StreamHandler(stream=sys.stdout)
+
     # Show console logs for all severity levels.
-    console_logger.setLevel(DEBUG)
+    log_level = os.getenv("LOG_LEVEL", "INFO")
+    console_logger.setLevel(log_level)
+
     # Add colorized formatter to console logger.
     console_logger.setFormatter(ColorizedFormatter())
+
     # Add the colorized console log handler to the LLM Verification Plugin's logger.
     log.addHandler(console_logger)
+
     # Don't pass log records to ancestor loggers.
     log.propagate = False
     log.info(f'Writing logs to CTFd\'s log directory "{llmv_logfile}"')
