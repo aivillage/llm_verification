@@ -6,8 +6,6 @@ import sys
 from flask import current_app
 
 
-
-
 def initialize_llmvctfd_loggers(module_name):
     """Create and initialize the loggers for the llmvctfd LLM Verification plugin.
 
