@@ -29,7 +29,7 @@ def initialize_llmvctfd_loggers(module_name):
 
     # Ensure that the log file exists.
     llmv_logfile.touch(exist_ok=True)
-    llm_verification_log = RotatingFileHandler(
+    llm_verification_log = logging.RotatingFileHandler(
         llmv_logfile, maxBytes=10485760, backupCount=5
     )
 
@@ -61,18 +61,20 @@ class ColorizedFormatter(Formatter):
     """Colorized log record formatter that's keyed to the record's severity level."""
 
     def __init__(self):
-        Formatter.__init__(self)
+        logging.Formatter.__init__(self)
+
         # Define the output format for each log record.
         self.logline_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
         # Set the color for each log record severity level type.
         self.severity_colors = {
             log_level: f"\033[1;{color_code}m{self.logline_format}\033[0m"
             for log_level, color_code in (
-                (DEBUG, 90),  # Grey text.
-                (INFO, 36),  # Cyan text.
-                (WARNING, 33),  # Yellow text.
-                (ERROR, 31),  # Red text.
-                (CRITICAL, 41),
+                (logging.DEBUG, 90),  # Grey text.
+                (logging.INFO, 36),  # Cyan text.
+                (logging.WARNING, 33),  # Yellow text.
+                (logging.ERROR, 31),  # Red text.
+                (logging.CRITICAL, 41),
             )
         }  # White text with red background.
 
@@ -87,6 +89,6 @@ class ColorizedFormatter(Formatter):
         # Get the format for this log record based off of its severity level.
         log_format = self.severity_colors[record.levelno]
         # Set the formatter for this log record.
-        record_formatter = Formatter(log_format)
+        record_formatter = logging.Formatter(log_format)
         # Formate the log entry and return it.
         return record_formatter.format(record)
