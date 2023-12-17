@@ -1,6 +1,5 @@
 import os
 import logging
-from logging.handlers import RotatingFileHandler
 from pathlib import Path
 import sys
 
@@ -29,7 +28,7 @@ def initialize_llmvctfd_loggers(module_name):
 
     # Ensure that the log file exists.
     llmv_logfile.touch(exist_ok=True)
-    llm_verification_log = logging.RotatingFileHandler(
+    llm_verification_log = logging.handlers.RotatingFileHandler(
         llmv_logfile, maxBytes=10485760, backupCount=5
     )
 
@@ -40,7 +39,7 @@ def initialize_llmvctfd_loggers(module_name):
     console_logger = logging.StreamHandler(stream=sys.stdout)
 
     # Show console logs for all severity levels.
-    log_level = os.getenv("LOG_LEVEL", "INFO")
+    log_level = os.getenv("LLM_VERIFICATION_LOGGING_LEVEL", "INFO")
     console_logger.setLevel(log_level)
 
     # Add colorized formatter to console logger.
@@ -51,13 +50,13 @@ def initialize_llmvctfd_loggers(module_name):
 
     # Don't pass log records to ancestor loggers.
     log.propagate = False
-    log.info(f'Writing logs to CTFd\'s log directory "{llmv_logfile}"')
     log.info("Initialized LLMV logger")
+    log.info(f'Writing logs to CTFd\'s log directory "{llmv_logfile}" at {log_level} log level')
     return log
 
 
 ## Set up console handler for log records.
-class ColorizedFormatter(Formatter):
+class ColorizedFormatter(logging.Formatter):
     """Colorized log record formatter that's keyed to the record's severity level."""
 
     def __init__(self):
